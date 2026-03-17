@@ -1111,10 +1111,10 @@ def main() -> None:
         cem[:, 3, 5, i] = acc.get_pod2()
 
     # CC
-    plot_weather_type_eval_bw(qem=qem[0, ...], filename='ww_cc_bw', max_y=0.4)
-    plot_weather_type_eval_bw(qem=qem[1, ...], filename='ww_mae_bw', max_y=10)
-    plot_weather_type_eval_bw(qem=qem[2, ...], filename='ww_rmse_bw', max_y=15)
-    plot_weather_type_eval_bw(qem=qem[3, ...], filename='ww_mre_bw', max_y=0.6)
+    plot_weather_type_eval_bw(qem=qem[0, ...], filename='wt_cc_bw', max_y=0.4)
+    plot_weather_type_eval_bw(qem=qem[1, ...], filename='wt_mae_bw', max_y=10)
+    plot_weather_type_eval_bw(qem=qem[2, ...], filename='wt_rmse_bw', max_y=15)
+    plot_weather_type_eval_bw(qem=qem[3, ...], filename='wt_mre_bw', max_y=0.6)
     fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
     # 绘制第一个柱子组（降水类）
     bars1 = ax.bar(
