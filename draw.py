@@ -32,7 +32,7 @@ def plot_weather_type_eval_bw(qem: np.ndarray, filename: str, max_y: float):
     max_y: float, y轴最大值
     """
     os.makedirs(name=r'D:\Project\vis\图', exist_ok=True)
-    fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    fig, ax = plt.subplots(figsize=(5, 2), dpi=600)
     x_pos = np.linspace(start=1, stop=6, num=6)
     # 绘制三个柱子组
     bars1 = ax.bar(x=x_pos - 0.2, height=qem[:, 0] / max_y, width=0.2,
@@ -41,22 +41,24 @@ def plot_weather_type_eval_bw(qem: np.ndarray, filename: str, max_y: float):
                    color='white', edgecolor='black', hatch='///', label='雾类')
     bars3 = ax.bar(x=x_pos + 0.2, height=qem[:, 2] / max_y, width=0.2,
                    color='white', edgecolor='black', label='霾类')
-    # 添加数值标注
-    for bars in [bars1, bars2, bars3]:
-        for bar in bars:
-            height = bar.get_height()
-            height = 0 if height < 0 else height
-            ax.text(x=bar.get_x() + bar.get_width() / 2., y=height + 0.02, s=f'{height:.2f}',
-                    ha='center', va='bottom', fontsize=9)
+    # # 添加数值标注
+    # for bars in [bars1, bars2, bars3]:
+    #     for bar in bars:
+    #         height = bar.get_height()
+    #         height = 0 if height < 0 else height
+    #         ax.text(x=bar.get_x() + bar.get_width() / 2., y=height + 0.02, s=f'{height:.2f}',
+    #                 ha='center', va='bottom', fontsize=9)
     # 设置坐标轴
     ax.set_xlim((0, 7))
     ax.set_xticks(ticks=range(1, 7), labels=['CMA-SH-WARR', '试验一', '试验二', '试验三', '试验四', '试验五'])
     ax.set_ylim((0, 1))
-    ax.set_yticks(ticks=np.linspace(start=0, stop=1, num=6),
-                  labels=np.linspace(start=0, stop=1, num=6) * max_y)
+    ax.set_yticks(
+        ticks=np.linspace(start=0, stop=1, num=6),
+        labels=[f"{val * max_y:g}" for val in np.linspace(start=0, stop=1, num=6)]
+    )
     ax.legend()
     # 保存并清理
-    fig.savefig(fname=fr'D:\Project\vis\图\{filename}.jpg', bbox_inches='tight', dpi=800)
+    fig.savefig(fname=fr'D:\Project\vis\图\{filename}.png', bbox_inches='tight', dpi=600)
     plt.close(fig)
     gc.collect()
 
@@ -456,13 +458,13 @@ def main() -> None:
         c = np.sum((pre == 0) & (rhu < 80) & index)
         abc = np.array([a, b, c])
         print(abc / np.sum(abc) * 100)
-        fig, ax = plt.subplots(figsize=(4, 4), dpi=800)
+        fig, ax = plt.subplots(figsize=(4, 4), dpi=600)
         ax.pie(x=(a, b, c), labels=('降水', '雾', '霾'), autopct='%.2f%%', startangle=90)
-        fig.savefig(fname=rf'D:\Project\vis\图\pie_{i + 1}.png', bbox_inches='tight', dpi=800)
+        fig.savefig(fname=rf'D:\Project\vis\图\pie_{i + 1}.png', bbox_inches='tight', dpi=600)
         plt.close(fig)
         del fig, ax
         gc.collect()
-    fig, ax = plt.subplots(figsize=(5, 5), dpi=800)
+    fig, ax = plt.subplots(figsize=(5, 5), dpi=600)
     index0 = vis < 500
     index1 = (vis < 500) & (pre > 0)
     index2 = (vis < 500) & (pre == 0) & (rhu >= 80)
@@ -478,11 +480,11 @@ def main() -> None:
     )
     ax.set_xlabel('低能见度事件类型')
     ax.set_ylabel('能见度（km）')
-    plt.savefig(r'D:\Project\vis\图\violinplot_ob.jpg', bbox_inches='tight', dpi=800)
+    plt.savefig(r'D:\Project\vis\图\violinplot_ob.png', bbox_inches='tight', dpi=600)
     plt.close(fig)
     del fig, ax
     gc.collect()
-    fig, ax = plt.subplots(figsize=(5, 5), dpi=800)
+    fig, ax = plt.subplots(figsize=(5, 5), dpi=600)
     index0 = vis < 500
     index1 = (vis < 500) & (pre > 0)
     index2 = (vis < 500) & (pre == 0) & (rhu >= 80)
@@ -501,13 +503,13 @@ def main() -> None:
     )
     ax.set_xlabel('低能见度事件类型')
     ax.set_ylabel('能见度（km）')
-    plt.savefig(r'D:\Project\vis\图\boxplot_ob.jpg', bbox_inches='tight', dpi=800)
+    plt.savefig(r'D:\Project\vis\图\boxplot_ob.png', bbox_inches='tight', dpi=600)
     plt.close(fig)
     del fig, ax
     gc.collect()
 
     df_month = pd.read_csv(filepath_or_buffer=r'D:\Project\vis\图\vis_month.csv', low_memory=False)
-    fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     ax.bar(
         x=np.linspace(start=1, stop=12, num=12),
         height=df_month.loc[:, '1pre'],
@@ -538,11 +540,11 @@ def main() -> None:
     ax.set_xlabel('月份')
     ax.set_ylabel('概率')
     ax.legend()
-    fig.savefig(fname=rf'D:\Project\vis\图\month_1+.jpg', bbox_inches='tight', dpi=800)
+    fig.savefig(fname=rf'D:\Project\vis\图\month_1+.png', bbox_inches='tight', dpi=600)
     plt.close(fig)
     del fig, ax
     gc.collect()
-    fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     ax.bar(
         x=np.linspace(start=1, stop=12, num=12),
         height=df_month.loc[:, '1pre'],
@@ -577,14 +579,14 @@ def main() -> None:
     ax.set_xlabel('月份')
     ax.set_ylabel('概率')
     ax.legend()
-    fig.savefig(fname=rf'D:\Project\vis\图\month_1+_bw.jpg', bbox_inches='tight', dpi=800)
+    fig.savefig(fname=rf'D:\Project\vis\图\month_1+_bw.png', bbox_inches='tight', dpi=600)
     plt.close(fig)
     del fig, ax
     gc.collect()
     lve = np.array(df_month.loc[:, '1haze'] + df_month.loc[:, '1pre'] + df_month.loc[:, '1fog'])
     print(np.argmax(lve) + 1, np.max(lve))
     print(np.argmin(lve) + 1, np.min(lve))
-    # fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    # fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # d = dict()
     # for i in range(12):
     #     index = vis < 10000
@@ -594,11 +596,11 @@ def main() -> None:
     # sns.violinplot(data=d, color='skyblue')
     # ax.set_xlabel('月份')
     # ax.set_ylabel('能见度（km）')
-    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_month.jpg', bbox_inches='tight', dpi=800)
+    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_month.png', bbox_inches='tight', dpi=600)
     # plt.close(fig)
     # del fig, ax
     # gc.collect()
-    # fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    # fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # d = dict()
     # for i in range(12):
     #     index = (vis < 10000) & (pre > 0)
@@ -608,11 +610,11 @@ def main() -> None:
     # sns.violinplot(data=d, color='skyblue')
     # ax.set_xlabel('月份')
     # ax.set_ylabel('能见度（km）')
-    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_month_pre.jpg', bbox_inches='tight', dpi=800)
+    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_month_pre.png', bbox_inches='tight', dpi=600)
     # plt.close(fig)
     # del fig, ax
     # gc.collect()
-    # fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    # fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # d = dict()
     # for i in range(12):
     #     index = (vis < 10000) & (pre == 0) & (rhu >= 80)
@@ -622,11 +624,11 @@ def main() -> None:
     # sns.violinplot(data=d, color='skyblue')
     # ax.set_xlabel('月份')
     # ax.set_ylabel('能见度（km）')
-    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_month_fog.jpg', bbox_inches='tight', dpi=800)
+    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_month_fog.png', bbox_inches='tight', dpi=600)
     # plt.close(fig)
     # del fig, ax
     # gc.collect()
-    # fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    # fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # d = dict()
     # for i in range(12):
     #     index = (vis < 10000) & (pre == 0) & (rhu < 80)
@@ -636,13 +638,13 @@ def main() -> None:
     # sns.violinplot(data=d, color='skyblue')
     # ax.set_xlabel('月份')
     # ax.set_ylabel('能见度（km）')
-    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_month_haze.jpg', bbox_inches='tight', dpi=800)
+    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_month_haze.png', bbox_inches='tight', dpi=600)
     # plt.close('all')
     # del fig, ax
     # gc.collect()
 
     df_hour = pd.read_csv(filepath_or_buffer=r'D:\Project\vis\图\vis_hour.csv', low_memory=False)
-    fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     ax.bar(
         x=np.linspace(start=0, stop=23, num=24),
         height=df_hour.loc[:, '1pre'],
@@ -673,11 +675,11 @@ def main() -> None:
     ax.set_xlabel('时间（UTC）')
     ax.set_ylabel('概率')
     ax.legend()
-    fig.savefig(fname=rf'D:\Project\vis\图\hour_1+.jpg', bbox_inches='tight', dpi=800)
+    fig.savefig(fname=rf'D:\Project\vis\图\hour_1+.png', bbox_inches='tight', dpi=600)
     plt.close(fig)
     del fig, ax
     gc.collect()
-    fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     ax.bar(
         x=np.linspace(start=0, stop=23, num=24),
         height=df_hour.loc[:, '1pre'],
@@ -712,14 +714,14 @@ def main() -> None:
     ax.set_xlabel('时间（UTC）')
     ax.set_ylabel('概率')
     ax.legend()
-    fig.savefig(fname=rf'D:\Project\vis\图\hour_1+_bw.jpg', bbox_inches='tight', dpi=800)
+    fig.savefig(fname=rf'D:\Project\vis\图\hour_1+_bw.png', bbox_inches='tight', dpi=600)
     plt.close(fig)
     del fig, ax
     gc.collect()
     lve = np.array(df_hour.loc[:, '1haze'] + df_hour.loc[:, '1pre'] + df_hour.loc[:, '1fog'])
     print(np.argmax(lve), np.max(lve))
     print(np.argmin(lve), np.min(lve))
-    # fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    # fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # d = dict()
     # for i in range(24):
     #     index = vis < 10000
@@ -729,11 +731,11 @@ def main() -> None:
     # sns.violinplot(data=d, color='skyblue')
     # ax.set_xlabel('小时（UTC）')
     # ax.set_ylabel('能见度（km）')
-    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_hour.png', bbox_inches='tight', dpi=800)
+    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_hour.png', bbox_inches='tight', dpi=600)
     # plt.close(fig)
     # del fig, ax
     # gc.collect()
-    # fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    # fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # d = dict()
     # for i in range(24):
     #     index = (vis < 10000) & (pre > 0)
@@ -743,11 +745,11 @@ def main() -> None:
     # sns.violinplot(data=d, color='skyblue')
     # ax.set_xlabel('小时（UTC）')
     # ax.set_ylabel('能见度（km）')
-    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_hour_pre.png', bbox_inches='tight', dpi=800)
+    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_hour_pre.png', bbox_inches='tight', dpi=600)
     # plt.close(fig)
     # del fig, ax
     # gc.collect()
-    # fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    # fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # d = dict()
     # for i in range(24):
     #     index = (vis < 10000) & (pre == 0) & (rhu >= 80)
@@ -757,11 +759,11 @@ def main() -> None:
     # sns.violinplot(data=d, color='skyblue')
     # ax.set_xlabel('小时（UTC）')
     # ax.set_ylabel('能见度（km）')
-    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_hour_fog.png', bbox_inches='tight', dpi=800)
+    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_hour_fog.png', bbox_inches='tight', dpi=600)
     # plt.close(fig)
     # del fig, ax
     # gc.collect()
-    # fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    # fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # d = dict()
     # for i in range(24):
     #     index = (vis < 10000) & (pre == 0) & (rhu < 80)
@@ -771,13 +773,13 @@ def main() -> None:
     # sns.violinplot(data=d, color='skyblue')
     # ax.set_xlabel('小时（UTC）')
     # ax.set_ylabel('能见度（km）')
-    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_hour_haze.png', bbox_inches='tight', dpi=800)
+    # fig.savefig(r'D:\Project\vis\图\boxplot_ob_hour_haze.png', bbox_inches='tight', dpi=600)
     # plt.close(fig)
     # del fig, ax
     # gc.collect()
 
     # # df_province = pd.read_csv(r'D:\Project\vis\图\vis_province.csv', low_memory=False)
-    # # fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    # # fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # # ax.bar(
     # #     x=np.linspace(1, 15, 15),
     # #     height=1 - df_province.loc[:, '0'],
@@ -789,7 +791,7 @@ def main() -> None:
     # # ax.set_ylim((0, 0.8))
     # # ax.set_yticks((0, 0.2, 0.4, 0.6, 0.8))
     # # ax.set_ylabel('频率')
-    # # fig.savefig(r'D:\Project\vis\图\province_1+.png', bbox_inches='tight', dpi=800)
+    # # fig.savefig(r'D:\Project\vis\图\province_1+.png', bbox_inches='tight', dpi=600)
     # # plt.close(fig)
     # del fig, ax
     # gc.collect()
@@ -808,8 +810,8 @@ def main() -> None:
     #     cmap=cmap,
     #     extend='max',
     #     title=[''],
-    #     save_path=r'D:\Project\vis\图\sta_1+.jpg',
-    #     dpi=800
+    #     save_path=r'D:\Project\vis\图\sta_1+.png',
+    #     dpi=600
     # )
     # index_in = np.zeros(502, dtype=np.bool_)
     # for i in range(502):
@@ -831,8 +833,8 @@ def main() -> None:
     #     cmap=cmap,
     #     extend='max',
     #     title=[''],
-    #     save_path=r'D:\Project\vis\图\sta_1+_pre.jpg',
-    #     dpi=800
+    #     save_path=r'D:\Project\vis\图\sta_1+_pre.png',
+    #     dpi=600
     # )
     # index_in = np.zeros(502, dtype=np.bool_)
     # for i in range(502):
@@ -854,8 +856,8 @@ def main() -> None:
     #     cmap=cmap,
     #     extend='max',
     #     title=[''],
-    #     save_path=r'D:\Project\vis\图\sta_1+_fog.jpg',
-    #     dpi=800
+    #     save_path=r'D:\Project\vis\图\sta_1+_fog.png',
+    #     dpi=600
     # )
     # index_in = np.zeros(502, dtype=np.bool_)
     # for i in range(502):
@@ -877,8 +879,8 @@ def main() -> None:
     #     cmap=cmap,
     #     extend='max',
     #     title=[''],
-    #     save_path=r'D:\Project\vis\图\sta_1+_haze.jpg',
-    #     dpi=800
+    #     save_path=r'D:\Project\vis\图\sta_1+_haze.png',
+    #     dpi=600
     # )
     # index_in = np.zeros(502, dtype=np.bool_)
     # for i in range(502):
@@ -901,8 +903,8 @@ def main() -> None:
     #     cmap=cmap,
     #     extend='max',
     #     title=[''],
-    #     save_path=r'D:\Project\vis\图\sta_ob_mean.jpg',
-    #     dpi=800
+    #     save_path=r'D:\Project\vis\图\sta_ob_mean.png',
+    #     dpi=600
     # )
     # index_in = np.zeros(502, dtype=np.bool_)
     # for i in range(502):
@@ -920,8 +922,8 @@ def main() -> None:
     # #     cmap=cmap,
     # #     extend='max',
     # #     title=[''],
-    # #     save_path=r'D:\Project\vis\图\sta_ob_lvpe_mean.jpg',
-    # #     dpi=800
+    # #     save_path=r'D:\Project\vis\图\sta_ob_lvpe_mean.png',
+    # #     dpi=600
     # # )
     # # sta0 = sta.loc[:, ('level', 'time', 'dtime', 'id', 'lat', 'lon', 'data0')]
     # # sta0.loc[:, 'data0'] = df_sta.loc[:, 'lvfe'] / 1000
@@ -932,8 +934,8 @@ def main() -> None:
     # #     cmap=cmap,
     # #     extend='max',
     # #     title=[''],
-    # #     save_path=r'D:\Project\vis\图\sta_ob_lvfe_mean.jpg',
-    # #     dpi=800
+    # #     save_path=r'D:\Project\vis\图\sta_ob_lvfe_mean.png',
+    # #     dpi=600
     # # )
     # # sta0 = sta.loc[:, ('level', 'time', 'dtime', 'id', 'lat', 'lon', 'data0')]
     # # sta0.loc[:, 'data0'] = df_sta.loc[:, 'lvhe'] / 1000
@@ -944,8 +946,8 @@ def main() -> None:
     # #     cmap=cmap,
     # #     extend='max',
     # #     title=[''],
-    # #     save_path=r'D:\Project\vis\图\sta_ob_lvhe_mean.jpg',
-    # #     dpi=800
+    # #     save_path=r'D:\Project\vis\图\sta_ob_lvhe_mean.png',
+    # #     dpi=600
     # # )
     # # cmap, clevs = meb.def_cmap_clevs(meb.cmaps.ts)
     # # meb.tool.color_tools.show_cmap_clev(cmap, clevs, save_path=r'D:\Project\vis\图\000.png')
@@ -1115,7 +1117,7 @@ def main() -> None:
     plot_weather_type_eval_bw(qem=qem[1, ...], filename='wt_mae_bw', max_y=10)
     plot_weather_type_eval_bw(qem=qem[2, ...], filename='wt_rmse_bw', max_y=15)
     plot_weather_type_eval_bw(qem=qem[3, ...], filename='wt_mre_bw', max_y=0.6)
-    fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # 绘制第一个柱子组（降水类）
     bars1 = ax.bar(
         x=np.linspace(start=1, stop=6, num=6) - 0.2,
@@ -1182,12 +1184,12 @@ def main() -> None:
     ax.set_ylim((0, 0.4))
     ax.set_yticks((0, 0.08, 0.16, 0.24, 0.32, 0.4))
     ax.legend()
-    fig.savefig(fname=rf'D:\Project\vis\图\wt_cc_bw.jpg', bbox_inches='tight', dpi=800)
+    fig.savefig(fname=rf'D:\Project\vis\图\wt_cc_bw.png', bbox_inches='tight', dpi=600)
     plt.close(fig)
     del fig, ax
     gc.collect()
     # MAE
-    fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # 绘制第一个柱子组（降水类）
     bars1 = ax.bar(
         x=np.linspace(start=1, stop=6, num=6) - 0.2,
@@ -1258,12 +1260,12 @@ def main() -> None:
     ax.set_yticks((0, 2, 4, 6, 8, 10))
     ax.set_xlabel('km')
     ax.legend()
-    fig.savefig(fname=rf'D:\Project\vis\图\wt_mae_bw.jpg', bbox_inches='tight', dpi=800)
+    fig.savefig(fname=rf'D:\Project\vis\图\wt_mae_bw.png', bbox_inches='tight', dpi=600)
     plt.close(fig)
     del fig, ax
     gc.collect()
     # RMSE
-    fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # 绘制第一个柱子组（降水类）
     bars1 = ax.bar(
         x=np.linspace(start=1, stop=6, num=6) - 0.2,
@@ -1334,12 +1336,12 @@ def main() -> None:
     ax.set_yticks((0, 3, 6, 9, 12, 15))
     ax.set_xlabel('km')
     ax.legend()
-    fig.savefig(fname=rf'D:\Project\vis\图\wt_rmse_bw.jpg', bbox_inches='tight', dpi=800)
+    fig.savefig(fname=rf'D:\Project\vis\图\wt_rmse_bw.png', bbox_inches='tight', dpi=600)
     plt.close(fig)
     del fig, ax
     gc.collect()
     # MRE
-    fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # 绘制第一个柱子组（降水类）
     bars1 = ax.bar(
         x=np.linspace(start=1, stop=6, num=6) - 0.2,
@@ -1409,7 +1411,7 @@ def main() -> None:
     ax.set_ylim((0, 0.6))
     ax.set_yticks((0, 0.12, 0.24, 0.36, 0.48, 0.6))
     ax.legend()
-    fig.savefig(fname=rf'D:\Project\vis\图\wt_mre_bw.jpg', bbox_inches='tight', dpi=800)
+    fig.savefig(fname=rf'D:\Project\vis\图\wt_mre_bw.png', bbox_inches='tight', dpi=600)
     plt.close(fig)
     del fig, ax
     gc.collect()
@@ -1427,7 +1429,7 @@ def main() -> None:
     #     cdf[0, i] = np.mean(ob <= vis_values[i])
     #     cdf[1, i] = np.mean(nwp <= vis_values[i])
     #     cdf[2, i] = np.mean(pr <= vis_values[i])
-    # fig, ax = plt.subplots(figsize=(5, 5), dpi=800)
+    # fig, ax = plt.subplots(figsize=(5, 5), dpi=600)
     # ax.plot(
     #     vis_values / 1000,
     #     cdf[0, :],
@@ -1456,13 +1458,13 @@ def main() -> None:
     # ax.set_xlabel('能见度/km')
     # ax.set_ylabel('累积概率')
     # ax.legend()
-    # fig.savefig(fname=rf'D:\Project\vis\图\vis_cdf.jpg', bbox_inches='tight', dpi=800)
+    # fig.savefig(fname=rf'D:\Project\vis\图\vis_cdf.png', bbox_inches='tight', dpi=600)
     # plt.close(fig)
     # del fig, ax
     # gc.collect()
 
     # index = ~np.isnan(val_ob) & ~np.isnan(cma_sh_warr) & ~np.isnan(pred_pdf_tl)
-    # fig, ax = plt.subplots(figsize=(5, 5), dpi=800)
+    # fig, ax = plt.subplots(figsize=(5, 5), dpi=600)
     # x = val_ob[index] / 1000
     # y = cma_sh_warr[index] / 1000
     # his2d = np.zeros((10, 10), dtype=np.float32) + np.nan
@@ -1491,7 +1493,7 @@ def main() -> None:
     # ax.set_yticks(l0, [f'{x:.2f}' for x in l])
     # ax.set_xlabel('实况 （km）')
     # ax.set_ylabel('预报 （km）')
-    # fig.savefig(r'D:\Project\vis\图\vis_nwp_his2d.jpg', bbox_inches='tight', dpi=800)
+    # fig.savefig(r'D:\Project\vis\图\vis_nwp_his2d.png', bbox_inches='tight', dpi=600)
     # plt.close(fig)
     # del fig, ax
     # gc.collect()
@@ -1516,7 +1518,7 @@ def main() -> None:
     #     df_fh['PDFM-TLE'].append(np.sum((pred_pdf_tl[index] < right) & (pred_pdf_tl[index] >= left)) / np.sum(index))
     # df_fh = pd.DataFrame(df_fh)
     # df_fh.to_csv(r'D:\Project\vis\图\vis_fh.csv', index=False)
-    # fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
+    # fig, ax = plt.subplots(figsize=(10, 4), dpi=600)
     # ax.bar(
     #     x=df_fh.loc[:, 'grade'] - 0.4,
     #     height=df_fh.loc[:, 'ob'],
@@ -1566,7 +1568,7 @@ def main() -> None:
     # ax.set_xlabel('低能见度等级')
     # ax.set_ylabel('频率')
     # ax.legend()
-    # fig.savefig(fname=rf'D:\Project\vis\图\fh.png', bbox_inches='tight', dpi=800)
+    # fig.savefig(fname=rf'D:\Project\vis\图\fh.png', bbox_inches='tight', dpi=600)
     # plt.close(fig)
     # del fig, ax
     # gc.collect()
@@ -1958,7 +1960,7 @@ def main() -> None:
     plt.tick_params(axis='y', which='both', left=False, right=False)
     plt.xlabel('预报时效（h）')
     plt.ylabel('起报时次（UTC）')
-    plt.savefig(r'D:\Project\vis\图\npw_hour_ts4+.jpg', bbox_inches='tight')
+    plt.savefig(r'D:\Project\vis\图\npw_hour_ts4+.png', bbox_inches='tight')
     plt.cla()
     plt.close('all')
     del fig, ax
@@ -1970,7 +1972,7 @@ def main() -> None:
     plt.tick_params(axis='y', which='both', left=False, right=False)
     plt.xlabel('预报时效（h）')
     plt.ylabel('起报时次（UTC）')
-    plt.savefig(r'D:\Project\vis\图\npw_hour_ts4+.jpg', bbox_inches='tight', dpi=800)
+    plt.savefig(r'D:\Project\vis\图\npw_hour_ts4+.png', bbox_inches='tight', dpi=600)
     plt.cla()
     plt.close('all')
     del fig, ax
@@ -1983,7 +1985,7 @@ def main() -> None:
     plt.tick_params(axis='y', which='both', left=False, right=False)
     plt.xlabel('预报时效（h）')
     plt.ylabel('起报时次（UTC）')
-    plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+.jpg', bbox_inches='tight')
+    plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+.png', bbox_inches='tight')
     plt.cla()
     plt.close('all')
     del fig, ax
@@ -1995,7 +1997,7 @@ def main() -> None:
     plt.tick_params(axis='y', which='both', left=False, right=False)
     plt.xlabel('预报时效（h）')
     plt.ylabel('起报时次（UTC）')
-    plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+.jpg', bbox_inches='tight', dpi=800)
+    plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+.png', bbox_inches='tight', dpi=600)
     plt.cla()
     plt.close('all')
     del fig, ax
@@ -2011,7 +2013,7 @@ def main() -> None:
     plt.tick_params(axis='y', which='both', left=False, right=False)
     plt.xlabel('预报时效（h）')
     plt.ylabel('起报时次（UTC）')
-    plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+_improvement.jpg', bbox_inches='tight', dpi=800)
+    plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+_improvement.png', bbox_inches='tight', dpi=600)
     plt.cla()
     plt.close('all')
     del fig, ax
@@ -2023,7 +2025,7 @@ def main() -> None:
     plt.tick_params(axis='y', which='both', left=False, right=False)
     plt.xlabel('预报时效（h）')
     plt.ylabel('起报时次（UTC）')
-    plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+_improvement.jpg', bbox_inches='tight', dpi=800)
+    plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+_improvement.png', bbox_inches='tight', dpi=600)
     plt.cla()
     plt.close('all')
     del fig, ax
@@ -2073,7 +2075,7 @@ def main() -> None:
     ax1.legend(loc='upper right')
     ax2.legend(loc='upper left')
     plt.xlabel('预报时效（h）')
-    plt.savefig(rf'D:\Project\vis\图\vis_vt_ts4+.jpg', bbox_inches='tight', dpi=800)
+    plt.savefig(rf'D:\Project\vis\图\vis_vt_ts4+.png', bbox_inches='tight', dpi=600)
     plt.cla()
     plt.close('all')
     del fig, ax
@@ -2120,7 +2122,7 @@ def main() -> None:
     ax1.legend(loc='upper right')
     ax2.legend(loc='upper left')
     plt.xlabel('预报时间（UTC）')
-    plt.savefig(rf'D:\Project\vis\图\vis_fhour_ts4+.jpg', bbox_inches='tight', dpi=800)
+    plt.savefig(rf'D:\Project\vis\图\vis_fhour_ts4+.png', bbox_inches='tight', dpi=600)
     plt.cla()
     plt.close('all')
     del fig, ax
@@ -2148,8 +2150,8 @@ def main() -> None:
     #     cmap=cmap,
     #     extend='max',
     #     title=[''],
-    #     save_path=r'D:\Project\vis\图\sta_ts4+_nwp.jpg',
-    #     dpi=800
+    #     save_path=r'D:\Project\vis\图\sta_ts4+_nwp.png',
+    #     dpi=600
     # )
     # # index_in = np.zeros(502, dtype=np.bool_)
     # # for i in range(502):
@@ -2167,8 +2169,8 @@ def main() -> None:
     #     cmap=cmap,
     #     extend='max',
     #     title=[''],
-    #     save_path=r'D:\Project\vis\图\sta_ts4+.jpg',
-    #     dpi=800
+    #     save_path=r'D:\Project\vis\图\sta_ts4+.png',
+    #     dpi=600
     # )
     # # index_in = np.zeros(502, dtype=np.bool_)
     # # for i in range(502):
@@ -2194,8 +2196,8 @@ def main() -> None:
     # #     cmap=cmap,
     # #     extend='both',
     # #     title=[''],
-    # #     save_path=r'D:\Project\vis\图\sta_mre_improvement.jpg',
-    # #     dpi=800
+    # #     save_path=r'D:\Project\vis\图\sta_mre_improvement.png',
+    # #     dpi=600
     # # )
     # # print(np.mean(rmse_improvement))
     # # index_in = np.zeros(1183, dtype=np.bool_)
@@ -2231,7 +2233,7 @@ def main() -> None:
     # plt.xlabel('经度')
     # plt.ylabel('MRE')
     # plt.legend()
-    # plt.savefig(rf'D:\Project\vis\图\sta_lon-mre.jpg', bbox_inches='tight', dpi=800)
+    # plt.savefig(rf'D:\Project\vis\图\sta_lon-mre.png', bbox_inches='tight', dpi=600)
     # plt.cla()
     # plt.close('all')
     # del fig, ax
@@ -2265,7 +2267,7 @@ def main() -> None:
     # plt.yticks((-40, -20, 0, 20, 40, 60, 80))
     # plt.xlabel('经度')
     # plt.ylabel('MRE改善率（%）')
-    # plt.savefig(r'D:\Project\vis\图\sta_lon-mre_improvement.jpg', bbox_inches='tight', dpi=800)
+    # plt.savefig(r'D:\Project\vis\图\sta_lon-mre_improvement.png', bbox_inches='tight', dpi=600)
     # plt.cla()
     # plt.close('all')
     # del fig, ax
@@ -2294,7 +2296,7 @@ def main() -> None:
     # plt.xlabel('纬度')
     # plt.ylabel('MRE')
     # plt.legend()
-    # plt.savefig(rf'D:\Project\vis\图\sta_lat-mre.jpg', bbox_inches='tight', dpi=800)
+    # plt.savefig(rf'D:\Project\vis\图\sta_lat-mre.png', bbox_inches='tight', dpi=600)
     # plt.cla()
     # plt.close('all')
     # del fig, ax
@@ -2328,7 +2330,7 @@ def main() -> None:
     # plt.yticks((-40, -20, 0, 20, 40, 60, 80))
     # plt.xlabel('纬度')
     # plt.ylabel('MRE改善率（%）')
-    # plt.savefig(r'D:\Project\vis\图\sta_lat-mre_improvement.jpg', bbox_inches='tight', dpi=800)
+    # plt.savefig(r'D:\Project\vis\图\sta_lat-mre_improvement.png', bbox_inches='tight', dpi=600)
     # plt.cla()
     # plt.close('all')
     # del fig, ax
@@ -2358,7 +2360,7 @@ def main() -> None:
     # plt.xlabel('纬度')
     # plt.ylabel('MRE')
     # plt.legend()
-    # plt.savefig(rf'D:\Project\vis\图\sta_alti-mre.jpg', bbox_inches='tight', dpi=800)
+    # plt.savefig(rf'D:\Project\vis\图\sta_alti-mre.png', bbox_inches='tight', dpi=600)
     # plt.cla()
     # plt.close('all')
     # del fig, ax
@@ -2393,7 +2395,7 @@ def main() -> None:
     # plt.yticks((-40, -20, 0, 20, 40, 60, 80))
     # plt.xlabel('高程(m)')
     # plt.ylabel('MRE改善率（%）')
-    # plt.savefig(r'D:\Project\vis\图\sta_alti-mre_improvement.jpg', bbox_inches='tight', dpi=800)
+    # plt.savefig(r'D:\Project\vis\图\sta_alti-mre_improvement.png', bbox_inches='tight', dpi=600)
     # plt.cla()
     # plt.close('all')
     # del fig, ax
@@ -2410,7 +2412,7 @@ def main() -> None:
     #     palette=['blue', 'red']
     # )
     # plt.ylabel('MRE')
-    # plt.savefig(r'D:\Project\vis\图\boxplot_mre.jpg', bbox_inches='tight', dpi=800)
+    # plt.savefig(r'D:\Project\vis\图\boxplot_mre.png', bbox_inches='tight', dpi=600)
     # plt.cla()
     # plt.close('all')
     # del fig, ax
@@ -2424,7 +2426,7 @@ def main() -> None:
     #     color='skyblue'
     # )
     # plt.ylabel('MRE改善率')
-    # plt.savefig(r'D:\Project\vis\图\boxplot_mre_improvement.jpg', bbox_inches='tight', dpi=800)
+    # plt.savefig(r'D:\Project\vis\图\boxplot_mre_improvement.png', bbox_inches='tight', dpi=600)
     # plt.cla()
     # plt.close('all')
     # del fig, ax
