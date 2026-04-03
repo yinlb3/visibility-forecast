@@ -165,7 +165,11 @@ class VisAcc:
         index = (~np.isnan(self.ob)) & (~np.isnan(self.pr))
         ob = self.ob[index]
         pr = self.pr[index]
-        return float(stats.pearsonr(ob, pr)[0])
+        if np.sum(index) > 2:
+            r = float(stats.pearsonr(ob, pr)[0])
+        else:
+            r = np.nan
+        return r
 
     def get_me1(self) -> np.ndarray:
         """按观测分级计算各级的平均误差 (ME), 返回长度为 n_grades+1 的数组."""
@@ -197,7 +201,7 @@ class VisAcc:
             rmse[i] = np.mean((pr - ob) ** 2) ** 0.5
         return rmse
 
-    def get_mre1(self) -> float:
+    def get_mre1(self) -> np.ndarray:
         """按观测分级计算各级的平均相对误差 (MRE), 返回长度为 n_grades+1 的数组."""
         mre = np.zeros(self.n_grades + 1, dtype=np.float32)
         for i in range(self.n_grades + 1):
@@ -816,10 +820,10 @@ def main() -> None:
     gc.collect()
     fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
     d = dict()
+    index_pre = (vis < 10000) & (pre > 0)
     for i in range(24):
-        index = (vis < 10000) & (pre > 0)
         vis_ob = vis[i::24, :]
-        index = index[i::24, :]
+        index = index_pre[i::24, :]
         d[f'{i}:00'] = vis_ob[index] / 1000
     sns.violinplot(data=d, color='skyblue')
     ax.set_xlabel('小时(UTC)')
@@ -831,10 +835,10 @@ def main() -> None:
     gc.collect()
     fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
     d = dict()
+    index_fog = (vis < 10000) & (pre == 0) & (rhu >= 80)
     for i in range(24):
-        index = (vis < 10000) & (pre == 0) & (rhu >= 80)
         vis_ob = vis[i::24, :]
-        index = index[i::24, :]
+        index = index_fog[i::24, :]
         d[f'{i}:00'] = vis_ob[index] / 1000
     sns.violinplot(data=d, color='skyblue')
     ax.set_xlabel('小时(UTC)')
@@ -846,10 +850,10 @@ def main() -> None:
     gc.collect()
     fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
     d = dict()
+    index_haze = (vis < 10000) & (pre == 0) & (rhu < 80)
     for i in range(24):
-        index = (vis < 10000) & (pre == 0) & (rhu < 80)
         vis_ob = vis[i::24, :]
-        index = index[i::24, :]
+        index = index_haze[i::24, :]
         d[f'{i}:00'] = vis_ob[index] / 1000
     sns.violinplot(data=d, color='skyblue')
     ax.set_xlabel('小时(UTC)')
@@ -1286,52 +1290,52 @@ def main() -> None:
     plot_weather_type_eval_bw(qem=qem[2, ...], filename='wt_rmse_bw', max_y=15)
     plot_weather_type_eval_bw(qem=qem[3, ...], filename='wt_mre_bw', max_y=0.6)
 
-    vis_values = list(range(-1, 100, 1)) + list(range(100, 1000, 10)) + list(range(1000, 30001, 100))
-    vis_values = list(range(-1, 30001, 1))
-    vis_values = np.array(vis_values)
-    cdf = np.zeros((3, vis_values.size), dtype=np.float32) + np.nan
-    index = (~np.isnan(vis_ob)) & (~np.isnan(cma_sh_warr)) & (~np.isnan(pred_pdfm_tle0))
-    ob = vis_ob[index]
-    nwp = cma_sh_warr[index]
-    pr = pred_pdfm_tle0[index]
-    for i in range(vis_values.size):
-        cdf[0, i] = np.mean(ob <= vis_values[i])
-        cdf[1, i] = np.mean(nwp <= vis_values[i])
-        cdf[2, i] = np.mean(pr <= vis_values[i])
-    fig, ax = plt.subplots(figsize=(5, 5), dpi=800)
-    ax.plot(
-        vis_values / 1000,
-        cdf[0, :],
-        '-',
-        c='black',
-        label='实况'
-    )
-    ax.plot(
-        vis_values / 1000,
-        cdf[1, :],
-        '-',
-        c='blue',
-        label='CMA-SH3-WARR'
-    )
-    ax.plot(
-        vis_values / 1000,
-        cdf[2, :],
-        '-',
-        c='red',
-        label='PDFM-TLE'
-    )
-    ax.set_xlim((-1, 31))
-    ax.set_xticks((0, 10, 20, 30))
-    ax.set_ylim((0, 1))
-    ax.set_yticks((0, 0.2, 0.4, 0.6, 0.8, 1))
-    ax.set_xlabel('能见度/km')
-    ax.set_ylabel('累积概率')
-    ax.legend()
-    fig.savefig(fname=rf'D:\Project\vis\图\vis_cdf.png', bbox_inches='tight', dpi=800)
-    fig.savefig(fname=rf'D:\Project\vis\图\vis_cdf.pdf', bbox_inches='tight', dpi=800)
-    plt.close(fig)
-    del fig, ax
-    gc.collect()
+    # vis_values = list(range(-1, 100, 1)) + list(range(100, 1000, 10)) + list(range(1000, 30001, 100))
+    # vis_values = list(range(-1, 30001, 1))
+    # vis_values = np.array(vis_values)
+    # cdf = np.zeros((3, vis_values.size), dtype=np.float32) + np.nan
+    # index = (~np.isnan(vis_ob)) & (~np.isnan(cma_sh_warr)) & (~np.isnan(pred_pdfm_tle0))
+    # ob = vis_ob[index]
+    # nwp = cma_sh_warr[index]
+    # pr = pred_pdfm_tle0[index]
+    # for i in range(vis_values.size):
+    #     cdf[0, i] = np.mean(ob <= vis_values[i])
+    #     cdf[1, i] = np.mean(nwp <= vis_values[i])
+    #     cdf[2, i] = np.mean(pr <= vis_values[i])
+    # fig, ax = plt.subplots(figsize=(5, 5), dpi=800)
+    # ax.plot(
+    #     vis_values / 1000,
+    #     cdf[0, :],
+    #     '-',
+    #     c='black',
+    #     label='实况'
+    # )
+    # ax.plot(
+    #     vis_values / 1000,
+    #     cdf[1, :],
+    #     '-',
+    #     c='blue',
+    #     label='CMA-SH3-WARR'
+    # )
+    # ax.plot(
+    #     vis_values / 1000,
+    #     cdf[2, :],
+    #     '-',
+    #     c='red',
+    #     label='PDFM-TLE'
+    # )
+    # ax.set_xlim((-1, 31))
+    # ax.set_xticks((0, 10, 20, 30))
+    # ax.set_ylim((0, 1))
+    # ax.set_yticks((0, 0.2, 0.4, 0.6, 0.8, 1))
+    # ax.set_xlabel('能见度/km')
+    # ax.set_ylabel('累积概率')
+    # ax.legend()
+    # fig.savefig(fname=rf'D:\Project\vis\图\vis_cdf.png', bbox_inches='tight', dpi=800)
+    # fig.savefig(fname=rf'D:\Project\vis\图\vis_cdf.pdf', bbox_inches='tight', dpi=800)
+    # plt.close(fig)
+    # del fig, ax
+    # gc.collect()
 
     index = ~np.isnan(vis_ob) & ~np.isnan(cma_sh_warr) & ~np.isnan(pred_pdfm_tle0)
     fig, ax = plt.subplots(figsize=(5, 5), dpi=800)
@@ -1621,8 +1625,7 @@ def main() -> None:
     df_fhour_ts4.to_csv(path_or_buf=r'D:\Project\vis\图\vis_fhour_ts4+.csv', index=False)
     np.save(r'D:\Project\vis\图\hour_access.npy', hour_access)
     v_type = np.load(r'D:\data\vis\v_type.npy')
-    v_type = v_type[-365:, :, :, index_zgdb]
-    v_type = np.reshape(v_type, (-1, 24, 1183))
+    v_type = np.reshape(v_type[-365:, :, :, index_cjzxy], (-1, 24, 502))
     df_type_corr = {'type': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()}
     df_type_mae = {'type': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()}
     df_type_rmse = {'type': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()}
@@ -1710,6 +1713,11 @@ def main() -> None:
     df_type_ts6.to_csv(r'D:\Project\vis\图\vis_type_ts6+.csv', index=False)
     df_sta_corr = {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()}
     df_sta_mae = {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()}
+    df_sta_ts1 = {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()}
+    df_sta_ts2 = {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()}
+    df_sta_ts3 = {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()}
+    df_sta_ts5 = {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()}
+    df_sta_ts6 = {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()}
     # ------------------------------------------------------------------
     # 14. 站点级检验:计算各站的 RMSE、MRE、TS4+ 并输出 CSV
     # ------------------------------------------------------------------
@@ -1776,18 +1784,6 @@ def main() -> None:
     # 13. 绘制起报时次-预报时效二维热图(TS4+)及改善率热图
     # ------------------------------------------------------------------
     hour_access = np.load(r'D:\Project\vis\图\hour_access.npy')
-    sns.heatmap(hour_access[0, :, :, 7], cmap='Reds', vmin=0, vmax=0.4, linewidths=0.3)
-    plt.xticks(np.arange(24) + 0.5, [str(x) for x in range(1, 25)])
-    plt.yticks(np.arange(24) + 0.5, [f'{x:02d}:00' for x in range(24)], rotation=0)
-    plt.tick_params(axis='x', which='both', bottom=False, top=False)
-    plt.tick_params(axis='y', which='both', left=False, right=False)
-    plt.xlabel('预报时效 (h) ')
-    plt.ylabel('起报时次 (UTC) ')
-    plt.savefig(r'D:\Project\vis\图\npw_hour_ts4+.png', bbox_inches='tight')
-    plt.savefig(r'D:\Project\vis\图\npw_hour_ts4+.pdf', bbox_inches='tight')
-    plt.cla()
-    plt.close('all')
-    del fig, ax
     gc.collect()
     sns.heatmap(hour_access[0, :, :, 7], cmap='Reds', vmin=0, vmax=0.4, linewidths=0.3)
     plt.xticks(np.arange(24) + 0.5, [str(x) for x in range(1, 25)])
@@ -1800,22 +1796,8 @@ def main() -> None:
     plt.savefig(r'D:\Project\vis\图\npw_hour_ts4+.pdf', bbox_inches='tight', dpi=800)
     plt.cla()
     plt.close('all')
-    del fig, ax
     gc.collect()
     print(np.min(hour_access[0, :, :, 7]), np.max(hour_access[0, :, :, 7]))
-    sns.heatmap(hour_access[3, :, :, 7], cmap='Reds', vmin=0, vmax=0.4, linewidths=0.3)
-    plt.xticks(np.arange(24) + 0.5, [str(x + 1) for x in range(24)])
-    plt.yticks(np.arange(24) + 0.5, [f'{x:02d}:00' for x in range(24)], rotation=0)
-    plt.tick_params(axis='x', which='both', bottom=False, top=False)
-    plt.tick_params(axis='y', which='both', left=False, right=False)
-    plt.xlabel('预报时效 (h) ')
-    plt.ylabel('起报时次 (UTC) ')
-    plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+.png', bbox_inches='tight')
-    plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+.pdf', bbox_inches='tight')
-    plt.cla()
-    plt.close('all')
-    del fig, ax
-    gc.collect()
     sns.heatmap(hour_access[3, :, :, 7], cmap='Reds', vmin=0, vmax=0.4, linewidths=0.3)
     plt.xticks(np.arange(24) + 0.5, [str(x + 1) for x in range(24)])
     plt.yticks(np.arange(24) + 0.5, [f'{x:02d}:00' for x in range(24)], rotation=0)
@@ -1827,7 +1809,6 @@ def main() -> None:
     plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+.pdf', bbox_inches='tight', dpi=800)
     plt.cla()
     plt.close('all')
-    del fig, ax
     gc.collect()
     print(np.min(hour_access[3, :, :, 7]), np.max(hour_access[3, :, :, 7]))
     ts_before = hour_access[0, :, :, 7]
@@ -1844,20 +1825,6 @@ def main() -> None:
     plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+_improvement.pdf', bbox_inches='tight', dpi=800)
     plt.cla()
     plt.close('all')
-    del fig, ax
-    gc.collect()
-    sns.heatmap(ts_improvement, cmap='Reds', vmin=0, vmax=150, linewidths=0.3)
-    plt.xticks(np.arange(24) + 0.5, [str(x + 1) for x in range(24)])
-    plt.yticks(np.arange(24) + 0.5, [f'{x:02d}:00' for x in range(24)], rotation=0)
-    plt.tick_params(axis='x', which='both', bottom=False, top=False)
-    plt.tick_params(axis='y', which='both', left=False, right=False)
-    plt.xlabel('预报时效 (h) ')
-    plt.ylabel('起报时次 (UTC) ')
-    plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+_improvement.png', bbox_inches='tight', dpi=800)
-    plt.savefig(r'D:\Project\vis\图\pdf-tl_hour_ts4+_improvement.pdf', bbox_inches='tight', dpi=800)
-    plt.cla()
-    plt.close('all')
-    del fig, ax
     gc.collect()
     print(np.min(ts_improvement), np.max(ts_improvement))
     print(np.mean(ts_improvement))
@@ -1911,7 +1878,7 @@ def main() -> None:
     plt.savefig(rf'D:\Project\vis\图\vis_vt_ts4+.pdf', bbox_inches='tight', dpi=800)
     plt.cla()
     plt.close('all')
-    del fig, ax
+    del fig, ax1, ax2
     gc.collect()
 
     df_fhour_ts4 = pd.read_csv(filepath_or_buffer=r'D:\Project\vis\图\vis_fhour_ts4+.csv', low_memory=False)
@@ -2116,7 +2083,6 @@ def main() -> None:
     plt.savefig(rf'D:\Project\vis\图\sta_lon-mre.pdf', bbox_inches='tight', dpi=800)
     plt.cla()
     plt.close('all')
-    del fig, ax
     gc.collect()
     print(stats.pearsonr(sta.loc[:, 'lon'], df_sta.loc[:, 'CMA-SH-WARR'])[0])
     print(stats.pearsonr(sta.loc[:, 'lon'], df_sta.loc[:, 'PDFM-TLE'])[0])
@@ -2151,7 +2117,6 @@ def main() -> None:
     plt.savefig(r'D:\Project\vis\图\sta_lon-mre_improvement.pdf', bbox_inches='tight', dpi=800)
     plt.cla()
     plt.close('all')
-    del fig, ax
     gc.collect()
     cc, p_value = stats.pearsonr(sta.loc[:, 'lon'], mre_improvement)
     print(cc, p_value)
@@ -2181,7 +2146,6 @@ def main() -> None:
     plt.savefig(rf'D:\Project\vis\图\sta_lat-mre.pdf', bbox_inches='tight', dpi=800)
     plt.cla()
     plt.close('all')
-    del fig, ax
     gc.collect()
     print(stats.pearsonr(sta.loc[:, 'lat'], df_sta.loc[:, 'CMA-SH-WARR'])[0])
     print(stats.pearsonr(sta.loc[:, 'lat'], df_sta.loc[:, 'PDFM-TLE'])[0])
@@ -2216,7 +2180,6 @@ def main() -> None:
     plt.savefig(r'D:\Project\vis\图\sta_lat-mre_improvement.pdf', bbox_inches='tight', dpi=800)
     plt.cla()
     plt.close('all')
-    del fig, ax
     gc.collect()
     cc, p_value = stats.pearsonr(sta.loc[:, 'lat'], mre_improvement)
     print(cc, p_value)
@@ -2240,14 +2203,13 @@ def main() -> None:
                ['0', '500', '1000', '1500', '2000', '2500', '3000', '3500'])
     plt.ylim((0, 0.6))
     plt.yticks((0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
-    plt.xlabel('纬度')
+    plt.xlabel('高程')
     plt.ylabel('MRE')
     plt.legend()
     plt.savefig(rf'D:\Project\vis\图\sta_alti-mre.png', bbox_inches='tight', dpi=800)
     plt.savefig(rf'D:\Project\vis\图\sta_alti-mre.pdf', bbox_inches='tight', dpi=800)
     plt.cla()
     plt.close('all')
-    del fig, ax
     gc.collect()
     print(stats.pearsonr(sta.loc[:, 'alti'], df_sta.loc[:, 'CMA-SH-WARR'])[0])
     print(stats.pearsonr(sta.loc[:, 'alti'], df_sta.loc[:, 'PDFM-TLE'])[0])
@@ -2283,7 +2245,6 @@ def main() -> None:
     plt.savefig(r'D:\Project\vis\图\sta_alti-mre_improvement.pdf', bbox_inches='tight', dpi=800)
     plt.cla()
     plt.close('all')
-    del fig, ax
     gc.collect()
     cc, p_value = stats.pearsonr(sta.loc[:, 'alti'], mre_improvement)
     print(cc, p_value)
@@ -2301,7 +2262,6 @@ def main() -> None:
     plt.savefig(r'D:\Project\vis\图\boxplot_mre.pdf', bbox_inches='tight', dpi=800)
     plt.cla()
     plt.close('all')
-    del fig, ax
     gc.collect()
     print(np.median(df_sta.loc[:, 'CMA-SH-WARR']), np.median(df_sta.loc[:, 'PDFM-TLE']))
     print(np.median(df_sta.loc[:, 'CMA-SH-WARR']) - np.median(df_sta.loc[:, 'PDFM-TLE']))
@@ -2316,7 +2276,6 @@ def main() -> None:
     plt.savefig(r'D:\Project\vis\图\boxplot_mre_improvement.pdf', bbox_inches='tight', dpi=800)
     plt.cla()
     plt.close('all')
-    del fig, ax
     gc.collect()
     print(np.mean(mre_improvement > 0))
 
@@ -2340,7 +2299,6 @@ def main() -> None:
     print(acc.get_ts2(), acc.get_far2(), acc.get_mar2())
 
     # 加载 2024 年观测与预报数据,并进行时效对齐偏移
-    vis_ob = np.load(r'D:\data\vis\vis1183_ob_2024.npy')[:, 1:, index_cjzxy]
     vis_ob = np.reshape(vis_ob, shape=(-1, 24, 502))
     vis_ob[vis_ob >= 30000] = 30000
     cma_sh_warr = np.load(r'D:\data\vis\vis_gjz_2024.npy')
