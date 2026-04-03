@@ -1614,7 +1614,7 @@ def main() -> None:
             hour_access[3, i, j, 2] = acc.get_rmse()
             hour_access[3, i, j, 3] = acc.get_mre()
             hour_access[3, i, j, 4:] = acc.get_ts2()
-    # 将时效 TS 评分结果输出为 CSV,并保存四维检验数组
+    # 将时效 TS 评分结果输出为 CSV, 并保存四维检验数组
     df_vt_ts4 = pd.DataFrame(df_vt_ts4)
     df_vt_ts4.to_csv(path_or_buf=r'D:\Project\vis\图\vis_vt_ts4+.csv', index=False)
     df_fhour_ts4 = pd.DataFrame(df_fhour_ts4)
