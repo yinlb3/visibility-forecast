@@ -103,34 +103,27 @@ python tl.py
 
 ---
 
-## 代码风格与开发约定
+## 项目特有约定
 
-1. **文件头格式**
-   ```python
-   #!user/bin.python3
-   """
-   Founded in YYYY-MM-DD
-   Modified in YYYY-MM-DD
-   @author: yinlb
-   """
-   ```
-   - Shebang 写法为 `#!user/bin.python3`（非标准 Linux shebang）。
+> 注：通用编码规范（文档规范、导入规范、函数/类规范等）遵循全局 SKILL.md 2.2 节。
 
-2. **注释与文档字符串**
-   - 函数 docstring 和注释使用**中文**。
-   - 变量命名混用拼音缩写（如 `hxjz` 混淆矩阵、`cjzxy` 长江中下游）与英文。
+1. **拼音缩写命名**
+   - 变量命名混用拼音缩写与英文，如 `hxjz`（混淆矩阵）、`cjzxy`（长江中下游）。
 
-3. **内存管理习惯**
+2. **内存管理习惯**
    - 绘图脚本中频繁使用 `plt.close(fig)`、`del fig, ax`、`gc.collect()` 来释放 matplotlib 占用的大量内存。
 
-4. **硬编码路径**
+3. **硬编码路径**
    - 输入数据路径硬编码为 `D:\data\vis\...`
    - 输出路径硬编码为 `D:\Project\vis\图\...`
    - 修改或迁移项目时，需要全局替换这些路径。
 
-5. **数据清洗约定**
+4. **数据清洗约定**
    - 缺失值常以 `999990` 或 `999999` 形式出现，读取后统一替换为 `np.nan`。
    - 能见度上限常截断为 `30000` 米。
+
+5. **Shebang 写法**
+   - 文件头使用 `#!user/bin.python3`（非标准 Linux shebang）。
 
 ---
 
