@@ -36,7 +36,7 @@ def format_time(second: float, is_abbreviation: bool = False) -> str:
     :raise ValueError: The value of input parameter 'second' is wrong.
     """
     if second < 0:
-        raise ValueError('The input parameter "second" cannot be negative.')
+        raise ValueError('The input parameter \'second\' cannot be negative.')
     elif is_abbreviation:
         if second <= 60:
             time_str = str(second) + 's'
@@ -139,12 +139,10 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    print('The program "huanghua.py" is beginning.')
-    start = arrow.now()
+    print('Program huanghua.py started')
+    total_start = arrow.now()
 
     main()
 
-    end = arrow.now()
-    running_time = (end - start).total_seconds()
-
-    print('The program "huanghua.py" runs out in {:s}.'.format(format_time(running_time)))
+    total_elapsed = (arrow.now() - total_start).total_seconds()
+    print(f'Program huanghua.py finished, total time: {format_time(total_elapsed)}')

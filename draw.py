@@ -1620,7 +1620,7 @@ def main() -> None:
     df_fhour_ts4 = pd.DataFrame(df_fhour_ts4)
     df_fhour_ts4.to_csv(path_or_buf=r'D:\Project\vis\图\vis_fhour_ts4+.csv', index=False)
     np.save(r'D:\Project\vis\图\hour_access.npy', hour_access)
-    v_type = np.load(r'D:\Project\vis\v_type.npy')
+    v_type = np.load(r'D:\data\vis\v_type.npy')
     v_type = v_type[-365:, :, :, index_zgdb]
     v_type = np.reshape(v_type, (-1, 24, 1183))
     df_type_corr = {'type': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()}
