@@ -12,3 +12,12 @@ __pycache__/
 
 # Output data (figures and results)
 图/
+
+# Backup files (keep local only)
+*.bak
+
+# Temporary files (keep local only)
+_*.py
+_*.txt
+_*.csv
+_*.npy
