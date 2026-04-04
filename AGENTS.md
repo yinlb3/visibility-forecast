@@ -11,7 +11,7 @@
 - 对能见度预报进行分级检验与统计评估；
 - 绘制论文所需的各类统计图（柱状图、箱线图、小提琴图、饼图、空间分布图等）。
 
-项目没有采用包（package）结构，所有脚本平铺在根目录下，各自独立运行。脚本中存在大量互相复制的工具函数（如 `VisAcc`、`format_time`）。
+主入口脚本 `draw.py` 已按职责拆分为 `src/` 下的多个模块，公共工具函数（`VisAcc`、`format_time` 等）已统一提取到 `src/` 中，避免重复代码。
 
 ---
 
@@ -20,13 +20,27 @@
 ```
 D:\Project\vis\
 ├── .idea/                  # PyCharm / IntelliJ IDEA 配置
+├── src/                    # 提取出的公共模块
+│   ├── vis_acc.py          # VisAcc 类与 THRES 常量
+│   ├── utils.py            # 通用工具函数（format_time 等）
+│   ├── data_prep.py        # 观测数据准备与预处理（阶段 1）
+│   ├── data_stats.py       # 观测数据统计与 CSV 输出（阶段 2）
+│   ├── plot_obs.py         # 观测数据可视化（阶段 3）
+│   ├── forecast_prep.py    # 预报数据加载与整体检验（阶段 4）
+│   ├── forecast_eval.py    # 分类型预报检验与 CDF/频率图（阶段 5-6）
+│   ├── temporal_eval.py    # 时效分析与站点/类型检验（阶段 7）
+│   ├── plot_temporal.py    # 时效特征热图与对比柱状图（阶段 8.1-8.2）
+│   ├── plot_spatial.py     # 站点级 TS4+/RMSE 改善率空间分布（阶段 8.3-8.4）
+│   ├── plot_geo_mre.py     # MRE 与地理要素关系图（阶段 8.5）
+│   ├── plot_mre_violin.py  # MRE 改善率小提琴图/箱线图（阶段 8.6）
+│   └── case_study.py       # 2024 年独立样本个例分析（阶段 9）
 ├── 图/                     # 输出目录：存放生成的图片、CSV、NPY 等
 │   ├── 投消图/             # 论文投稿用图片子目录
 │   ├── *.png / *.jpg / *.eps / *.pdf   # 各类可视化成果
 │   ├── vis_*.csv           # 中间统计结果（如 vis_hour.csv、vis_sta.csv）
 │   └── ...
 ├── access.py               # 预报检验与 PDF 匹配订正
-├── draw.py                 # 主绘图脚本（最大的可视化入口）
+├── draw.py                 # 主绘图脚本（仅剩 main() 入口）
 ├── huanghua.py             # 历史月总簿 Excel 数据解析
 ├── ots.py                  # 最优阈值选取（Optimal Threshold Selection）
 ├── schematic.py            # 对角线颜色网格示意图绘制
@@ -78,7 +92,20 @@ python tl.py
 
 | 文件 | 职责 | 关键类/函数 |
 |------|------|-------------|
-| `draw.py` | 主绘图入口。读取观测与多种预报试验结果，绘制月/小时频率图、箱线图、小提琴图、饼图、空间散点图，并输出到 `图/` 目录。 | `VisAcc`, `plot_weather_type_eval_bw`, `main` |
+| `draw.py` | 主绘图入口。仅剩 `main()` 函数，按 9 个阶段调度 `src/` 各模块完成全部分析与可视化。 | `main`, `format_time` |
+| `src/vis_acc.py` | 能见度分级/定量检验指标计算（VisAcc 类）。 | `VisAcc`, `THRES` |
+| `src/utils.py` | 通用工具函数。 | `format_time` |
+| `src/data_prep.py` | 观测数据准备：读站点、加载观测、筛选区域、分级、月份索引。 | `read_sta`, `load_obs`, `filter_region`, `grade_visibility`, `build_month_index` |
+| `src/data_stats.py` | 观测数据统计：月/小时/站点三级统计字典与 CSV 输出。 | `build_month_stats`, `build_hour_stats`, `build_sta_stats`, `save_obs_stats` |
+| `src/plot_obs.py` | 观测数据可视化：饼图、箱线图、小提琴图、堆叠柱状图、空间分布图。 | `plot_obs_pies`, `plot_monthly_bars`, `plot_sta_frequency_maps` 等 |
+| `src/forecast_prep.py` | 预报数据加载与整体检验指标打印。 | `load_forecast_data`, `load_experiment_preds`, `print_overall_metrics` |
+| `src/forecast_eval.py` | 分类型预报检验：天气类型指标、CDF、二维频率图、分级频率柱状图。 | `calc_weather_type_metrics`, `plot_vis_cdf`, `plot_weather_type_eval_bw` 等 |
+| `src/temporal_eval.py` | 时效分析：起报时次/预报时效/预报时间检验，类型与站点指标。 | `calc_temporal_metrics`, `calc_type_metrics`, `calc_sta_metrics` 等 |
+| `src/plot_temporal.py` | 时效可视化：hour_access 热图、TS4+ 对比柱状图。 | `plot_hour_access_heatmaps`, `plot_ts_comparison_bars` |
+| `src/plot_spatial.py` | 空间分布可视化：站点 TS4+、RMSE 改善率地图。 | `plot_sta_ts4_maps`, `plot_rmse_improvement_map` |
+| `src/plot_geo_mre.py` | MRE 与经纬度高程的散点图及线性拟合。 | `plot_geo_mre_relations` |
+| `src/plot_mre_violin.py` | MRE 与改善率的小提琴图/箱线图。 | `plot_mre_violins` |
+| `src/case_study.py` | 2024 年独立样本个例分析。 | `load_2024_preds`, `analyze_case_studies` |
 | `access.py` | 预报订正与检验。实现 PDF 匹配订正（`PDF` 类）以及分级/定量检验指标计算（`VisAcc` 类）。 | `PDF`, `VisAcc` |
 | `tl.py` | 时效试验分析。对不同起报时效的预报进行滑动加权平均，并计算检验指标。 | `VisAcc`, `main` |
 | `ots.py` | 最优阈值选取。基于训练样本搜索使 TS 评分最大的阈值，再对预报进行分段线性映射。 | `OTS`, `VisAcc` |
@@ -89,7 +116,7 @@ python tl.py
 
 ### 关于 `VisAcc` 类
 
-多个脚本中均复制了一份 `VisAcc` 类，用于计算能见度分级检验指标：
+`VisAcc` 类已统一迁移至 `src/vis_acc.py`，用于计算能见度分级检验指标：
 - **定量指标**：ME、MAE、RMSE、MRE、Pearson 相关系数 R
 - **分级指标**：TS、ETS、HSS、TSS、BIAS、FAR、MAR、POD、OA、Kappa
 - 能见度分级阈值（米）定义为全局常量：
@@ -99,7 +126,7 @@ python tl.py
 
 ### 关于 `format_time`
 
-同样被复制到多个脚本中，用于将秒数格式化为可读字符串，例如 `'43.5 seconds'`、`'12.5m'`。
+`format_time` 已统一迁移至 `src/utils.py`，用于将秒数格式化为可读字符串，例如 `'43.5 seconds'`、`'12.5m'`。
 
 ---
 
@@ -152,15 +179,16 @@ python tl.py
 | Git 配置 | 配置 .gitignore，排除 IDE 配置和输出文件 | 2026-04-02 |
 | 双平台同步 | 推送到 Gitee 和 GitHub | 2026-04-03 |
 | 逻辑错误检查 | 静态检查发现 draw.py 存在变量未定义、类型注解错误等问题 | 2026-04-03 |
+| **大文件拆分** | 将 `draw.py` (~936 行) 按 9 个阶段拆分为 `src/` 下的 13 个模块；`draw.py` 仅剩 `main()` 入口（~300 行） | 2026-04-04 |
+| **公共函数提取** | 提取 `VisAcc`、`format_time`、`plot_weather_type_eval_bw` 到 `src/`；优化 CDF 计算为 `np.searchsorted` | 2026-04-04 |
 
 ### 🔄 进行中
 | 任务 | 描述 | 备注 |
 |------|------|------|
-| 代码重构 | 提取公共函数，消除重复代码 | 优先处理 VisAcc 类 |
+| 代码重构 | 继续消除 `access.py`、`tl.py`、`ots.py` 中的重复代码 | — |
 
 ### 📋 待办事项
 | 任务 | 描述 | 优先级 |
 |------|------|--------|
-| 拆分大文件 | draw.py 超过 1000 行，需拆分为多个模块 | P1 |
 | 添加单元测试 | 为 VisAcc 类添加 pytest 测试 | P2 |
 | 路径配置化 | 将硬编码路径改为配置文件 | P2 |

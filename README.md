@@ -16,7 +16,21 @@
 
 ```
 D:\Project\vis\
-├── draw.py          # 主绘图脚本（可视化主入口）
+├── src/             # 公共模块（由 draw.py 拆分而来）
+│   ├── vis_acc.py   # VisAcc 类与 THRES 常量
+│   ├── utils.py     # 通用工具函数
+│   ├── data_prep.py # 观测数据准备与预处理
+│   ├── data_stats.py# 观测数据统计与输出
+│   ├── plot_obs.py  # 观测数据可视化
+│   ├── forecast_prep.py    # 预报数据加载与整体检验
+│   ├── forecast_eval.py    # 分类型预报检验与绘图
+│   ├── temporal_eval.py    # 时效分析与站点/类型检验
+│   ├── plot_temporal.py    # 时效特征热图与柱状图
+│   ├── plot_spatial.py     # 站点级空间分布图
+│   ├── plot_geo_mre.py     # MRE 与地理要素关系图
+│   ├── plot_mre_violin.py  # MRE 改善率小提琴图
+│   └── case_study.py       # 2024 年独立样本个例分析
+├── draw.py          # 主绘图脚本（仅剩 main() 调度入口）
 ├── access.py        # 预报检验与 PDF 匹配订正
 ├── tl.py            # 时效试验分析与检验
 ├── ots.py           # 最优阈值选取
@@ -55,16 +69,16 @@ python tl.py
 
 - **作者**: yinlb
 - **创建时间**: 2024-04-18
-- **最后修改**: 2026-04-03
+- **最后修改**: 2026-04-04
+
+## 最近更新
+
+- **2026-04-04** 完成 `draw.py` 大文件拆分：将原来近 1000 行的主脚本按 9 个阶段重构为 `src/` 下的 13 个模块；公共函数 `VisAcc`、`format_time`、`plot_weather_type_eval_bw` 统一提取到 `src/`；CDF 计算优化为 `np.searchsorted`，复杂度从 O(N·M) 降至 O(M log M)。
 
 ## 已知问题
 
-静态检查发现以下逻辑错误（尚未修复）：
-
 - **类型注解错误**: `VisAcc.get_mre1()` 返回类型标注为 `float`，实际返回 `np.ndarray`
-- **变量未定义风险**: 多处使用 `plt.figure()` 或 `sns.heatmap()` 后执行 `del fig, ax`，但变量未正确定义
-- **重复绘图**: `hour_access` 热图绘制两次，仅 dpi 参数不同
-- **xlabel 错误**: 海拔相关图表误标注为"纬度"
+- **硬编码路径**: 输入/输出路径仍写死在代码中，迁移时需批量替换
 
 ## 许可证
 
