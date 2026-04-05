@@ -11,7 +11,7 @@ __pycache__/
 .ipynb_checkpoints/
 
 # Output data (figures and results)
-图/
+figures/
 
 # Backup files (keep local only)
 *.bak
