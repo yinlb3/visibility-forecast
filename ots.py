@@ -239,12 +239,12 @@ def main() -> None:
     val_ob = ob[-365:, :, :, :]
     val_pr = pr[-365:, :, :, :]
     del ob, pr
-    # # 原始
+    # # Raw
     # na = np.sum((val_pr < 1000) & (val_ob < 1000))
     # nb = np.sum((val_pr < 1000) & (val_ob >= 1000))
     # nc = np.sum((val_pr >= 1000) & (val_ob < 1000))
     # print(na / (na + nb + nc))
-    # # 整体
+    # # Overall
     # pred_pr = np.zeros_like(val_pr)
     # ts = np.zeros(200, dtype=np.float32) + np.nan
     # for t in range(200):
@@ -259,7 +259,7 @@ def main() -> None:
     # nb = np.sum((pred_pr < 1000) & (val_ob >= 1000))
     # nc = np.sum((pred_pr >= 1000) & (val_ob < 1000))
     # print(na / (na + nb + nc))
-    # # 分时次
+    # # By init time
     # pred_pr = np.zeros_like(val_pr)
     # for i in range(24):
     #     ts = np.zeros(200, dtype=np.float32) + np.nan
@@ -275,7 +275,7 @@ def main() -> None:
     # nb = np.sum((pred_pr < 1000) & (val_ob >= 1000))
     # nc = np.sum((pred_pr >= 1000) & (val_ob < 1000))
     # print(na / (na + nb + nc))
-    # # 分站点
+    # # By station
     # pred_pr = np.zeros_like(val_pr)
     # for i in range(1139):
     #     ts = np.zeros(200, dtype=np.float32) + np.nan
@@ -291,7 +291,7 @@ def main() -> None:
     # nb = np.sum((pred_pr < 1000) & (val_ob >= 1000))
     # nc = np.sum((pred_pr >= 1000) & (val_ob < 1000))
     # print(na / (na + nb + nc))
-    # # 分时次分站点
+    # # By init time and station
     # pred_pr = np.zeros_like(val_pr)
     # for i in range(24):
     #     for j in range(1139):

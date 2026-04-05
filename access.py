@@ -262,7 +262,7 @@ def main() -> None:
 
     train_ob_cjzxy = train_ob[..., index_cjzxy]
     train_pr_cjzxy = train_pr[..., index_cjzxy]
-    print('方案1')
+    print('Scheme 1')
     time_arrow = arrow.now()
     acc = VisAcc(train_ob, train_pr)
     model = acc.get_pdf_model()
@@ -308,7 +308,7 @@ def main() -> None:
     pred_pdfm_tle = np.reshape(pred_pdfm_tle, (365, 24, 24, 502))
     np.save(r'D:\data\vis\vis_gjz_pred0_cjzxy.npy', pred_pdfm_tle)
     del acc, pred_pdfm, model
-    print('方案2')
+    print('Scheme 2')
     pred_pdfm = np.zeros_like(val_pr, dtype=np.float32) + np.nan
     time_arrow = arrow.now()
     models = list()
@@ -362,7 +362,7 @@ def main() -> None:
     pred_pdfm_tle = np.reshape(pred_pdfm_tle, (365, 24, 24, 502))
     np.save(r'D:\data\vis\vis_gjz_pred1_cjzxy.npy', pred_pdfm_tle)
     del acc, pred_pdfm, models
-    print('方案3')
+    print('Scheme 3')
     pred_pdfm = np.zeros_like(val_pr, dtype=np.float32) + np.nan
     time_arrow = arrow.now()
     models = list()

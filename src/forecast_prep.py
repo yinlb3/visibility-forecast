@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-预报数据加载与整体检验模块.
+Forecast data loading and overall verification module.
 
 Founded in 2026-04-04
 Modified in 2026-04-04
@@ -19,14 +19,14 @@ def load_forecast_data(
     index_cjzxy: np.ndarray
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    加载 2020-2023 年最后 365 天的观测与 CMA-SH-WARR 预报数据.
+    Load last 365 days (2020-2023) obs and CMA-SH-WARR forecast data.
 
     Args:
-        data_dir (str): 数据根目录.
-        index_cjzxy (np.ndarray): 长江中下游站点筛选索引.
+        data_dir (str): Data root directory.
+        index_cjzxy (np.ndarray): Middle-lower Yangtze station filter index.
 
     Returns:
-        tuple: (vis_ob, cma_sh_warr), 均为形状 (-1, 24, 502) 的数组.
+        tuple: (vis_ob, cma_sh_warr), arrays of shape (-1, 24, 502).
     """
     vis_ob = np.load(rf'{data_dir}\vis1183_ob.npy')[-365:, :, 1:, index_cjzxy]
     vis_ob = np.reshape(vis_ob, (-1, 24, 502))
@@ -42,13 +42,13 @@ def load_forecast_data(
 
 def load_experiment_preds(data_dir: str) -> Tuple[np.ndarray, ...]:
     """
-    加载 5 组 PDFM-TLE 试验预报数据.
+    Load 5 PDFM-TLE experiment forecast datasets.
 
     Args:
-        data_dir (str): 数据根目录.
+        data_dir (str): Data root directory.
 
     Returns:
-        tuple: 5 个预报数组 (pred_pdfm_tle0~4).
+        tuple: 5 forecast arrays (pred_pdfm_tle0~4).
     """
     preds = []
     for i in range(5):
@@ -66,23 +66,23 @@ def print_overall_metrics(
     name: str
 ) -> None:
     """
-    计算并打印某方案的整体检验指标.
+    Calculate and print overall verification metrics for a scheme.
 
     Args:
-        vis_ob (np.ndarray): 观测数组.
-        pred (np.ndarray): 预报数组.
-        name (str): 方案名称, 用于打印标识.
+        vis_ob (np.ndarray): Observation array.
+        pred (np.ndarray): Forecast array.
+        name (str): Scheme name for printing.
     """
     acc = VisAcc(vis_ob, pred)
-    print(name)
-    print(acc.get_r())
-    print(acc.get_mae())
-    print(acc.get_rmse())
-    print(acc.get_mre())
-    print(acc.get_ts2())
-    print(acc.get_ets2())
-    print(acc.get_hss2())
-    print(acc.get_tss2())
-    print(acc.get_far2())
-    print(acc.get_mar2())
-    print(acc.get_pod2())
+    print(f'[print_overall_metrics] {name}')
+    print(f'  R: {acc.get_r()}')
+    print(f'  MAE: {acc.get_mae()}')
+    print(f'  RMSE: {acc.get_rmse()}')
+    print(f'  MRE: {acc.get_mre()}')
+    print(f'  TS2: {acc.get_ts2()}')
+    print(f'  ETS2: {acc.get_ets2()}')
+    print(f'  HSS2: {acc.get_hss2()}')
+    print(f'  TSS2: {acc.get_tss2()}')
+    print(f'  FAR2: {acc.get_far2()}')
+    print(f'  MAR2: {acc.get_mar2()}')
+    print(f'  POD2: {acc.get_pod2()}')

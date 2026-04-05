@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-观测数据统计与输出模块.
+Observation data statistics and output module.
 
 Founded in 2026-04-04
 Modified in 2026-04-04
@@ -21,17 +21,17 @@ def build_month_stats(
     thres: Tuple[float, ...]
 ) -> dict:
     """
-    按月统计各级低能见度出现频率.
+    Calc monthly freq of low visibility by grade.
 
     Args:
-        vis_grade (np.ndarray): 能见度分级数组.
-        pre (np.ndarray): 降水数组.
-        rhu (np.ndarray): 相对湿度数组.
-        month_ind (np.ndarray): 逐小时月份索引.
-        thres (tuple): 能见度分级阈值.
+        vis_grade (np.ndarray): Visibility grade array.
+        pre (np.ndarray): Precipitation array.
+        rhu (np.ndarray): Relative humidity array.
+        month_ind (np.ndarray): Hourly month index.
+        thres (tuple): Visibility grade thresholds.
 
     Returns:
-        dict: 月统计结果字典.
+        dict: Monthly stats dict.
     """
     df_month = {'month': list()}
     for i in range(len(thres)):
@@ -108,18 +108,18 @@ def build_sta_stats(
     thres: Tuple[float, ...]
 ) -> dict:
     """
-    按站点统计各级低能见度出现频率及平均能见度.
+    Calc station-wise freq and mean visibility.
 
     Args:
-        sta (pd.DataFrame): 站点信息表.
-        vis (np.ndarray): 能见度原始数组.
-        vis_grade (np.ndarray): 能见度分级数组.
-        pre (np.ndarray): 降水数组.
-        rhu (np.ndarray): 相对湿度数组.
-        thres (tuple): 能见度分级阈值.
+        sta (pd.DataFrame): Station info table.
+        vis (np.ndarray): Raw visibility array.
+        vis_grade (np.ndarray): Visibility grade array.
+        pre (np.ndarray): Precipitation array.
+        rhu (np.ndarray): Relative humidity array.
+        thres (tuple): Visibility grade thresholds.
 
     Returns:
-        dict: 站点统计结果字典.
+        dict: Station stats dict.
     """
     df_sta = {
         'sta_id': sta.loc[:, 'id'],
@@ -169,14 +169,17 @@ def save_obs_stats(
     output_dir: str
 ) -> None:
     """
-    将月、时、站统计结果输出为 CSV.
+    Output month/hour/sta stats to CSV.
 
     Args:
-        df_month (dict): 月统计字典.
-        df_hour (dict): 小时统计字典.
-        df_sta (dict): 站点统计字典.
-        output_dir (str): 输出目录路径.
+        df_month (dict): Monthly stats dict.
+        df_hour (dict): Hourly stats dict.
+        df_sta (dict): Station stats dict.
+        output_dir (str): Output directory path.
     """
-    pd.DataFrame(df_month).to_csv(path_or_buf=rf'{output_dir}\vis_month.csv', index=False)
-    pd.DataFrame(df_hour).to_csv(path_or_buf=rf'{output_dir}\vis_hour.csv', index=False)
-    pd.DataFrame(df_sta).to_csv(rf'{output_dir}\vis_sta.csv', index=False)
+    import os
+    csv_dir = rf'{output_dir}\csv'
+    os.makedirs(csv_dir, exist_ok=True)
+    pd.DataFrame(df_month).to_csv(path_or_buf=rf'{csv_dir}\vis_month.csv', index=False)
+    pd.DataFrame(df_hour).to_csv(path_or_buf=rf'{csv_dir}\vis_hour.csv', index=False)
+    pd.DataFrame(df_sta).to_csv(rf'{csv_dir}\vis_sta.csv', index=False)

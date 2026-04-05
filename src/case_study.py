@@ -32,20 +32,20 @@ def load_2024_preds(data_dir: str) -> tuple:
 
 
 def print_2024_overall_metrics(vis_ob: np.ndarray, pred_pdfm2: np.ndarray, pred_tle2: np.ndarray) -> None:
-    """打印 PDFM 与 TLE 的整体检验指标."""
+    """Print overall verification metrics for PDFM and TLE."""
     acc = VisAcc(vis_ob, pred_pdfm2)
-    print('PDFM')
-    print(acc.get_r(), acc.get_mae(), acc.get_rmse(), acc.get_mre())
-    print(acc.get_ts2(), acc.get_far2(), acc.get_mar2())
+    print('[print_2024_overall_metrics] PDFM')
+    print(f'  R={acc.get_r()}, MAE={acc.get_mae()}, RMSE={acc.get_rmse()}, MRE={acc.get_mre()}')
+    print(f'  TS2={acc.get_ts2()}, FAR2={acc.get_far2()}, MAR2={acc.get_mar2()}')
 
     acc = VisAcc(vis_ob, pred_tle2)
-    print('TLE')
-    print(acc.get_r(), acc.get_mae(), acc.get_rmse(), acc.get_mre())
-    print(acc.get_ts2(), acc.get_far2(), acc.get_mar2())
+    print('[print_2024_overall_metrics] TLE')
+    print(f'  R={acc.get_r()}, MAE={acc.get_mae()}, RMSE={acc.get_rmse()}, MRE={acc.get_mre()}')
+    print(f'  TS2={acc.get_ts2()}, FAR2={acc.get_far2()}, MAR2={acc.get_mar2()}')
 
 
 def load_2024_eval_data(data_dir: str, index_cjzxy: np.ndarray) -> tuple:
-    """加载 2024 年用于个例评估的观测与预报数据."""
+    """Load 2024 obs and forecast data for case evaluation."""
     cma_sh_warr = np.load(rf'{data_dir}\vis_gjz_2024.npy')
     cma_sh_warr = np.reshape(cma_sh_warr[:, 1:, index_cjzxy], shape=(-1, 24, 502))
     cma_sh_warr[cma_sh_warr >= 30000] = 30000
@@ -59,15 +59,19 @@ def load_2024_eval_data(data_dir: str, index_cjzxy: np.ndarray) -> tuple:
 
 def align_forecast_times(vis_ob: np.ndarray, cma_sh_warr: np.ndarray, pred_pdfm2: np.ndarray) -> tuple:
     """
-    对 24 个起报时次分别做时间偏移, 使预报时效与实况时间对齐.
+    Apply time offset to 24 forecast init times to align with obs.
     """
+    n_days = vis_ob.shape[0]  # 动态获取天数（365或366）
     vis_ob_ = np.zeros_like(vis_ob) + np.nan
     pred_pdfm2_ = np.zeros_like(pred_pdfm2) + np.nan
     cma_sh_warr_ = np.zeros_like(cma_sh_warr) + np.nan
     for i in range(24):
-        vis_ob_[i + 1:, i, :] = vis_ob[: 8783 - i, i, :]
-        pred_pdfm2_[i + 1:, i, :] = pred_pdfm2[: 8783 - i, i, :]
-        cma_sh_warr_[i + 1:, i, :] = cma_sh_warr[: 8783 - i, i, :]
+        # 使用实际数据长度，避免硬编码8783
+        src_len = n_days - 1 - i
+        if src_len > 0:
+            vis_ob_[i + 1:, i, :] = vis_ob[:src_len, i, :]
+            pred_pdfm2_[i + 1:, i, :] = pred_pdfm2[:src_len, i, :]
+            cma_sh_warr_[i + 1:, i, :] = cma_sh_warr[:src_len, i, :]
     return vis_ob_, cma_sh_warr_, pred_pdfm2_
 
 
@@ -105,7 +109,7 @@ def analyze_case_studies(
         i = round((arrow.get(d[0]) - arrow.get('2024')).total_seconds() / 3600)
         j = round((arrow.get(d[1]) - arrow.get('2024')).total_seconds() / 3600)
         k = round((arrow.get(d[2]) - arrow.get('2024')).total_seconds() / 3600)
-        # 输出各阶段(全程、开始、结束、峰值)的 CMA-SH-WARR 与 PDFM-TLE 的 TS4+
+        # Output TS4+ for CMA-SH-WARR and PDFM-TLE at each phase (all, start, end, peak)
         print(
             VisAcc(vis_ob_[i: j + 24, :, :], cma_sh_warr_[i: j + 24, :, :]).get_ts2()[3],
             VisAcc(vis_ob_[i: i + 24, :, :], cma_sh_warr_[i: i + 24, :, :]).get_ts2()[3],

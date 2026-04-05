@@ -16,13 +16,13 @@ from src.vis_acc import VisAcc
 
 
 def _create_group(keys: Tuple[str, ...]) -> Dict[str, dict]:
-    """为一组指标创建 10 个空字典."""
+    """Create 10 empty dicts for metrics group."""
     return {k: {key: list() for key in keys} for k in
             ('corr', 'mae', 'rmse', 'mre', 'ts1', 'ts2', 'ts3', 'ts4', 'ts5', 'ts6')}
 
 
 def _append_metrics(acc: VisAcc, group: Dict[str, dict], name: str) -> None:
-    """将 VisAcc 结果追加到某一组字典中."""
+    """Append VisAcc results to a metric group."""
     ts = acc.get_ts2()
     group['corr'][name].append(acc.get_r())
     group['mae'][name].append(acc.get_mae())
@@ -40,7 +40,7 @@ def build_fhour_index(n_days: int = 8760, n_hours: int = 24) -> np.ndarray:
     """
     构建预报时效索引数组.
 
-    fhour_ind[i, j] 表示第 i 个起报日、第 j 个预报时效对应的实际预报时间(UTC).
+    fhour_ind[i, j] is actual forecast time (UTC) for day i, lead j.
 
     Args:
         n_days (int): 起报日数,默认 8760.
@@ -130,9 +130,12 @@ def calc_temporal_metrics(
             hour_access[3, i, j, 3] = acc.get_mre()
             hour_access[3, i, j, 4:] = acc.get_ts2()
 
-    pd.DataFrame(vt['ts4']).to_csv(rf'{output_dir}\vis_vt_ts4+.csv', index=False)
-    pd.DataFrame(fhour['ts4']).to_csv(rf'{output_dir}\vis_fhour_ts4+.csv', index=False)
-    np.save(rf'{output_dir}\hour_access.npy', hour_access)
+    import os
+    csv_dir = rf'{output_dir}\csv'
+    os.makedirs(csv_dir, exist_ok=True)
+    pd.DataFrame(vt['ts4']).to_csv(rf'{csv_dir}\vis_vt_ts4+.csv', index=False)
+    pd.DataFrame(fhour['ts4']).to_csv(rf'{csv_dir}\vis_fhour_ts4+.csv', index=False)
+    np.save(rf'{csv_dir}\hour_access.npy', hour_access)
     return hour_access
 
 
@@ -179,58 +182,44 @@ def calc_type_metrics(
         acc = VisAcc(vis_ob[v_type == i], pred_pdfm_tle0[v_type == i])
         _append_metrics(acc, d, 'PDFM-TLE')
 
-    print(d['corr']['CMA-SH-WARR'])
-    print(d['corr']['PDFM-TLE'])
-    print(d['mae']['CMA-SH-WARR'])
-    print(d['mae']['PDFM-TLE'])
-    print(d['rmse']['CMA-SH-WARR'])
-    print(d['rmse']['PDFM-TLE'])
-    print(d['mre']['CMA-SH-WARR'])
-    print(d['mre']['PDFM-TLE'])
-    print(d['ts1']['CMA-SH-WARR'])
-    print(d['ts1']['PDFM-TLE'])
-    print(d['ts2']['CMA-SH-WARR'])
-    print(d['ts2']['PDFM-TLE'])
-    print(d['ts3']['CMA-SH-WARR'])
-    print(d['ts3']['PDFM-TLE'])
-    print(d['ts4']['CMA-SH-WARR'])
-    print(d['ts4']['PDFM-TLE'])
-    print(d['ts5']['CMA-SH-WARR'])
-    print(d['ts5']['PDFM-TLE'])
-    print(d['ts6']['CMA-SH-WARR'])
-    print(d['ts6']['PDFM-TLE'])
+    print(f'[print_metrics] CMA-SH-WARR: corr={d["corr"]["CMA-SH-WARR"]:.4f}, mae={d["mae"]["CMA-SH-WARR"]:.4f}, rmse={d["rmse"]["CMA-SH-WARR"]:.4f}, mre={d["mre"]["CMA-SH-WARR"]:.4f}')
+    print(f'[print_metrics] PDFM-TLE: corr={d["corr"]["PDFM-TLE"]:.4f}, mae={d["mae"]["PDFM-TLE"]:.4f}, rmse={d["rmse"]["PDFM-TLE"]:.4f}, mre={d["mre"]["PDFM-TLE"]:.4f}')
+    print(f'[print_metrics] CMA-SH-WARR TS: ts1={d["ts1"]["CMA-SH-WARR"]:.4f}, ts2={d["ts2"]["CMA-SH-WARR"]:.4f}, ts3={d["ts3"]["CMA-SH-WARR"]:.4f}, ts4={d["ts4"]["CMA-SH-WARR"]:.4f}, ts5={d["ts5"]["CMA-SH-WARR"]:.4f}, ts6={d["ts6"]["CMA-SH-WARR"]:.4f}')
+    print(f'[print_metrics] PDFM-TLE TS: ts1={d["ts1"]["PDFM-TLE"]:.4f}, ts2={d["ts2"]["PDFM-TLE"]:.4f}, ts3={d["ts3"]["PDFM-TLE"]:.4f}, ts4={d["ts4"]["PDFM-TLE"]:.4f}, ts5={d["ts5"]["PDFM-TLE"]:.4f}, ts6={d["ts6"]["PDFM-TLE"]:.4f}')
 
     return {k: pd.DataFrame(d[k]) for k in d}
 
 
 def save_type_results(dfs: Dict[str, pd.DataFrame], output_dir: str) -> None:
-    """保存能见度类型检验指标到 CSV."""
-    dfs['corr'].to_csv(rf'{output_dir}\vis_type_corr.csv', index=False)
-    dfs['mae'].to_csv(rf'{output_dir}\vis_type_mae.csv', index=False)
-    dfs['rmse'].to_csv(rf'{output_dir}\vis_type_rmse.csv', index=False)
-    dfs['mre'].to_csv(rf'{output_dir}\vis_type_mre.csv', index=False)
+    """Save visibility type metrics to CSV."""
+    import os
+    csv_dir = rf'{output_dir}\csv'
+    os.makedirs(csv_dir, exist_ok=True)
+    dfs['corr'].to_csv(rf'{csv_dir}\vis_type_corr.csv', index=False)
+    dfs['mae'].to_csv(rf'{csv_dir}\vis_type_mae.csv', index=False)
+    dfs['rmse'].to_csv(rf'{csv_dir}\vis_type_rmse.csv', index=False)
+    dfs['mre'].to_csv(rf'{csv_dir}\vis_type_mre.csv', index=False)
     for i in range(1, 7):
-        dfs[f'ts{i}'].to_csv(rf'{output_dir}\vis_type_ts{i}+.csv', index=False)
+        dfs[f'ts{i}'].to_csv(rf'{csv_dir}\vis_type_ts{i}+.csv', index=False)
 
 
 def calc_sta_metrics(
     vis_ob: np.ndarray,
     cma_sh_warr: np.ndarray,
-    pred_pdfm_tle2: np.ndarray,
-    n_sta: int = 502
+    pred_pdfm_tle2: np.ndarray
 ) -> Dict[str, pd.DataFrame]:
     """
     按站点计算检验指标.
 
     Args:
-        vis_ob (np.ndarray): 观测数组.
+        vis_ob (np.ndarray): 观测数组, shape (..., n_sta).
         cma_sh_warr (np.ndarray): CMA-SH-WARR 预报数组.
         pred_pdfm_tle2 (np.ndarray): PDFM-TLE 试验 2.
-        n_sta (int): 站点数,默认 502.
 
     Returns:
         dict: 各指标对应的 DataFrame.
     """
+    n_sta = vis_ob.shape[-1]  # 从数组形状获取站点数
     d = _create_group(('sta', 'CMA-SH-WARR', 'PDFM-TLE'))
     for i in range(n_sta):
         for k in d:
@@ -244,9 +233,12 @@ def calc_sta_metrics(
 
 def save_sta_results(dfs: Dict[str, pd.DataFrame], output_dir: str) -> None:
     """保存站点检验指标到 CSV."""
-    dfs['corr'].to_csv(rf'{output_dir}\vis_sta_corr.csv', index=False)
-    dfs['mae'].to_csv(rf'{output_dir}\vis_sta_mae.csv', index=False)
-    dfs['rmse'].to_csv(rf'{output_dir}\vis_sta_rmse.csv', index=False)
-    dfs['mre'].to_csv(rf'{output_dir}\vis_sta_mre.csv', index=False)
+    import os
+    csv_dir = rf'{output_dir}\csv'
+    os.makedirs(csv_dir, exist_ok=True)
+    dfs['corr'].to_csv(rf'{csv_dir}\vis_sta_corr.csv', index=False)
+    dfs['mae'].to_csv(rf'{csv_dir}\vis_sta_mae.csv', index=False)
+    dfs['rmse'].to_csv(rf'{csv_dir}\vis_sta_rmse.csv', index=False)
+    dfs['mre'].to_csv(rf'{csv_dir}\vis_sta_mre.csv', index=False)
     for i in range(1, 7):
-        dfs[f'ts{i}'].to_csv(rf'{output_dir}\vis_sta_ts{i}+.csv', index=False)
+        dfs[f'ts{i}'].to_csv(rf'{csv_dir}\vis_sta_ts{i}+.csv', index=False)

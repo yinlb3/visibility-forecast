@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-MRE 分布小提琴图/箱线图可视化模块 (阶段 8.5).
+MRE distribution violin/box plot module (Stage 8.5).
 
 Founded in 2026-04-04
 Modified in 2026-04-04
@@ -18,7 +18,7 @@ def plot_mre_violins(sta: pd.DataFrame, output_dir: str) -> None:
     """
     绘制 MRE 与改善率的小提琴图/箱线图.
     """
-    df_sta = pd.read_csv(rf'{output_dir}\vis_sta_mre.csv', low_memory=False)
+    df_sta = pd.read_csv(rf'{output_dir}\csv\vis_sta_mre.csv', low_memory=False)
     mre_before = np.array(df_sta.loc[:, 'CMA-SH-WARR'])
     mre_after = np.array(df_sta.loc[:, 'PDFM-TLE'])
     mre_improvement = (mre_before - mre_after) / mre_before * 100
@@ -37,8 +37,8 @@ def plot_mre_violins(sta: pd.DataFrame, output_dir: str) -> None:
     plt.cla()
     plt.close('all')
     gc.collect()
-    print(np.median(df_sta.loc[:, 'CMA-SH-WARR']), np.median(df_sta.loc[:, 'PDFM-TLE']))
-    print(np.median(df_sta.loc[:, 'CMA-SH-WARR']) - np.median(df_sta.loc[:, 'PDFM-TLE']))
+    print(f'[plot_mre_violins] MRE median (CMA-SH-WARR, PDFM-TLE): {np.median(df_sta.loc[:, "CMA-SH-WARR"])}, {np.median(df_sta.loc[:, "PDFM-TLE"])}')
+    print(f'[plot_mre_violins] MRE median improvement: {np.median(df_sta.loc[:, "CMA-SH-WARR"]) - np.median(df_sta.loc[:, "PDFM-TLE"])}')
 
     plt.figure(figsize=(5, 6))
     sns.violinplot(
@@ -51,4 +51,4 @@ def plot_mre_violins(sta: pd.DataFrame, output_dir: str) -> None:
     plt.cla()
     plt.close('all')
     gc.collect()
-    print(np.mean(mre_improvement > 0))
+    print(f'[plot_mre_violins] Positive improvement ratio: {np.mean(mre_improvement > 0)}')

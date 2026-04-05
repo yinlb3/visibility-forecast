@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-分类型预报检验与绘图模块.
+Weather-type forecast evaluation and plotting module.
 
 Founded in 2026-04-04
 Modified in 2026-04-04
@@ -20,14 +20,14 @@ from src.vis_acc import VisAcc
 
 def load_weather_type(data_dir: str, index_cjzxy: np.ndarray) -> np.ndarray:
     """
-    加载天气类型数据并 reshape 为与预报数据一致的形状.
+    Load weather type data and reshape to match forecast.
 
     Args:
-        data_dir (str): 数据根目录.
-        index_cjzxy (np.ndarray): 长江中下游站点筛选索引.
+        data_dir (str): Data root directory.
+        index_cjzxy (np.ndarray): Middle-lower Yangtze station filter index.
 
     Returns:
-        np.ndarray: 天气类型数组, 形状为 (-1, 24, 502).
+        np.ndarray: Weather type array, shape (-1, 24, 502).
     """
     weather_type = np.load(rf'{data_dir}\weather_type.npy', mmap_mode='r')
     val_wt = np.reshape(weather_type[1096:1461, ..., index_cjzxy], shape=(-1, 24, 502))
@@ -81,13 +81,13 @@ def plot_vis_cdf(
     output_dir: str
 ) -> None:
     """
-    计算并绘制能见度累积分布函数(CDF).
+    Calc and plot visibility CDF.
 
     Args:
-        vis_ob (np.ndarray): 观测数组.
-        cma_sh_warr (np.ndarray): CMA-SH-WARR 预报数组.
-        pred_pdfm_tle0 (np.ndarray): PDFM-TLE 预报数组.
-        output_dir (str): 输出目录.
+        vis_ob (np.ndarray): Observation array.
+        cma_sh_warr (np.ndarray): CMA-SH-WARR forecast array.
+        pred_pdfm_tle0 (np.ndarray): PDFM-TLE forecast array.
+        output_dir (str): Output directory.
     """
     vis_values = np.arange(-1, 30001, 1, dtype=np.float32)
     cdf = np.zeros((3, vis_values.size), dtype=np.float32)
@@ -129,12 +129,12 @@ def plot_nwp_his2d(
     output_dir: str
 ) -> None:
     """
-    绘制预报-实况二维频率分布图.
+    Plot 2D frequency distribution (fcst vs obs).
 
     Args:
-        vis_ob (np.ndarray): 观测数组.
-        cma_sh_warr (np.ndarray): CMA-SH-WARR 预报数组.
-        output_dir (str): 输出目录.
+        vis_ob (np.ndarray): Observation array.
+        cma_sh_warr (np.ndarray): CMA-SH-WARR forecast array.
+        output_dir (str): Output directory.
     """
     index = ~np.isnan(vis_ob) & ~np.isnan(cma_sh_warr)
     fig, ax = plt.subplots(figsize=(5, 5), dpi=800)
@@ -180,13 +180,13 @@ def plot_grade_frequency(
     output_dir: str
 ) -> None:
     """
-    绘制各方案分级频率分布柱状图.
+    Plot grade frequency distribution bars.
 
     Args:
-        vis_ob (np.ndarray): 观测数组.
-        preds (dict): 预报数据字典, key 为图例名称, value 为预报数组.
-        thres (tuple): 能见度分级阈值.
-        output_dir (str): 输出目录.
+        vis_ob (np.ndarray): Observation array.
+        preds (dict): Forecast data dict, key is legend name, value is forecast array.
+        thres (tuple): Visibility grade thresholds.
+        output_dir (str): Output directory.
     """
     index = ~np.isnan(vis_ob)
     for pred in preds.values():
@@ -208,8 +208,11 @@ def plot_grade_frequency(
                 np.sum((pred[index] < right) & (pred[index] >= left)) / np.sum(index)
             )
 
+    import os
     df_fh = pd.DataFrame(df_fh)
-    df_fh.to_csv(rf'{output_dir}\vis_fh.csv', index=False)
+    csv_dir = rf'{output_dir}\csv'
+    os.makedirs(csv_dir, exist_ok=True)
+    df_fh.to_csv(rf'{csv_dir}\vis_fh.csv', index=False)
 
     colors = {
         'ob': 'black',
@@ -254,15 +257,15 @@ def plot_grade_frequency(
 
 def plot_weather_type_eval_bw(qem: np.ndarray, filename: str, max_y: float) -> None:
     """
-    绘制按天气类型 (降水、雾、霾) 分类的检验指标对比柱状图 (黑白风格).
+    Plot weather-type metric comparison bars (B&W style).
 
     Args:
-        qem: 形状为 (6, 3) 的定量检验指标数组, 6 个方案 * 3 类天气;
-        filename: 输出文件名 (不含扩展名);
-        max_y: y 轴实际物理量最大值, 用于归一化显示.
+        qem: Shape (6, 3) quantitative metric array, 6 schemes * 3 weather types;
+        filename: Output filename (no extension);
+        max_y: Max physical value for y-axis, used for normalization.
     """
     # 确保输出目录存在
-    os.makedirs(name=r'D:\Project\vis\图', exist_ok=True)
+    os.makedirs(name=r'D:\Project\vis\figures', exist_ok=True)
     fig, ax = plt.subplots(figsize=(10, 4), dpi=800)
     # 6 个方案对应的 x 轴位置
     x_pos = np.linspace(start=1, stop=6, num=6)
@@ -290,6 +293,6 @@ def plot_weather_type_eval_bw(qem: np.ndarray, filename: str, max_y: float) -> N
     )
     ax.legend()
     # 保存为 PDF 并释放内存
-    fig.savefig(fname=fr'D:\Project\vis\图\{filename}.pdf', bbox_inches='tight', dpi=800)
+    fig.savefig(fname=fr'D:\Project\vis\figures\{filename}.pdf', bbox_inches='tight', dpi=800)
     plt.close(fig)
     gc.collect()

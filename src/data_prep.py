@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-观测数据准备与预处理模块.
+Observation data preparation and preprocessing module.
 
 Founded in 2026-04-04
 Modified in 2026-04-04
@@ -16,14 +16,14 @@ from src.vis_acc import THRES
 
 def read_sta(sta_path: str, provinces: tuple) -> tuple:
     """
-    读取站点信息并按省份筛选.
+    Read station info and filter by province.
 
     Args:
-        sta_path (str): 站点 CSV 文件路径.
-        provinces (tuple): 参与分析的省级行政区列表.
+        sta_path (str): Station CSV file path.
+        provinces (tuple): Provinces to include.
 
     Returns:
-        tuple: (筛选后的站点 DataFrame, 初始筛选布尔索引数组).
+        tuple: (Filtered station DataFrame, initial filter bool index).
     """
     sta = pd.read_csv(filepath_or_buffer=sta_path, low_memory=False)
     sta = sta.sort_values(by=['id'])
@@ -43,14 +43,14 @@ def read_sta(sta_path: str, provinces: tuple) -> tuple:
 
 def load_obs(data_dir: str, index_zgdb: np.ndarray) -> tuple:
     """
-    加载能见度、降水、相对湿度观测数据并进行质控.
+    Load vis/precip/RH obs data and apply QC.
 
     Args:
-        data_dir (str): 数据目录路径,末尾不带斜杠.
-        index_zgdb (np.ndarray): 初始筛选站点的布尔索引.
+        data_dir (str): Data directory path, no trailing slash.
+        index_zgdb (np.ndarray): Initial station filter bool index.
 
     Returns:
-        tuple: (vis, pre, rhu),均为经质控后的 numpy 数组.
+        tuple: (vis, pre, rhu), all QC-ed numpy arrays.
     """
     vis = np.load(rf'{data_dir}\vis20-23.npy')[:, index_zgdb]
     vis[vis >= 999990] = np.nan
@@ -76,17 +76,17 @@ def filter_region(
     region_provinces: tuple
 ) -> tuple:
     """
-    按目标省级行政区二次筛选站点及对应要素数组.
+    Secondary filter stations by target provinces.
 
     Args:
-        sta (pd.DataFrame): 站点信息表.
-        vis (np.ndarray): 能见度数组.
-        pre (np.ndarray): 降水数组.
-        rhu (np.ndarray): 相对湿度数组.
-        region_provinces (tuple): 目标省份列表.
+        sta (pd.DataFrame): Station info table.
+        vis (np.ndarray): Visibility array.
+        pre (np.ndarray): Precipitation array.
+        rhu (np.ndarray): Relative humidity array.
+        region_provinces (tuple): Target province list.
 
     Returns:
-        tuple: (筛选后的 sta, vis, pre, rhu, 二次筛选布尔索引).
+        tuple: (Filtered sta, vis, pre, rhu, secondary filter bool index).
     """
     n_sta = len(sta)
     index_region = np.zeros(n_sta, dtype=np.bool_)
@@ -107,13 +107,13 @@ def filter_region(
 
 def grade_visibility(vis: np.ndarray) -> np.ndarray:
     """
-    对能见度进行六级分级.
+    Grade visibility into six levels.
 
     Args:
-        vis (np.ndarray): 能见度观测数组.
+        vis (np.ndarray): Obs visibility array.
 
     Returns:
-        np.ndarray: 分级后的整数数组,缺测为 -1.
+        np.ndarray: Graded int array, -1 for missing.
     """
     vis_grade = np.zeros_like(vis, dtype=np.int_) - 1
     vis_grade[~np.isnan(vis)] = 0
@@ -124,14 +124,14 @@ def grade_visibility(vis: np.ndarray) -> np.ndarray:
 
 def build_month_index(start_year: int, n_hours: int) -> np.ndarray:
     """
-    构建逐小时对应的月份编号索引.
+    Build hourly-to-month index array.
 
     Args:
-        start_year (int): 起始年份.
-        n_hours (int): 总小时数.
+        start_year (int): Start year.
+        n_hours (int): Total hours.
 
     Returns:
-        np.ndarray: 长度为 n_hours 的月份索引数组.
+        np.ndarray: Month index array of length n_hours.
     """
     month_ind = np.zeros(shape=n_hours, dtype=np.int_)
     base = arrow.get(str(start_year))

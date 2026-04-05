@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-对角线颜色网格图绘制程序
-用于展示斜线方向的颜色分布规律
-修复了中文字体和内存问题
+Diagonal color grid plotting program
+Display color distribution along diagonal direction
+Fixed Chinese font and memory issues
 """
 
 import arrow
@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import matplotlib.font_manager as fm
 
-# ==================== 全局配置参数 ====================
+# ==================== Global Configuration ====================
 
 GRID_SIZE = 24  # 网格大小 24x24
 FIG_WIDTH = 12  # 图片宽度（英寸）
@@ -22,7 +22,7 @@ OUTPUT_DPI = 800
 CHINESE_FONT_PATH = None  # 中文字体路径（自动查找）
 
 
-# ==================== 字体配置函数 ====================
+# ==================== Font Configuration ====================
 
 
 def setup_chinese_font():
@@ -34,34 +34,34 @@ def setup_chinese_font():
     """
     global CHINESE_FONT_PATH
 
-    # 常见中文字体路径（Windows）
+    # Common Chinese font paths (Windows)
     possible_fonts = [
-        r'C:\Windows\Fonts\msyh.ttc',  # 微软雅黑
-        r'C:\Windows\Fonts\msyhbd.ttc',  # 微软雅黑粗体
+        r'C:\Windows\Fonts\msyh.ttc',  # Microsoft YaHei
+        r'C:\Windows\Fonts\msyhbd.ttc',  # Microsoft YaHei Bold
         r'C:\Windows\Fonts\simhei.ttf',  # SimHei
-        r'C:\Windows\Fonts\STSONG.TTC',  # 宋体
+        r'C:\Windows\Fonts\STSONG.TTC',  # SimSun
         r'C:\Windows\Fonts\ARIALUNI.TTF',  # Arial Unicode MS
     ]
 
-    # 尝试找到可用的中文字体
+    # Try to find available Chinese font
     for font_path in possible_fonts:
         try:
-            # 测试字体是否可用
+            # Test if font is available
             prop = fm.FontProperties(fname=font_path)
-            text = u'测试中文'
-            # 尝试渲染测试文本
+            text = u'Test Chinese'
+            # Try to render test text
             fig_test = plt.figure()
             ax_test = fig_test.add_subplot(111)
             ax_test.text(0.5, 0.5, text, fontproperties=prop)
             plt.close(fig_test)
             CHINESE_FONT_PATH = font_path
-            print(f'找到并验证可用的中文字体: {font_path}')
+            print(f'Found and verified Chinese font: {font_path}')
             break
         except Exception as e:
             continue
 
     if CHINESE_FONT_PATH is None:
-        print('警告: 未找到可用的中文字体，将使用英文标题')
+        print('Warning: No Chinese font found, using English title')
 
 
 def set_matplotlib_params():
@@ -73,16 +73,16 @@ def set_matplotlib_params():
     """
     plt.rcParams['axes.unicode_minus'] = False  # 正确显示负号
 
-    # 如果找到中文字体，则注册并使用
+    # If Chinese font found, register and use
     if CHINESE_FONT_PATH:
-        # 注册字体
+        # Register font
         font_prop = fm.FontProperties(fname=CHINESE_FONT_PATH)
-        # 设置全局字体
+        # Set global font
         plt.rcParams['font.family'] = font_prop.get_name()
-        print(f'已设置字体为: {font_prop.get_name()}')
+        print(f'Font set to: {font_prop.get_name()}')
 
 
-# ==================== 核心功能函数 ====================
+# ==================== Core Functions ====================
 
 
 def create_diagonal_matrix(size):
@@ -93,16 +93,16 @@ def create_diagonal_matrix(size):
     用于后续映射颜色
 
     Args:
-        size: 网格大小
+        size: Grid size
 
     Returns:
-        diagonal_idx: 对角线索引矩阵
+        diagonal_idx: Diagonal index matrix
     """
     diagonal_idx = np.zeros((size, size), dtype=int)
 
     for i in range(size):
         for j in range(size):
-            # 计算对角线索引 (左下到右上方向)
+            # Calc diagonal index (bottom-left to top-right)
             diagonal_idx[i, j] = i + j
 
     return diagonal_idx
@@ -116,10 +116,10 @@ def generate_color_map(num_colors):
     可根据需要自定义颜色序列
 
     Args:
-        num_colors: 需要的颜色数量
+        num_colors: Number of colors needed
 
     Returns:
-        colors: 颜色列表
+        colors: Color list
     """
     base_cmap = plt.get_cmap(COLOR_MAP_NAME)
     colors = [base_cmap(i / max(1, num_colors - 1)) for i in range(num_colors)]
@@ -135,13 +135,13 @@ def draw_grid(ax, matrix, colors, size):
     添加黑色网格线便于区分
 
     Args:
-        ax: matplotlib 轴对象
-        matrix: 对角线索引矩阵
-        colors: 颜色列表
-        size: 网格大小
+        ax: matplotlib axis object
+        matrix: Diagonal index matrix
+        colors: Color list
+        size: Grid size
     """
-    # 分批绘制，减少内存占用
-    batch_size = 8  # 每次绘制8行
+    # Batch draw to reduce memory
+    batch_size = 8  # Draw 8 rows per batch
 
     for start_row in range(0, size, batch_size):
         end_row = min(start_row + batch_size, size)
@@ -149,20 +149,20 @@ def draw_grid(ax, matrix, colors, size):
         for i in range(start_row, end_row):
             for j in range(size):
                 color_idx = matrix[i, j] % len(colors)
-                # 注意：矩阵行索引与绘图 y 轴方向相反
+                # Note: Matrix row index opposite to y-axis
                 rect = Rectangle(
                     (j, size - 1 - i), 1, 1,
                     facecolor=colors[color_idx],
                     edgecolor='black',
-                    linewidth=0.3  # 减小线宽节省内存
+                    linewidth=0.3  # Thinner lines save memory
                 )
                 ax.add_patch(rect)
 
-        # 强制垃圾回收
+        # Force garbage collection
         import gc
         gc.collect()
 
-    # 设置坐标轴范围
+    # Set axis range
     ax.set_xlim(0, size)
     ax.set_ylim(0, size)
     ax.set_aspect('equal')
@@ -177,13 +177,13 @@ def draw_color_bar(ax, colors, size):
     与上方网格颜色一一对应
 
     Args:
-        ax: matplotlib 轴对象
-        colors: 颜色列表
-        size: 网格大小
+        ax: matplotlib axis object
+        colors: Color list
+        size: Grid size
     """
-    num_colors = min(len(colors), size)  # 限制颜色数量
+    num_colors = min(len(colors), size)  # Limit color count
 
-    # 分批绘制颜色条
+    # Batch draw color bar
     for i in range(num_colors):
         rect = Rectangle(
             (i, 0), 1, 1,
@@ -193,7 +193,7 @@ def draw_color_bar(ax, colors, size):
         )
         ax.add_patch(rect)
 
-    # 设置坐标轴
+    # Set axis
     ax.set_xlim(0, num_colors)
     ax.set_ylim(0, 1)
     ax.set_aspect('equal')
@@ -208,12 +208,12 @@ def add_number_labels(ax, size, position='top'):
     便于定位每个格子的位置
 
     Args:
-        ax: matplotlib 轴对象
-        size: 网格大小
-        position: 标签位置 ('top' 或 'bottom')
+        ax: matplotlib axis object
+        size: Grid size
+        position: Label position ('top' or 'bottom')
     """
-    # 减少标签密度以节省内存
-    label_step = max(1, size // 12)  # 每隔几个位置显示一个标签
+    # Reduce label density to save memory
+    label_step = max(1, size // 12)  # Show label every N positions
 
     for i in range(0, size, label_step):
         x_pos = i + 0.5
@@ -224,11 +224,11 @@ def add_number_labels(ax, size, position='top'):
             y_pos = -0.5
             va = 'top'
 
-        # 使用较小的字体
+        # Use smaller font
         ax.text(
             x_pos, y_pos, str(i + 1),
             ha='center', va=va,
-            fontsize=6,  # 减小字体大小
+            fontsize=6,  # Smaller font
             color='black'
         )
 
@@ -240,9 +240,9 @@ def add_arrow_annotation(ax, size, target_col):
     指示网格与颜色条的对应关系
 
     Args:
-        ax: matplotlib 轴对象
-        size: 网格大小
-        target_col: 目标列位置
+        ax: matplotlib axis object
+        size: Grid size
+        target_col: Target column position
     """
     ax.annotate(
         '',
@@ -256,7 +256,7 @@ def add_arrow_annotation(ax, size, target_col):
     )
 
 
-# ==================== 主程序入口 ====================
+# ==================== Main Entry ====================
 
 
 def main():
@@ -270,56 +270,56 @@ def main():
     5. 添加标注和标签
     6. 保存输出文件
     """
-    # 设置字体和参数
+    # Set font and parameters
     setup_chinese_font()
     set_matplotlib_params()
 
-    # 创建图形和子图
+    # Create figure and subplots
     fig = plt.figure(figsize=(FIG_WIDTH, FIG_HEIGHT))
 
-    # 定义三个子图区域：顶部标签、网格、颜色条
+    # Define three subplot areas: top label, grid, color bar
     ax_grid = fig.add_axes([0.1, 0.15, 0.8, 0.75])
     ax_colorbar = fig.add_axes([0.1, 0.05, 0.8, 0.08])
     ax_labels = fig.add_axes([0.1, 0.15, 0.8, 0.75])
 
-    # 生成对角线矩阵和颜色
+    # Generate diagonal matrix and colors
     diagonal_matrix = create_diagonal_matrix(GRID_SIZE)
     color_list = generate_color_map(GRID_SIZE * 2 - 1)
 
-    # 绘制主要元素
+    # Draw main elements
     draw_grid(ax_grid, diagonal_matrix, color_list, GRID_SIZE)
     draw_color_bar(ax_colorbar, color_list, GRID_SIZE * 2 - 1)
 
-    # 添加数字标签
+    # Add number labels
     add_number_labels(ax_labels, GRID_SIZE, position='top')
     add_number_labels(ax_labels, GRID_SIZE, position='bottom')
 
-    # 添加箭头标注（示例：指向第 12-13 列）
+    # Add arrow annotation (example: point to col 12-13)
     add_arrow_annotation(ax_labels, GRID_SIZE, target_col=12.5)
 
-    # 根据是否找到中文字体设置标题
+    # Set title based on whether Chinese font found
     if CHINESE_FONT_PATH:
-        # 使用字体属性直接指定字体
+        # Use font property to specify font
         font_prop = fm.FontProperties(fname=CHINESE_FONT_PATH, size=14)
-        fig.suptitle('对角线颜色分布示意图', fontproperties=font_prop, y=0.98)
+        fig.suptitle('Diagonal Color Distribution', fontproperties=font_prop, y=0.98)
     else:
         fig.suptitle('Diagonal Color Distribution Schematic', fontsize=14, y=0.98)
 
-    # 保存文件（使用较低的DPI以节省内存）
+    # Save files (use lower DPI to save memory)
     output_path_pdf = r'D:\Project\vis\图\diagonal_grid_fixed.pdf'
     plt.savefig(output_path_pdf, dpi=OUTPUT_DPI, bbox_inches='tight',
                 format='pdf', facecolor='white', edgecolor='none')
-    print(f'PDF图形已保存为 {output_path_pdf}')
+    print(f'PDF figure saved to {output_path_pdf}')
 
     output_path_eps = r'D:\Project\vis\图\diagonal_grid_fixed.eps'
     plt.savefig(output_path_eps, dpi=OUTPUT_DPI, bbox_inches='tight',
                 format='eps', facecolor='white', edgecolor='none')
-    print(f'EPS图形已保存为 {output_path_eps}')
+    print(f'EPS figure saved to {output_path_eps}')
 
-    # # 显示图形
+    # # Show figure
     # plt.show()
 
-    # 清理内存
+    # Clean up memory
     plt.close(fig)
 
 
@@ -345,7 +345,7 @@ def format_time(second: float, is_abbreviation: bool = False) -> str:
     return time_str
 
 
-# ==================== 程序执行 ====================
+# ==================== Execution ====================
 
 if __name__ == '__main__':
     print('Program schematic.py started')

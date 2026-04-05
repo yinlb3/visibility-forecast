@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""通用工具函数模块.
+"""General utility functions.
 
 Founded in 2026-04-04
 Modified in 2026-04-04
@@ -9,20 +9,20 @@ Modified in 2026-04-04
 
 def format_time(second: float, is_abbreviation: bool = False) -> str:
     """
-    将秒数转换为人类可读的时间字符串.
+    Convert seconds to human-readable time string.
 
     Args:
-        second: 秒数, 浮点数;
-        is_abbreviation: 是否使用缩写格式 (如 '12.5m'), 默认 False;
+        second: Seconds, float;
+        is_abbreviation: Use abbreviation format (e.g., '12.5m'), default False;
 
     Returns:
-        格式化后的时间字符串, 例如 '43.5 seconds' 或 '12.5m';
+        Formatted time string, e.g., '43.5 seconds' or '12.5m';
 
     Raises:
-        ValueError: 当 second 为负数时抛出异常.
+        ValueError: When second is negative.
     """
     if second < 0:
-        raise ValueError('输入参数 \'second\' 不能为负数.')
+        raise ValueError("Parameter 'second' cannot be negative.")
     elif is_abbreviation:
         if second <= 60:
             time_str = str(second) + 's'

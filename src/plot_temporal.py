@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-时效特征可视化模块 (阶段 8.1-8.2).
+Temporal feature visualization module (Stage 8.1-8.2).
 
 Founded in 2026-04-04
 Modified in 2026-04-04
@@ -20,7 +20,7 @@ def plot_hour_access_heatmaps(output_dir: str) -> None:
 
     包括 CMA-SH-WARR、PDFM-TLE 的 TS4+ 热图以及改善率热图.
     """
-    hour_access = np.load(rf'{output_dir}\hour_access.npy')
+    hour_access = np.load(rf'{output_dir}\csv\hour_access.npy')
     gc.collect()
 
     # CMA-SH-WARR TS4+
@@ -36,7 +36,7 @@ def plot_hour_access_heatmaps(output_dir: str) -> None:
     plt.cla()
     plt.close('all')
     gc.collect()
-    print(np.min(hour_access[0, :, :, 7]), np.max(hour_access[0, :, :, 7]))
+    print(f'[plot_hour_access_heatmaps] CMA-SH-WARR TS4+ range: {np.min(hour_access[0, :, :, 7])} ~ {np.max(hour_access[0, :, :, 7])}')
 
     # PDFM-TLE TS4+
     sns.heatmap(hour_access[3, :, :, 7], cmap='Reds', vmin=0, vmax=0.4, linewidths=0.3)
@@ -51,7 +51,7 @@ def plot_hour_access_heatmaps(output_dir: str) -> None:
     plt.cla()
     plt.close('all')
     gc.collect()
-    print(np.min(hour_access[3, :, :, 7]), np.max(hour_access[3, :, :, 7]))
+    print(f'[plot_hour_access_heatmaps] PDFM-TLE TS4+ range: {np.min(hour_access[3, :, :, 7])} ~ {np.max(hour_access[3, :, :, 7])}')
 
     # 改善率热图
     ts_before = hour_access[0, :, :, 7]
@@ -69,9 +69,9 @@ def plot_hour_access_heatmaps(output_dir: str) -> None:
     plt.cla()
     plt.close('all')
     gc.collect()
-    print(np.min(ts_improvement), np.max(ts_improvement))
-    print(np.mean(ts_improvement))
-    print(np.where(ts_improvement == np.max(ts_improvement)))
+    print(f'[plot_hour_access_heatmaps] TS improvement range: {np.min(ts_improvement)} ~ {np.max(ts_improvement)}')
+    print(f'[plot_hour_access_heatmaps] TS improvement mean: {np.mean(ts_improvement)}')
+    print(f'[plot_hour_access_heatmaps] TS improvement max location: {np.where(ts_improvement == np.max(ts_improvement))}')
 
 
 def plot_ts_comparison_bars(output_dir: str) -> None:
@@ -79,13 +79,13 @@ def plot_ts_comparison_bars(output_dir: str) -> None:
     8.2 绘制预报时效与预报时间的 TS4+ 对比柱状图.
     """
     # 预报时效
-    df_vt_ts4 = pd.read_csv(filepath_or_buffer=rf'{output_dir}\vis_vt_ts4+.csv', low_memory=False)
+    df_vt_ts4 = pd.read_csv(filepath_or_buffer=rf'{output_dir}\csv\vis_vt_ts4+.csv', low_memory=False)
     ts_before = np.array(df_vt_ts4.loc[:, 'CMA-SH-WARR'])
     ts_after = np.array(df_vt_ts4.loc[:, 'PDFM-TLE'])
     ts_improvement = (ts_after - ts_before) / ts_before * 100
-    print(np.min(ts_improvement), np.max(ts_improvement))
-    print(ts_improvement)
-    print(np.max(df_vt_ts4.loc[:, 'PDFM-TLE']))
+    print(f'[plot_ts_comparison_bars] VT TS improvement range: {np.min(ts_improvement)} ~ {np.max(ts_improvement)}')
+    print(f'[plot_ts_comparison_bars] VT TS improvement: {ts_improvement}')
+    print(f'[plot_ts_comparison_bars] VT PDFM-TLE max: {np.max(df_vt_ts4.loc[:, "PDFM-TLE"])}')
 
     fig, ax1 = plt.subplots(figsize=(10, 4))
     ax1.bar(
@@ -129,13 +129,13 @@ def plot_ts_comparison_bars(output_dir: str) -> None:
     gc.collect()
 
     # 预报时间
-    df_fhour_ts4 = pd.read_csv(filepath_or_buffer=rf'{output_dir}\vis_fhour_ts4+.csv', low_memory=False)
+    df_fhour_ts4 = pd.read_csv(filepath_or_buffer=rf'{output_dir}\csv\vis_fhour_ts4+.csv', low_memory=False)
     ts_before = np.array(df_fhour_ts4.loc[:, 'CMA-SH-WARR'])
     ts_after = np.array(df_fhour_ts4.loc[:, 'PDFM-TLE'])
     ts_improvement = (ts_after - ts_before) / ts_before * 100
-    print(np.min(ts_improvement), np.max(ts_improvement))
-    print(ts_improvement)
-    print(np.max(df_fhour_ts4.loc[:, 'PDFM-TLE']))
+    print(f'[plot_ts_comparison_bars] FHour TS improvement range: {np.min(ts_improvement)} ~ {np.max(ts_improvement)}')
+    print(f'[plot_ts_comparison_bars] FHour TS improvement: {ts_improvement}')
+    print(f'[plot_ts_comparison_bars] FHour PDFM-TLE max: {np.max(df_fhour_ts4.loc[:, "PDFM-TLE"])}')
 
     fig, ax1 = plt.subplots(figsize=(10, 4))
     ax1.bar(
@@ -175,5 +175,5 @@ def plot_ts_comparison_bars(output_dir: str) -> None:
     plt.savefig(rf'{output_dir}\vis_fhour_ts4+.pdf', bbox_inches='tight', dpi=800)
     plt.cla()
     plt.close('all')
-    del fig, ax
+    del fig, ax1, ax2
     gc.collect()
