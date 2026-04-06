@@ -19,9 +19,9 @@ def format_time(second: float, is_abbreviation: bool = False) -> str:
     r"""Format time.
 
     :param second: A float number representing the number of seconds.
-    :param is_abbreviation: A boolean variable representing whether processing to abbreviation.
+    :param is_abbreviation: Whether to use abbreviation format (default: False).
         The default value is False.
-    :return: A sequence of strings representing the time. For example: '43.5 seconds'
+    :return: Formatted time string, e.g., '43.5 seconds'.
     :raise ValueError: The value of input parameter 'second' is wrong.
     """
     if second < 0:
@@ -49,7 +49,8 @@ def format_time(second: float, is_abbreviation: bool = False) -> str:
 def main() -> None:
     vis = np.load(r'E:\vis\vis_grade.npy')
     sta = meb.read_station(meb.station_国家站)
-    sta97 = pd.read_csv(r'D:\Project\wind\国家气象观测站.csv', encoding='gb2312', low_memory=False)
+    csv_path = r'D:\Project\wind\国家气象观测站.csv'
+    sta97 = pd.read_csv(csv_path, encoding='gb2312', low_memory=False)
     index = np.zeros(2410, dtype=np.bool_)
     for i in range(2410):
         if sta.loc[i, 'id'] in sta97.loc[:, '台站号'].to_list():
@@ -79,9 +80,12 @@ def main() -> None:
     i = 0
     for year in range(1980, 2014):
         n_days = 366 if year % 4 == 0 else 365
-        c[year - 1980, :] = np.sum(vis_grade_day[i: i + n_days, :] == -1, axis=0) / n_days
+        missing = np.sum(vis_grade_day[i: i + n_days, :] == -1, axis=0)
+        c[year - 1980, :] = missing / n_days
         for j in range(7):
-            vis_grade_year_days[year - 1980, :, j] = np.sum(vis_grade_day[i: i + n_days, :] == j, axis=0)
+            vgyd = vis_grade_year_days
+            mask = vis_grade_day[i: i + n_days, :] == j
+            vgyd[year - 1980, :, j] = np.sum(mask, axis=0)
         i += n_days
     sta_index = np.sum(c < 0.02, axis=0) == 34
     sta_index[54] = False
@@ -100,22 +104,34 @@ def main() -> None:
     sta83.loc[:, 'level'] = 0
     sta83.loc[:, 'time'] = arrow.get('1980').datetime
     sta83.loc[:, 'dtime'] = 0
-    sta83 = sta83.loc[:, ['level', 'time', 'dtime', '台站号', '经度', '纬度', '<1000', '<500', '<200', '<50']]
-    sta83 = meb.sta_data(sta83, columns=['level', 'time', 'dtime', 'id', 'lon', 'lat', '<1000', '<500', '<200', '<50'])
+    cols = ['level', 'time', 'dtime', '台站号', '经度', '纬度']
+    cols += ['<1000', '<500', '<200', '<50']
+    sta83 = sta83.loc[:, cols]
+    cols = ['level', 'time', 'dtime', 'id', 'lon', 'lat']
+    cols += ['<1000', '<500', '<200', '<50']
+    sta83 = meb.sta_data(sta83, columns=cols)
     print(sta83.min())
     print(sta83.max())
-    meb.scatter_sta(sta83.loc[:, ['level', 'time', 'dtime', 'id', 'lon', 'lat', '<1000']],
-                    save_path=r'E:\vis\1000.png', dpi=300, title=['能见度不足1000米天数'], cmap=meb.cmaps.hour,
-                    map_extend=[108.65, 114.4, 24.5, 30.25], clevs=[0, 8, 16, 24, 32, 40, 48, 56, 64])
-    meb.scatter_sta(sta83.loc[:, ['level', 'time', 'dtime', 'id', 'lon', 'lat', '<500']],
-                    save_path=r'E:\vis\500.png', dpi=300, title=['能见度不足500米天数'], cmap=meb.cmaps.hour,
-                    map_extend=[108.65, 114.4, 24.5, 30.25], clevs=[0, 6, 12, 18, 24, 30, 36, 42, 48])
-    meb.scatter_sta(sta83.loc[:, ['level', 'time', 'dtime', 'id', 'lon', 'lat', '<200']],
-                    save_path=r'E:\vis\200.png', dpi=300, title=['能见度不足200米天数'], cmap=meb.cmaps.hour,
-                    map_extend=[108.65, 114.4, 24.5, 30.25], clevs=[0, 4, 8, 12, 16, 20, 24, 28, 32])
-    meb.scatter_sta(sta83.loc[:, ['level', 'time', 'dtime', 'id', 'lon', 'lat', '<50']],
-                    save_path=r'E:\vis\50.png', dpi=300, title=['能见度不足50米天数'], cmap=meb.cmaps.hour,
-                    map_extend=[108.65, 114.4, 24.5, 30.25], clevs=[0, 3, 6, 9, 12, 15, 18, 21, 24])
+    cols = ['level', 'time', 'dtime', 'id', 'lon', 'lat', '<1000']
+    meb.scatter_sta(sta83.loc[:, cols], save_path=r'E:\vis\1000.png', dpi=300,
+                    title=['能见度不足1000米天数'], cmap=meb.cmaps.hour,
+                    map_extend=[108.65, 114.4, 24.5, 30.25],
+                    clevs=[0, 8, 16, 24, 32, 40, 48, 56, 64])
+    cols = ['level', 'time', 'dtime', 'id', 'lon', 'lat', '<500']
+    meb.scatter_sta(sta83.loc[:, cols], save_path=r'E:\vis\500.png', dpi=300,
+                    title=['能见度不足500米天数'], cmap=meb.cmaps.hour,
+                    map_extend=[108.65, 114.4, 24.5, 30.25],
+                    clevs=[0, 6, 12, 18, 24, 30, 36, 42, 48])
+    cols = ['level', 'time', 'dtime', 'id', 'lon', 'lat', '<200']
+    meb.scatter_sta(sta83.loc[:, cols], save_path=r'E:\vis\200.png', dpi=300,
+                    title=['能见度不足200米天数'], cmap=meb.cmaps.hour,
+                    map_extend=[108.65, 114.4, 24.5, 30.25],
+                    clevs=[0, 4, 8, 12, 16, 20, 24, 28, 32])
+    cols = ['level', 'time', 'dtime', 'id', 'lon', 'lat', '<50']
+    meb.scatter_sta(sta83.loc[:, cols], save_path=r'E:\vis\50.png', dpi=300,
+                    title=['能见度不足50米天数'], cmap=meb.cmaps.hour,
+                    map_extend=[108.65, 114.4, 24.5, 30.25],
+                    clevs=[0, 3, 6, 9, 12, 15, 18, 21, 24])
 
 
 if __name__ == '__main__':
@@ -125,4 +141,5 @@ if __name__ == '__main__':
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
-    print(f'Program vis_grade.py finished, total time: {format_time(total_elapsed)}')
+    elapsed_str = format_time(total_elapsed)
+    print(f'Program vis_grade.py finished, total time: {elapsed_str}')

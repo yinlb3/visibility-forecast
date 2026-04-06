@@ -7,7 +7,7 @@ Modified in 2026-04-04
 @author: yinlb
 """
 
-from typing import Tuple
+import typing
 
 import numpy as np
 import pandas as pd
@@ -18,7 +18,7 @@ def build_month_stats(
     pre: np.ndarray,
     rhu: np.ndarray,
     month_ind: np.ndarray,
-    thres: Tuple[float, ...]
+    thres: typing.Tuple[float, ...]
 ) -> dict:
     """
     Calc monthly freq of low visibility by grade.
@@ -33,14 +33,18 @@ def build_month_stats(
     Returns:
         dict: Monthly stats dict.
     """
+    # 1. Init result container
     df_month = {'month': list()}
+    # 2. Loop through each grade threshold
     for i in range(len(thres)):
+        # 2.1 Create weather type masks
         a = np.copy(vis_grade)
-        a[pre == 0] = -1
+        a[pre == 0] = -1  # Precip: keep only precip events
         b = np.copy(vis_grade)
-        b[(pre > 0) | (rhu < 80)] = -1
+        b[(pre > 0) | (rhu < 80)] = -1      # Fog type: no precip + high RH
         c = np.copy(vis_grade)
-        c[(pre < 0) | (rhu >= 80)] = -1
+        c[(pre < 0) | (rhu >= 80)] = -1     # Haze type: no precip + low RH
+        # 2.2 Loop through 12 months
         for j in range(12):
             if i == 0:
                 df_month['month'].append(j + 1)
@@ -49,11 +53,16 @@ def build_month_stats(
                 df_month[str(i + 1) + 'pre'] = list()
                 df_month[str(i + 1) + 'fog'] = list()
                 df_month[str(i + 1) + 'haze'] = list()
+            # 2.3 Calc valid samples and freq for each weather type
             valid = np.sum(vis_grade[month_ind == j + 1, :] >= 0)
-            df_month[str(i + 1)].append(np.sum(vis_grade[month_ind == j + 1, :] >= i + 1) / valid)
-            df_month[str(i + 1) + 'pre'].append(np.sum(a[month_ind == j + 1, :] >= i + 1) / valid)
-            df_month[str(i + 1) + 'fog'].append(np.sum(b[month_ind == j + 1, :] >= i + 1) / valid)
-            df_month[str(i + 1) + 'haze'].append(np.sum(c[month_ind == j + 1, :] >= i + 1) / valid)
+            vg = vis_grade[month_ind == j + 1, :]
+            df_month[str(i + 1)].append(np.sum(vg >= i + 1) / valid)
+            a_m = a[month_ind == j + 1, :]
+            df_month[str(i + 1) + 'pre'].append(np.sum(a_m >= i + 1) / valid)
+            b_m = b[month_ind == j + 1, :]
+            df_month[str(i + 1) + 'fog'].append(np.sum(b_m >= i + 1) / valid)
+            c_m = c[month_ind == j + 1, :]
+            df_month[str(i + 1) + 'haze'].append(np.sum(c_m >= i + 1) / valid)
     return df_month
 
 
@@ -61,19 +70,19 @@ def build_hour_stats(
     vis_grade: np.ndarray,
     pre: np.ndarray,
     rhu: np.ndarray,
-    thres: Tuple[float, ...]
+    thres: typing.Tuple[float, ...]
 ) -> dict:
     """
-    按小时统计各级低能见度出现频率.
+    Calc hourly frequency of low visibility by grade.
 
     Args:
-        vis_grade (np.ndarray): 能见度分级数组.
-        pre (np.ndarray): 降水数组.
-        rhu (np.ndarray): 相对湿度数组.
-        thres (tuple): 能见度分级阈值.
+        vis_grade (np.ndarray): Visibility grade array.
+        pre (np.ndarray): Precipitation array.
+        rhu (np.ndarray): Relative humidity array.
+        thres (tuple): Visibility grade thresholds.
 
     Returns:
-        dict: 小时统计结果字典.
+        dict: Hourly stats dict.
     """
     df_hour = {'hour': list()}
     for i in range(len(thres)):
@@ -92,10 +101,14 @@ def build_hour_stats(
                 df_hour[str(i + 1) + 'fog'] = list()
                 df_hour[str(i + 1) + 'haze'] = list()
             valid = np.sum(vis_grade[j::24, :] >= 0)
-            df_hour[str(i + 1)].append(np.sum(vis_grade[j::24, :] >= i + 1) / valid)
-            df_hour[str(i + 1) + 'pre'].append(np.sum(a[j::24, :] >= i + 1) / valid)
-            df_hour[str(i + 1) + 'fog'].append(np.sum(b[j::24, :] >= i + 1) / valid)
-            df_hour[str(i + 1) + 'haze'].append(np.sum(c[j::24, :] >= i + 1) / valid)
+            vg_h = vis_grade[j::24, :]
+            df_hour[str(i + 1)].append(np.sum(vg_h >= i + 1) / valid)
+            a_h = a[j::24, :]
+            df_hour[str(i + 1) + 'pre'].append(np.sum(a_h >= i + 1) / valid)
+            b_h = b[j::24, :]
+            df_hour[str(i + 1) + 'fog'].append(np.sum(b_h >= i + 1) / valid)
+            c_h = c[j::24, :]
+            df_hour[str(i + 1) + 'haze'].append(np.sum(c_h >= i + 1) / valid)
     return df_hour
 
 
@@ -105,7 +118,7 @@ def build_sta_stats(
     vis_grade: np.ndarray,
     pre: np.ndarray,
     rhu: np.ndarray,
-    thres: Tuple[float, ...]
+    thres: typing.Tuple[float, ...]
 ) -> dict:
     """
     Calc station-wise freq and mean visibility.
@@ -149,7 +162,8 @@ def build_sta_stats(
             df_sta[str(i + 1)].append(np.sum(vis_grade[:, j] >= i + 1) / valid)
             df_sta[str(i + 1) + 'pre'].append(np.sum(a[:, j] >= i + 1) / valid)
             df_sta[str(i + 1) + 'fog'].append(np.sum(b[:, j] >= i + 1) / valid)
-            df_sta[str(i + 1) + 'haze'].append(np.sum(c[:, j] >= i + 1) / valid)
+            c_s = c[:, j]
+            df_sta[str(i + 1) + 'haze'].append(np.sum(c_s >= i + 1) / valid)
             if i == 0:
                 df_sta['n'].append(valid)
                 df_sta['mean'].append(np.nanmean(vis[:, j]))
@@ -180,6 +194,10 @@ def save_obs_stats(
     import os
     csv_dir = rf'{output_dir}\csv'
     os.makedirs(csv_dir, exist_ok=True)
-    pd.DataFrame(df_month).to_csv(path_or_buf=rf'{csv_dir}\vis_month.csv', index=False)
-    pd.DataFrame(df_hour).to_csv(path_or_buf=rf'{csv_dir}\vis_hour.csv', index=False)
+    pd.DataFrame(df_month).to_csv(
+        path_or_buf=rf'{csv_dir}\vis_month.csv', index=False
+    )
+    pd.DataFrame(df_hour).to_csv(
+        path_or_buf=rf'{csv_dir}\vis_hour.csv', index=False
+    )
     pd.DataFrame(df_sta).to_csv(rf'{csv_dir}\vis_sta.csv', index=False)

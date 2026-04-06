@@ -12,15 +12,6 @@
 - **Forecast Verification**: Calculate various verification indicators such as ME, MAE, RMSE, MRE, R, TS, ETS, HSS, TSS
 - **Visualization**: Draw bar charts, box plots, violin plots, pie charts, heatmaps, spatial distribution maps, etc.
 
-## Install
-
-No installation required. Ensure the following dependencies are installed:
-
-- **Python**: 3.8+
-- **Core Dependencies**: numpy, pandas, matplotlib, seaborn, scipy, arrow
-- **Domain Library**: meteva (domestic meteorological verification toolkit)
-- **Memory**: Recommended ≥ 16GB (for processing large numpy arrays)
-
 ## Usage
 
 ```powershell
@@ -47,13 +38,8 @@ Before running, please confirm:
 ### Completed
 | Task | Description | Completion Date |
 |------|-------------|-----------------|
-| Code Comments | Add Chinese comments and Google-style docstrings to draw.py | 2026-04-02 |
-| Git Config | Configure .gitignore, exclude IDE config and output files | 2026-04-02 |
-| Dual-Platform Sync | Push to Gitee and GitHub | 2026-04-03 |
-| Logic Error Check | Static analysis found undefined variables, type annotation errors in draw.py | 2026-04-03 |
-| Large File Refactoring | Split `draw.py` (~936 lines) into 13 modules under `src/` by 9 stages; `draw.py` only has `main()` entry (~300 lines) | 2026-04-04 |
-| Common Function Extraction | Extract `VisAcc`, `format_time`, `plot_weather_type_eval_bw` to `src/`; Optimize CDF calculation to `np.searchsorted`, complexity from O(N·M) to O(M log M) | 2026-04-04 |
-| Translation | Translate README.md and AGENTS.md to English; Fix Chinese path `图/` to `figures/` | 2026-04-05 |
+| Project Setup & Documentation | Initialize git repository, configure .gitignore, set up dual-platform sync (Gitee/GitHub), add code comments/docstrings, and translate all documentation to English | 2026-04-02 ~ 2026-04-05 |
+| draw.py Refactoring | Split `draw.py` into 9 `src/` modules by stage (1 stage = 1 file); extract shared utilities; standardize console output and file structure | 2026-04-06 |
 
 ### In Progress
 | Task | Description | Notes |
@@ -65,10 +51,6 @@ Before running, please confirm:
 |------|-------------|----------|
 | Add Unit Tests | Add pytest tests for VisAcc class | P2 |
 | Path Configuration | Change hard-coded paths to configuration file | P2 |
-
-## License
-
-This project is developed for scientific research purposes and is for internal use only.
 
 ## Author
 

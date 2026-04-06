@@ -2,24 +2,28 @@
 # -*- coding: utf-8 -*-
 """
 Diagonal color grid plotting program
-Display color distribution along diagonal direction
+Display color distribution along diagonal
 Fixed Chinese font and memory issues
+
+Founded in 2026-04-04
+Modified in 2026-04-04
+@author: yinlb
 """
 
 import arrow
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
-import matplotlib.font_manager as fm
+from matplotlib import font_manager as fm
+from matplotlib import patches
+from matplotlib import pyplot as plt
 
 # ==================== Global Configuration ====================
 
-GRID_SIZE = 24  # 网格大小 24x24
-FIG_WIDTH = 12  # 图片宽度（英寸）
-FIG_HEIGHT = 14  # 图片高度（英寸）
-COLOR_MAP_NAME = 'rainbow'  # 颜色映射名称
+GRID_SIZE = 24  # Grid size 24x24
+FIG_WIDTH = 12  # Figure width (inches)
+FIG_HEIGHT = 14  # Figure height (inches)
+COLOR_MAP_NAME = 'rainbow'  # Colormap name
 OUTPUT_DPI = 800
-CHINESE_FONT_PATH = None  # 中文字体路径（自动查找）
+CHINESE_FONT_PATH = None  # Chinese font path (auto-detect)
 
 
 # ==================== Font Configuration ====================
@@ -27,10 +31,10 @@ CHINESE_FONT_PATH = None  # 中文字体路径（自动查找）
 
 def setup_chinese_font():
     """
-    配置中文字体支持
+    Configure Chinese font support.
 
-    自动查找系统可用的中文字体
-    解决 DejaVu Sans 不支持中文的问题
+    Auto-detect system Chinese fonts
+    to fix DejaVu Sans missing CJK glyphs.
     """
     global CHINESE_FONT_PATH
 
@@ -40,7 +44,7 @@ def setup_chinese_font():
         r'C:\Windows\Fonts\msyhbd.ttc',  # Microsoft YaHei Bold
         r'C:\Windows\Fonts\simhei.ttf',  # SimHei
         r'C:\Windows\Fonts\STSONG.TTC',  # SimSun
-        r'C:\Windows\Fonts\ARIALUNI.TTF',  # Arial Unicode MS
+        r'C:\Windows\Fonts\ARIALUNI.TTF',  # Arial Unicode
     ]
 
     # Try to find available Chinese font
@@ -55,7 +59,7 @@ def setup_chinese_font():
             ax_test.text(0.5, 0.5, text, fontproperties=prop)
             plt.close(fig_test)
             CHINESE_FONT_PATH = font_path
-            print(f'Found and verified Chinese font: {font_path}')
+            print(f'Found font: {font_path}')
             break
         except Exception as e:
             continue
@@ -66,12 +70,12 @@ def setup_chinese_font():
 
 def set_matplotlib_params():
     """
-    设置 matplotlib 参数
+    Set matplotlib parameters.
 
-    包括字体、后端等配置
-    避免字体渲染问题
+    Including fonts, backend, etc.
+    Avoid font rendering issues.
     """
-    plt.rcParams['axes.unicode_minus'] = False  # 正确显示负号
+    plt.rcParams['axes.unicode_minus'] = False  # Correct minus sign display
 
     # If Chinese font found, register and use
     if CHINESE_FONT_PATH:
@@ -87,10 +91,10 @@ def set_matplotlib_params():
 
 def create_diagonal_matrix(size):
     """
-    创建对角线索引矩阵
+    Create diagonal index matrix.
 
-    每条从左下到右上的斜线具有相同的索引值
-    用于后续映射颜色
+    Each diagonal line (bottom-left to top-right) has same index value.
+    Used for subsequent color mapping.
 
     Args:
         size: Grid size
@@ -110,10 +114,10 @@ def create_diagonal_matrix(size):
 
 def generate_color_map(num_colors):
     """
-    生成指定数量的颜色列表
+    Generate color list of specified count.
 
-    使用 matplotlib 内置颜色映射
-    可根据需要自定义颜色序列
+    Use built-in matplotlib colormap.
+    Can customize color sequence as needed.
 
     Args:
         num_colors: Number of colors needed
@@ -129,10 +133,10 @@ def generate_color_map(num_colors):
 
 def draw_grid(ax, matrix, colors, size):
     """
-    绘制彩色网格
+    Draw colored grid.
 
-    每个格子根据对角线索引填充对应颜色
-    添加黑色网格线便于区分
+    Each cell filled with corresponding color by diagonal index.
+    Add black grid lines for distinction.
 
     Args:
         ax: matplotlib axis object
@@ -150,7 +154,7 @@ def draw_grid(ax, matrix, colors, size):
             for j in range(size):
                 color_idx = matrix[i, j] % len(colors)
                 # Note: Matrix row index opposite to y-axis
-                rect = Rectangle(
+                rect = patches.Rectangle(
                     (j, size - 1 - i), 1, 1,
                     facecolor=colors[color_idx],
                     edgecolor='black',
@@ -171,10 +175,10 @@ def draw_grid(ax, matrix, colors, size):
 
 def draw_color_bar(ax, colors, size):
     """
-    绘制底部颜色条
+    Draw bottom color bar.
 
-    显示每种颜色对应的索引
-    与上方网格颜色一一对应
+    Show index corresponding to each color.
+    One-to-one match with upper grid colors.
 
     Args:
         ax: matplotlib axis object
@@ -185,7 +189,7 @@ def draw_color_bar(ax, colors, size):
 
     # Batch draw color bar
     for i in range(num_colors):
-        rect = Rectangle(
+        rect = patches.Rectangle(
             (i, 0), 1, 1,
             facecolor=colors[i],
             edgecolor='black',
@@ -202,10 +206,10 @@ def draw_color_bar(ax, colors, size):
 
 def add_number_labels(ax, size, position='top'):
     """
-    添加数字标签
+    Add number labels.
 
-    在网格顶部或底部添加 1-24 的数字
-    便于定位每个格子的位置
+    Add numbers 1-24 at top or bottom of grid.
+    Facilitate positioning of each cell.
 
     Args:
         ax: matplotlib axis object
@@ -235,9 +239,9 @@ def add_number_labels(ax, size, position='top'):
 
 def add_arrow_annotation(ax, size, target_col):
     """
-    添加箭头标注
+    Add arrow annotation.
 
-    指示网格与颜色条的对应关系
+    Indicate correspondence between grid and color bar.
 
     Args:
         ax: matplotlib axis object
@@ -259,61 +263,67 @@ def add_arrow_annotation(ax, size, target_col):
 # ==================== Main Entry ====================
 
 
-def main():
+def main() -> None:
     """
-    主函数：执行绘图流程
+    Main function: execute plotting workflow.
 
-    1. 设置中文字体
-    2. 创建对角线矩阵
-    3. 生成颜色映射
-    4. 绘制网格和颜色条
-    5. 添加标注和标签
-    6. 保存输出文件
+    Steps:
+        1. Setup Chinese font
+        2. Create diagonal matrix
+        3. Generate color map
+        4. Draw grid and color bar
+        5. Add annotations and labels
+        6. Save output files
     """
-    # Set font and parameters
+    # 1. Setup Chinese font and matplotlib parameters
     setup_chinese_font()
     set_matplotlib_params()
 
-    # Create figure and subplots
+    # 2. Create figure and define subplot areas
     fig = plt.figure(figsize=(FIG_WIDTH, FIG_HEIGHT))
+    ax_grid = fig.add_axes([0.1, 0.15, 0.8, 0.75])      # Main grid area
+    ax_colorbar = fig.add_axes([0.1, 0.05, 0.8, 0.08])  # Color bar area
+    ax_labels = fig.add_axes([0.1, 0.15, 0.8, 0.75])    # Label overlay area
 
-    # Define three subplot areas: top label, grid, color bar
-    ax_grid = fig.add_axes([0.1, 0.15, 0.8, 0.75])
-    ax_colorbar = fig.add_axes([0.1, 0.05, 0.8, 0.08])
-    ax_labels = fig.add_axes([0.1, 0.15, 0.8, 0.75])
-
-    # Generate diagonal matrix and colors
+    # 3. Generate diagonal matrix and color map
     diagonal_matrix = create_diagonal_matrix(GRID_SIZE)
     color_list = generate_color_map(GRID_SIZE * 2 - 1)
 
-    # Draw main elements
+    # 4. Draw main elements (grid and color bar)
     draw_grid(ax_grid, diagonal_matrix, color_list, GRID_SIZE)
     draw_color_bar(ax_colorbar, color_list, GRID_SIZE * 2 - 1)
 
-    # Add number labels
+    # 5. Add number labels and annotations
     add_number_labels(ax_labels, GRID_SIZE, position='top')
     add_number_labels(ax_labels, GRID_SIZE, position='bottom')
-
-    # Add arrow annotation (example: point to col 12-13)
     add_arrow_annotation(ax_labels, GRID_SIZE, target_col=12.5)
 
-    # Set title based on whether Chinese font found
+    # 6. Set title and save output files
     if CHINESE_FONT_PATH:
         # Use font property to specify font
         font_prop = fm.FontProperties(fname=CHINESE_FONT_PATH, size=14)
-        fig.suptitle('Diagonal Color Distribution', fontproperties=font_prop, y=0.98)
+        fig.suptitle(
+            'Diagonal Color Distribution',
+            fontproperties=font_prop, y=0.98
+        )
     else:
-        fig.suptitle('Diagonal Color Distribution Schematic', fontsize=14, y=0.98)
+        fig.suptitle(
+            'Diagonal Color Distribution Schematic', fontsize=14,
+                     y=0.98)
 
     # Save files (use lower DPI to save memory)
-    output_path_pdf = r'D:\Project\vis\图\diagonal_grid_fixed.pdf'
-    plt.savefig(output_path_pdf, dpi=OUTPUT_DPI, bbox_inches='tight',
-                format='pdf', facecolor='white', edgecolor='none')
+    output_path_pdf = r'D:\Project\vis\figures\diagonal_grid_fixed.pdf'
+    plt.savefig(
+        output_path_pdf, dpi=OUTPUT_DPI, bbox_inches='tight',
+        format='pdf', facecolor='white', edgecolor='none'
+    )
     print(f'PDF figure saved to {output_path_pdf}')
 
-    output_path_eps = r'D:\Project\vis\图\diagonal_grid_fixed.eps'
-    plt.savefig(output_path_eps, dpi=OUTPUT_DPI, bbox_inches='tight',
-                format='eps', facecolor='white', edgecolor='none')
+    output_path_eps = r'D:\Project\vis\figures\diagonal_grid_fixed.eps'
+    plt.savefig(
+        output_path_eps, dpi=OUTPUT_DPI, bbox_inches='tight',
+        format='eps', facecolor='white', edgecolor='none'
+    )
     print(f'EPS figure saved to {output_path_eps}')
 
     # # Show figure
@@ -324,6 +334,16 @@ def main():
 
 
 def format_time(second: float, is_abbreviation: bool = False) -> str:
+    """
+    Format seconds to human-readable time string.
+
+    Args:
+        second (float): Seconds to format.
+        is_abbreviation (bool): Use abbreviation format (e.g., '12.5m').
+
+    Returns:
+        str: Formatted time string.
+    """
     if second < 0:
         raise ValueError('The input parameter \'second\' cannot be negative.')
     elif is_abbreviation:
@@ -354,4 +374,5 @@ if __name__ == '__main__':
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
-    print(f'Program schematic.py finished, total time: {format_time(total_elapsed)}')
+    elapsed_str = format_time(total_elapsed)
+    print(f'Program schematic.py finished, total time: {elapsed_str}')

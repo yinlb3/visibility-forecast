@@ -25,10 +25,12 @@ def read_sta(sta_path: str, provinces: tuple) -> tuple:
     Returns:
         tuple: (Filtered station DataFrame, initial filter bool index).
     """
+    # 1. Load station data and sort by ID
     sta = pd.read_csv(filepath_or_buffer=sta_path, low_memory=False)
     sta = sta.sort_values(by=['id'])
     sta.reset_index(drop=True, inplace=True)
 
+    # 2. Build province filter mask (OR logic for multiple provinces)
     index_zgdb = None
     for province in provinces:
         if index_zgdb is None:
@@ -36,6 +38,7 @@ def read_sta(sta_path: str, provinces: tuple) -> tuple:
         else:
             index_zgdb |= sta.loc[:, 'province'] == province
 
+    # 3. Apply filter and reset index
     sta = sta.loc[index_zgdb]
     sta.reset_index(drop=True, inplace=True)
     return sta, index_zgdb.values
@@ -52,14 +55,17 @@ def load_obs(data_dir: str, index_zgdb: np.ndarray) -> tuple:
     Returns:
         tuple: (vis, pre, rhu), all QC-ed numpy arrays.
     """
+    # 1. Load visibility data and apply QC (capped at 30000m)
     vis = np.load(rf'{data_dir}\vis20-23.npy')[:, index_zgdb]
-    vis[vis >= 999990] = np.nan
-    vis[vis >= 30000] = 30000
+    vis[vis >= 999990] = np.nan  # Missing value marker
+    vis[vis >= 30000] = 30000    # Cap at 30000m
 
+    # 2. Load precipitation data and apply QC
     pre = np.load(rf'{data_dir}\pre20-23.npy')[:, index_zgdb]
-    pre[pre >= 200] = np.nan
+    pre[pre >= 200] = np.nan     # Extreme precip as missing
     pre[pre >= 30000] = 30000
 
+    # 3. Load relative humidity and apply range limit [0, 100]
     rhu = np.load(rf'{data_dir}\rhu20-23.npy')[:, index_zgdb]
     rhu[rhu >= 999990] = np.nan
     rhu[rhu > 100] = 100

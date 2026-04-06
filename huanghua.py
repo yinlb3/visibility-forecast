@@ -30,9 +30,9 @@ def format_time(second: float, is_abbreviation: bool = False) -> str:
     r"""Format time.
 
     :param second: A float number representing the number of seconds.
-    :param is_abbreviation: A boolean variable representing whether processing to abbreviation.
+    :param is_abbreviation: Whether to use abbreviation (default: False).
         The default value is False.
-    :return: A sequence of strings representing the time. For example: '43.5 seconds'
+    :return: Formatted time string, e.g., '43.5 seconds'.
     :raise ValueError: The value of input parameter 'second' is wrong.
     """
     if second < 0:
@@ -63,9 +63,10 @@ def main() -> None:
     for year in range(2013, 2024):
         for month in range(1, 13):
             n_days = get_n_days(year, month)
-            filepath1 = fr'D:\data\历年月总簿（2013-2023）\{year}年\{year}EXCEL\{year}-{month:02d}月总簿.xls'
-            filepath2 = fr'D:\data\历年月总簿（2013-2023）\{year}年\{year}EXCEL\MZGHA{year}{month:02d}.xls'
-            filepath3 = fr'D:\data\历年月总簿（2013-2023）\{year}年\{year}EXCEL\MZHGA{year}{month:02d}.xls'
+            base = fr'D:\data\历年月总簿（2013-2023）\{year}年\{year}EXCEL'
+            filepath1 = rf'{base}\{year}-{month:02d}月总簿.xls'
+            filepath2 = rf'{base}\MZGHA{year}{month:02d}.xls'
+            filepath3 = rf'{base}\MZHGA{year}{month:02d}.xls'
             if os.path.exists(filepath1):
                 df = pd.read_excel(filepath1, sheet_name='场面气压')
             elif os.path.exists(filepath2):
@@ -74,7 +75,8 @@ def main() -> None:
                 df = pd.read_excel(filepath3, sheet_name='场面气压')
             data[n: n + 10, :, 0] = df.iloc[2:12, 1:25]
             data[n + 10: n + 20, :, 0] = df.iloc[14:24, 1:25]
-            data[n + 20: n + n_days, :, 0] = df.iloc[26: 26 + n_days - 20, 1:25]
+            r = slice(26, 26 + n_days - 20)
+            data[n + 20: n + n_days, :, 0] = df.iloc[r, 1:25]
             if os.path.exists(filepath1):
                 df = pd.read_excel(filepath1, sheet_name='修正海平面气压')
             elif os.path.exists(filepath2):
@@ -83,7 +85,7 @@ def main() -> None:
                 df = pd.read_excel(filepath3, sheet_name='修正海平面气压')
             data[n: n + 10, :, 1] = df.iloc[2:12, 1:25]
             data[n + 10: n + 20, :, 1] = df.iloc[14:24, 1:25]
-            data[n + 20: n + n_days, :, 1] = df.iloc[26: 26 + n_days - 20, 1:25]
+            data[n + 20: n + n_days, :, 1] = df.iloc[r, 1:25]
             if os.path.exists(filepath1):
                 df = pd.read_excel(filepath1, sheet_name='温度')
             elif os.path.exists(filepath2):
@@ -92,7 +94,7 @@ def main() -> None:
                 df = pd.read_excel(filepath3, sheet_name='温度')
             data[n: n + 10, :, 2] = df.iloc[2:12, 1:25]
             data[n + 10: n + 20, :, 2] = df.iloc[14:24, 1:25]
-            data[n + 20: n + n_days, :, 2] = df.iloc[26: 26 + n_days - 20, 1:25]
+            data[n + 20: n + n_days, :, 2] = df.iloc[r, 1:25]
             if os.path.exists(filepath1):
                 df = pd.read_excel(filepath1, sheet_name='相对湿度')
             elif os.path.exists(filepath2):
@@ -101,7 +103,7 @@ def main() -> None:
                 df = pd.read_excel(filepath3, sheet_name='相对湿度')
             data[n: n + 10, :, 3] = df.iloc[2:12, 1:25]
             data[n + 10: n + 20, :, 3] = df.iloc[14:24, 1:25]
-            data[n + 20: n + n_days, :, 3] = df.iloc[26: 26 + n_days - 20, 1:25]
+            data[n + 20: n + n_days, :, 3] = df.iloc[r, 1:25]
             if os.path.exists(filepath1):
                 df = pd.read_excel(filepath1, sheet_name='露点温度')
             elif os.path.exists(filepath2):
@@ -117,7 +119,7 @@ def main() -> None:
                 df = pd.read_excel(filepath3, sheet_name='总云量')
             data[n: n + 10, :, 5] = df.iloc[2:12, 1:25]
             data[n + 10: n + 20, :, 5] = df.iloc[14:24, 1:25]
-            data[n + 20: n + n_days, :, 5] = df.iloc[26: 26 + n_days - 20, 1:25]
+            data[n + 20: n + n_days, :, 5] = df.iloc[r, 1:25]
             if os.path.exists(filepath1):
                 df = pd.read_excel(filepath1, sheet_name='低云量')
             elif os.path.exists(filepath2):
@@ -126,7 +128,7 @@ def main() -> None:
                 df = pd.read_excel(filepath3, sheet_name='低云量')
             data[n: n + 10, :, 6] = df.iloc[2:12, 1:25]
             data[n + 10: n + 20, :, 6] = df.iloc[14:24, 1:25]
-            data[n + 20: n + n_days, :, 6] = df.iloc[26: 26 + n_days - 20, 1:25]
+            data[n + 20: n + n_days, :, 6] = df.iloc[r, 1:25]
             if os.path.exists(filepath1):
                 df = pd.read_excel(filepath1, sheet_name='主导能见度')
             elif os.path.exists(filepath2):
@@ -145,4 +147,5 @@ if __name__ == '__main__':
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
-    print(f'Program huanghua.py finished, total time: {format_time(total_elapsed)}')
+    elapsed_str = format_time(total_elapsed)
+    print(f'Program huanghua.py finished, total time: {elapsed_str}')

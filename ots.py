@@ -21,7 +21,9 @@ class OTS:
         self.t = list()
 
     def fit(self, ob: np.ndarray, pr: np.ndarray):
-        t0 = list(range(100)) + list(range(100, 1000, 10)) + list(range(1000, 60001, 100))
+        t0 = list(range(100))
+        t0 += list(range(100, 1000, 10))
+        t0 += list(range(1000, 60001, 100))
         t0.reverse()
         t0 = np.array(t0, dtype=np.float32)
         thres = list(THRES)
@@ -41,17 +43,29 @@ class OTS:
     def predict(self, pr: np.ndarray) -> np.ndarray:
         pred_pr = np.zeros_like(pr, dtype=np.float32) + np.nan
         index = pr >= self.t[0]
-        pred_pr[index] = (pr[index] - self.t[0]) / (60000 - self.t[0]) * 50000 + 10000
+        pr_i = pr[index]
+        t0 = self.t[0]
+        pred_pr[index] = (pr_i - t0) / (60000 - t0) * 50000 + 10000
         index = (pr >= self.t[1]) & (pr < self.t[0])
-        pred_pr[index] = (pr[index] - self.t[1]) / (self.t[0] - self.t[1]) * 8000 + 2000
+        pr_i = pr[index]
+        t0, t1 = self.t[0], self.t[1]
+        pred_pr[index] = (pr_i - t1) / (t0 - t1) * 8000 + 2000
         index = (pr >= self.t[2]) & (pr < self.t[1])
-        pred_pr[index] = (pr[index] - self.t[2]) / (self.t[1] - self.t[2]) * 1000 + 1000
+        pr_i = pr[index]
+        t1, t2 = self.t[1], self.t[2]
+        pred_pr[index] = (pr_i - t2) / (t1 - t2) * 1000 + 1000
         index = (pr >= self.t[3]) & (pr < self.t[2])
-        pred_pr[index] = (pr[index] - self.t[3]) / (self.t[2] - self.t[3]) * 500 + 500
+        pr_i = pr[index]
+        t2, t3 = self.t[2], self.t[3]
+        pred_pr[index] = (pr_i - t3) / (t2 - t3) * 500 + 500
         index = (pr >= self.t[4]) & (pr < self.t[3])
-        pred_pr[index] = (pr[index] - self.t[4]) / (self.t[3] - self.t[4]) * 300 + 200
+        pr_i = pr[index]
+        t3, t4 = self.t[3], self.t[4]
+        pred_pr[index] = (pr_i - t4) / (t3 - t4) * 300 + 200
         index = (pr >= self.t[5]) & (pr < self.t[4])
-        pred_pr[index] = (pr[index] - self.t[5]) / (self.t[4] - self.t[5]) * 150 + 50
+        pr_i = pr[index]
+        t4, t5 = self.t[4], self.t[5]
+        pred_pr[index] = (pr_i - t5) / (t4 - t5) * 150 + 50
         index = pr < self.t[5]
         pred_pr[index] = pr[index] / self.t[5] * 50
 
@@ -72,10 +86,12 @@ class VisAcc:
         self.pr_grade[~np.isnan(self.pr)] = 0
         for i in range(self.n_grades):
             self.pr_grade[self.pr < self.thres[i]] = i + 1
-        self.hxjz = np.zeros((self.n_grades + 1, self.n_grades + 1), dtype=np.int_)
+        shape = (self.n_grades + 1, self.n_grades + 1)
+        self.hxjz = np.zeros(shape, dtype=np.int_)
         for i in range(self.n_grades + 1):
             for j in range(self.n_grades + 1):
-                self.hxjz[i, j] = np.sum((self.ob_grade == i) & (self.pr_grade == j))
+                mask = (self.ob_grade == i) & (self.pr_grade == j)
+                self.hxjz[i, j] = np.sum(mask)
         self.n = np.sum(self.hxjz)
 
     def get_me(self) -> float:
@@ -148,7 +164,8 @@ class VisAcc:
             nc = np.sum(self.hxjz[i + 1:, :i + 1])
             nd = np.sum(self.hxjz[:i + 1, :i + 1])
             r = (na + nb) / (na + nb + nc + nd) * (na + nc)
-            ets[i] = (na - r) / (na + nb + nc - r) if na + nb + nc != 0 else np.nan
+            denom = na + nb + nc - r
+            ets[i] = (na - r) / denom if na + nb + nc != 0 else np.nan
         return ets
 
     def get_bias2(self) -> np.ndarray:
@@ -224,19 +241,22 @@ def format_time(second: float, is_abbreviation: bool = False) -> str:
 
 
 def main() -> None:
+    # 1. Load observation and forecast data
     ob = np.load(r'D:\data\vis\vis1183_ob.npy')[:, :, 1:, :]
-    ob[ob >= 999990] = np.nan
+    ob[ob >= 999990] = np.nan  # Missing value marker
     pr = np.load(r'D:\data\vis\vis1183_pr.npy')[:, :, 1:, :]
+    # 2. Filter stations with valid data
     index = np.zeros(1183, dtype=np.bool_)
     for i in range(1183):
         if np.sum(~np.isnan(ob[:, :, :, i]) & ~np.isnan(pr[:, :, :, i])) > 0:
             index[i] = True
-    print(np.sum(index))
+    print(f'Valid stations: {np.sum(index)}')
+    # 3. Subset data and split train/validation
     ob = ob[:, :, :, index]
     pr = pr[:, :, :, index]
-    train_ob = ob[:-365, :, :, :]
+    train_ob = ob[:-365, :, :, :]  # Training: all except last 365 days
     train_pr = pr[:-365, :, :, :]
-    val_ob = ob[-365:, :, :, :]
+    val_ob = ob[-365:, :, :, :]    # Validation: last 365 days
     val_pr = pr[-365:, :, :, :]
     del ob, pr
     # # Raw
@@ -334,11 +354,14 @@ def main() -> None:
     index0 = (val_pr >= 1300) & (val_pr < 8900)
     pred_pr[index0] = (val_pr[index0] - 1300) / (8900 - 1300) * 1000 + 1000
     index0 = (val_pr >= 270) & (val_pr < 1300)
-    pred_pr[index0] = (val_pr[index0] - 270) / (1300 - 270) * 500 + 500
+    v_i = val_pr[index0]
+    pred_pr[index0] = (v_i - 270) / (1300 - 270) * 500 + 500
     index0 = (val_pr >= 160) & (val_pr < 270)
-    pred_pr[index0] = (val_pr[index0] - 160) / (270 - 160) * 300 + 200
+    v_i = val_pr[index0]
+    pred_pr[index0] = (v_i - 160) / (270 - 160) * 300 + 200
     index0 = (val_pr >= 84) & (val_pr < 160)
-    pred_pr[index0] = (val_pr[index0] - 84) / (160 - 84) * 150 + 50
+    v_i = val_pr[index0]
+    pred_pr[index0] = (v_i - 84) / (160 - 84) * 150 + 50
     index0 = val_pr < 84
     pred_pr[index0] = val_pr[index0] / 84 * 50
     index_sta08 = np.load(r'D:\Project\vis\index_sta08.npy')

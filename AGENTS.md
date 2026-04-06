@@ -10,7 +10,7 @@ description: Meteorological visibility data analysis and visualization toolkit
 > - Git workflow (B4)
 > - This document only records project-specific information.
 
-## Context
+## 1. Context
 
 ### Your role
 You are an AI programming assistant for this meteorological data analysis project. Your responsibilities include:
@@ -29,15 +29,15 @@ You are an AI programming assistant for this meteorological data analysis projec
 - **Domain Library**: meteva (domestic meteorological verification toolkit)
 
 **File Structure**:
-- `src/` - Extracted common modules (13 modules split from draw.py)
+- `src/` - Extracted common modules (9 modules split from `draw.py`, 1 stage = 1 file)
 - `figures/` - Output directory for images, CSV, NPY files
-- `draw.py` - Main plotting script (main() entry only)
+- `draw.py` - Main orchestrator (pipeline entry only)
 - `access.py` - Forecast verification and PDF matching correction
 - `tl.py` - Temporal lead experiment analysis
 - `ots.py` - Optimal threshold selection
 - `D:\data\vis\` - Input data directory (not under version control)
 
-## 1. Commands
+## 2. Commands
 
 ```powershell
 # One-click execution
@@ -52,17 +52,17 @@ python ots.py       # Optimal threshold selection
 Before running, confirm:
 1. `D:\data\vis\` contains required `.npy`, `.csv`, `.xls` files
 2. Chinese fonts installed (scripts look for `msyh.ttc`, `simhei.ttf`)
-3. Memory ≥ 16GB recommended (large numpy arrays)
+3. Memory >= 16GB recommended (large numpy arrays)
 
-## 2. Testing
+## 3. Testing
 
-No unit test framework (no `pytest`, `unittest`).
+Refer to `user-preferences` skill Testing guidelines.
 
-Verification method: Run scripts and check:
+No unit test framework (no `pytest`, `unittest`). Verification method: run scripts and check:
 - Console output verification indicators
 - Images and CSV files generated in `figures/` directory meet expectations
 
-## 3. Code Style
+## 4. Code Style
 
 Refer to `user-preferences` skill A.1-A.9.
 
@@ -70,9 +70,9 @@ Refer to `user-preferences` skill A.1-A.9.
 1. **Pinyin Abbreviation Naming**: Variable naming mixes pinyin with English, e.g., `hxjz` (confusion matrix), `cjzxy` (middle-lower Yangtze)
 2. **Memory Management**: Use `plt.close(fig)`, `del fig, ax`, `gc.collect()` to release matplotlib memory
 3. **Hard-coded Paths**: Input `D:\data\vis\...`, Output `D:\Project\vis\figures\...`
-4. **Data Cleaning**: Missing values as `999990`/`999999` → `np.nan`; visibility capped at 30000m
+4. **Data Cleaning**: Missing values as `999990`/`999999` -> `np.nan`; visibility capped at 30000m
 
-## 4. Git Workflow
+## 5. Git Workflow
 
 Refer to `user-preferences` skill B.4.
 
@@ -80,12 +80,12 @@ Refer to `user-preferences` skill B.4.
 - Dual-platform sync: Push to both Gitee and GitHub
 - Do not commit large data files (`.npy`, `.csv`) to git
 
-## 5. Boundaries
+## 6. Boundaries
 
 - **Always do**:
   - Use English for all code comments and output messages
   - Clean up memory after plotting (`plt.close()`, `gc.collect()`)
-  - Keep variable names ≤ 20 characters
+  - Keep variable names <= 20 characters
   - Mark file modifications with line numbers when showing changes
 
 - **Ask first**:
@@ -98,18 +98,13 @@ Refer to `user-preferences` skill B.4.
   - Modify files outside working directory
   - Use PowerShell `Set-Content` for Chinese text (use UTF-8 aware methods)
 
-## 6. Milestones
+## 7. Milestones
 
 ### Completed
 | Task | Description | Completion Date |
 |------|-------------|-----------------|
-| Code Comments | Add Chinese comments and Google-style docstrings to draw.py | 2026-04-02 |
-| Git Config | Configure .gitignore, exclude IDE config and output files | 2026-04-02 |
-| Dual-Platform Sync | Push to Gitee and GitHub | 2026-04-03 |
-| Logic Error Check | Static analysis found undefined variables, type annotation errors in draw.py | 2026-04-03 |
-| Large File Refactoring | Split `draw.py` (~936 lines) into 13 modules under `src/` by 9 stages | 2026-04-04 |
-| Common Function Extraction | Extract `VisAcc`, `format_time` to `src/`; Optimize CDF calculation | 2026-04-04 |
-| Translation | Translate README.md and AGENTS.md to English | 2026-04-05 |
+| Project Setup & Documentation | Initialize git repository, configure .gitignore, set up dual-platform sync (Gitee/GitHub), add code comments/docstrings, and translate all documentation to English | 2026-04-02 ~ 2026-04-05 |
+| draw.py Refactoring | Split `draw.py` into 9 `src/` modules by stage (1 stage = 1 file); extract shared utilities; standardize console output and file structure | 2026-04-06 |
 
 ### In Progress
 | Task | Description | Notes |
@@ -124,4 +119,4 @@ Refer to `user-preferences` skill B.4.
 
 ---
 
-**Last Updated**: 2026-04-05
+**Last Updated**: 2026-04-06

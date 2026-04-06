@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-能见度预报检验指标计算模块.
+Visibility forecast verification metrics calculation module.
 
 Founded in 2024-04-18
 Modified in 2026-04-04
@@ -19,16 +19,15 @@ THRES = (10000., 2000., 1000., 500., 200., 50.)
 
 class VisAcc:
     """
-    能见度预报检验指标计算类.
+    Visibility forecast verification metrics calculator class.
 
     Auto-grade visibility from obs/fcst arrays and build confusion matrix,
-    providing quantitative metrics (ME, MAE, RMSE, MRE, R) and grade metrics (TS, ETS, HSS, TSS,
-    BIAS, FAR, MAR, POD, OA, Kappa) query methods.
+    providing metrics (ME, MAE, RMSE, MRE, R, TS, ETS, HSS, BIAS, FAR, etc).
     """
 
     def __init__(self, ob: np.ndarray, pr: np.ndarray) -> None:
         """
-        初始化检验对象.
+        Init verification object.
 
         Args:
             ob (np.ndarray): Obs visibility array, np.nan for missing.
@@ -39,7 +38,7 @@ class VisAcc:
         self._ob = ob
         self._pr = pr
 
-        # Init obs grade matrix: -1=missing, 0=above max threshold, 1-6 by thresholds
+        # Init obs grade: -1=missing, 0=above max, 1-6 by thresholds
         self._ob_grade = np.zeros_like(self._ob, dtype=np.int_) - 1
         self._ob_grade[~np.isnan(self._ob)] = 0
         for i in range(self._n_grades):
@@ -51,58 +50,102 @@ class VisAcc:
         for i in range(self._n_grades):
             self._pr_grade[self._pr < self._thres[i]] = i + 1
 
-        # Build (n_grades+1)*(n_grades+1) confusion matrix
-        self._hxjz = np.zeros((self._n_grades + 1, self._n_grades + 1), dtype=np.int_)
+        # Build (n_grades+1)^2 confusion matrix
+        shape = (self._n_grades + 1, self._n_grades + 1)
+        self._hxjz = np.zeros(shape, dtype=np.int_)
         for i in range(self._n_grades + 1):
             for j in range(self._n_grades + 1):
-                self._hxjz[i, j] = np.sum((self._ob_grade == i) & (self._pr_grade == j))
+                mask = (self._ob_grade == i) & (self._pr_grade == j)
+                self._hxjz[i, j] = np.sum(mask)
 
         # Total valid samples
         self._n = np.sum(self._hxjz)
 
     def copy(self) -> 'VisAcc':
-        """返回深拷贝对象."""
+        """
+        Return deep copy of object.
+
+        Returns:
+            VisAcc: Deep copy of this instance.
+        """
         return copy.deepcopy(self)
 
     def get_me(self) -> float:
-        """计算平均误差(Mean Error, ME)."""
+        """
+        Calc Mean Error (ME).
+
+        Returns:
+            float: Mean error value.
+        """
+        # 1. Filter valid data (exclude NaN)
         index = (~np.isnan(self._ob)) & (~np.isnan(self._pr))
         ob = self._ob[index]
         pr = self._pr[index]
+        # 2. Handle empty case
         if len(ob) == 0:
             return np.nan
+        # 3. Calc mean difference (forecast - obs)
         return float(np.mean(pr - ob))
 
     def get_mae(self) -> float:
-        """计算平均绝对误差(Mean Absolute Error, MAE)."""
+        """
+        Calc Mean Absolute Error (MAE).
+
+        Returns:
+            float: Mean absolute error value.
+        """
+        # 1. Filter valid data
         index = (~np.isnan(self._ob)) & (~np.isnan(self._pr))
         ob = self._ob[index]
         pr = self._pr[index]
+        # 2. Handle empty case
         if len(ob) == 0:
             return np.nan
+        # 3. Calc mean absolute difference
         return float(np.mean(np.abs(pr - ob)))
 
     def get_rmse(self) -> float:
-        """计算均方根误差(Root Mean Square Error, RMSE)."""
+        """
+        Calc Root Mean Square Error (RMSE).
+
+        Returns:
+            float: Root mean square error value.
+        """
+        # 1. Filter valid data
         index = (~np.isnan(self._ob)) & (~np.isnan(self._pr))
         ob = self._ob[index]
         pr = self._pr[index]
+        # 2. Handle empty case
         if len(ob) == 0:
             return np.nan
+        # 3. Calc root mean square difference
         return float(np.mean((pr - ob) ** 2) ** 0.5)
 
     def get_mre(self) -> float:
-        """计算平均相对误差(Mean Relative Error, MRE)."""
-        # 严格过滤：排除nan、排除分母过小（避免除零或数值爆炸）
-        index = (~np.isnan(self._ob)) & (~np.isnan(self._pr)) & (self._ob + self._pr > 1e-6)
+        """
+        Calc Mean Relative Error (MRE).
+
+        Returns:
+            float: Mean relative error value.
+        """
+        # 1. Strict filter: exclude nan and small denominator (avoid div zero)
+        valid = (~np.isnan(self._ob)) & (~np.isnan(self._pr))
+        index = valid & (self._ob + self._pr > 1e-6)
         ob = self._ob[index]
         pr = self._pr[index]
+        # 2. Handle empty case
         if len(ob) == 0:
-            return np.nan  # 无有效数据时明确返回nan
+            return np.nan
+        # 3. Calc mean relative error using |pr-ob|/(pr+ob)
         return float(np.mean(np.abs((pr - ob) / (pr + ob))))
 
     def get_nme(self) -> float:
-        """计算归一化平均误差(Normalized ME)."""
+        """
+        Calc Normalized ME.
+
+        Returns:
+            float: Normalized mean error value.
+        """
         index = (~np.isnan(self._ob)) & (~np.isnan(self._pr))
         ob = self._ob[index]
         pr = self._pr[index]
@@ -110,11 +153,16 @@ class VisAcc:
             return np.nan
         denom = np.max(ob) - np.min(ob)
         if denom < 1e-6:
-            return np.nan  # 避免除零
+            return np.nan  # Avoid div zero
         return float(np.mean(pr - ob) / denom)
 
     def get_nmae(self) -> float:
-        """计算归一化平均绝对误差(Normalized MAE)."""
+        """
+        Calc Normalized MAE.
+
+        Returns:
+            float: Normalized mean absolute error value.
+        """
         index = (~np.isnan(self._ob)) & (~np.isnan(self._pr))
         ob = self._ob[index]
         pr = self._pr[index]
@@ -122,11 +170,16 @@ class VisAcc:
             return np.nan
         denom = np.max(ob) - np.min(ob)
         if denom < 1e-6:
-            return np.nan  # 避免除零
+            return np.nan  # Avoid div zero
         return float(np.mean(np.abs(pr - ob)) / denom)
 
     def get_nrmse(self) -> float:
-        """计算归一化均方根误差(Normalized RMSE)."""
+        """
+        Calc Normalized RMSE.
+
+        Returns:
+            float: Normalized root mean square error value.
+        """
         index = (~np.isnan(self._ob)) & (~np.isnan(self._pr))
         ob = self._ob[index]
         pr = self._pr[index]
@@ -134,11 +187,16 @@ class VisAcc:
             return np.nan
         denom = np.max(ob) - np.min(ob)
         if denom < 1e-6:
-            return np.nan  # 避免除零
+            return np.nan  # Avoid div zero
         return float(np.mean((pr - ob) ** 2) ** 0.5 / denom)
 
     def get_r(self) -> float:
-        """计算Pearson相关系数(R)."""
+        """
+        Calc Pearson correlation coefficient (R).
+
+        Returns:
+            float: Pearson correlation coefficient.
+        """
         index = (~np.isnan(self._ob)) & (~np.isnan(self._pr))
         ob = self._ob[index]
         pr = self._pr[index]
@@ -149,10 +207,16 @@ class VisAcc:
         return r
 
     def get_me1(self) -> np.ndarray:
-        """按观测分级计算各级的平均误差(ME),返回长度为n_grades+1的数组."""
+        """
+        Calc ME by obs grade, return array of length n_grades+1.
+
+        Returns:
+            np.ndarray: ME array by obs grade.
+        """
         me = np.zeros(self._n_grades + 1, dtype=np.float32) + np.nan
         for i in range(self._n_grades + 1):
-            index = (~np.isnan(self._ob)) & (~np.isnan(self._pr)) & (self._ob_grade == i)
+            valid = (~np.isnan(self._ob)) & (~np.isnan(self._pr))
+            index = valid & (self._ob_grade == i)
             ob = self._ob[index]
             pr = self._pr[index]
             if len(ob) > 0:
@@ -160,10 +224,16 @@ class VisAcc:
         return me
 
     def get_mae1(self) -> np.ndarray:
-        """按观测分级计算各级的平均绝对误差(MAE),返回长度为n_grades+1的数组."""
+        """
+        Calc MAE by obs grade, return array of length n_grades+1.
+
+        Returns:
+            np.ndarray: MAE array by obs grade.
+        """
         mae = np.zeros(self._n_grades + 1, dtype=np.float32) + np.nan
         for i in range(self._n_grades + 1):
-            index = (~np.isnan(self._ob)) & (~np.isnan(self._pr)) & (self._ob_grade == i)
+            valid = (~np.isnan(self._ob)) & (~np.isnan(self._pr))
+            index = valid & (self._ob_grade == i)
             ob = self._ob[index]
             pr = self._pr[index]
             if len(ob) > 0:
@@ -171,10 +241,16 @@ class VisAcc:
         return mae
 
     def get_rmse1(self) -> np.ndarray:
-        """按观测分级计算各级的均方根误差(RMSE),返回长度为n_grades+1的数组."""
+        """
+        Calc RMSE by obs grade, return array of length n_grades+1.
+
+        Returns:
+            np.ndarray: RMSE array by obs grade.
+        """
         rmse = np.zeros(self._n_grades + 1, dtype=np.float32) + np.nan
         for i in range(self._n_grades + 1):
-            index = (~np.isnan(self._ob)) & (~np.isnan(self._pr)) & (self._ob_grade == i)
+            valid = (~np.isnan(self._ob)) & (~np.isnan(self._pr))
+            index = valid & (self._ob_grade == i)
             ob = self._ob[index]
             pr = self._pr[index]
             if len(ob) > 0:
@@ -182,13 +258,18 @@ class VisAcc:
         return rmse
 
     def get_mre1(self) -> np.ndarray:
-        """按观测分级计算各级的平均相对误差(MRE),返回长度为n_grades+1的数组."""
+        """
+        Calc MRE by obs grade, return array of length n_grades+1.
+
+        Returns:
+            np.ndarray: MRE array by obs grade.
+        """
         mre = np.zeros(self._n_grades + 1, dtype=np.float32) + np.nan
         for i in range(self._n_grades + 1):
             index = (
                 (~np.isnan(self._ob))
                 & (~np.isnan(self._pr))
-                & (self._ob + self._pr > 1e-6)  # 严格过滤，避免除零
+                & (self._ob + self._pr > 1e-6)  # Strict filter, avoid div zero
                 & (self._ob_grade == i)
             )
             ob = self._ob[index]
@@ -198,7 +279,12 @@ class VisAcc:
         return mre
 
     def get_r1(self) -> np.ndarray:
-        """按观测分级计算各级的Pearson相关系数(R),返回长度为n_grades+1的数组."""
+        """
+        Calc Pearson R by obs grade, return array of length n_grades+1.
+
+        Returns:
+            np.ndarray: R array by obs grade.
+        """
         r = np.zeros(self._n_grades + 1, dtype=np.float32) + np.nan
         for i in range(self._n_grades + 1):
             index = (
@@ -208,17 +294,27 @@ class VisAcc:
             )
             ob = self._ob[index]
             pr = self._pr[index]
-            # pearsonr需要至少2个样本
+            # pearsonr needs at least 2 samples
             if len(ob) > 2:
                 r[i] = stats.pearsonr(ob, pr)[0]
         return r
 
     def get_hxjz(self) -> np.ndarray:
-        """返回混淆矩阵(整数计数)."""
+        """
+        Return confusion matrix (int counts).
+
+        Returns:
+            np.ndarray: Confusion matrix array.
+        """
         return self._hxjz
 
     def get_hxjz2(self) -> np.ndarray:
-        """返回归一化混淆矩阵,每行除以该观测级的总站次数."""
+        """
+        Return normalized confusion matrix, each row divided by obs total.
+
+        Returns:
+            np.ndarray: Normalized confusion matrix array.
+        """
         hxjz2 = np.zeros_like(self._hxjz, dtype=np.float32) + np.nan
         for i in range(self._n_grades + 1):
             row_sum = np.sum(self._hxjz[i, :])
@@ -228,24 +324,39 @@ class VisAcc:
         return hxjz2
 
     def get_oa(self) -> float:
-        """计算总体准确度(Overall Accuracy, OA),即对角线之和占总样本比例."""
+        """
+        Calc Overall Accuracy (OA), ratio of diagonal sum to total samples.
+
+        Returns:
+            float: Overall accuracy value.
+        """
         if self._n == 0:
             return np.nan
         return np.sum(np.diag(self._hxjz)) / self._n
 
     def get_kappa(self) -> float:
-        """计算Kappa系数,衡量分级一致性."""
+        """
+        Calc Kappa coefficient, measuring grade consistency.
+
+        Returns:
+            float: Kappa coefficient value.
+        """
         if self._n == 0:
             return np.nan
         a = np.sum(self._hxjz, axis=1).astype(np.float32)
         b = np.sum(self._hxjz, axis=0).astype(np.float32)
         pe = np.sum(a * b) / self._n / self._n
         if abs(1 - pe) < 1e-6:
-            return np.nan  # 避免除零
+            return np.nan  # Avoid div zero
         return (self.get_oa() - pe) / (1 - pe)
 
     def get_ts(self) -> np.ndarray:
-        """计算各级的威胁评分(Threat Score, TS),返回长度为n_grades+1的数组."""
+        """
+        Calc Threat Score (TS) for each grade.
+
+        Returns:
+            np.ndarray: TS array by grade.
+        """
         ts = np.zeros(self._n_grades + 1, dtype=np.float32)
         for i in range(self._n_grades + 1):
             na = self._hxjz[i, i]
@@ -255,10 +366,14 @@ class VisAcc:
         return ts
 
     def get_ts2(self) -> np.ndarray:
-        """计算合并等级的威胁评分(TS),返回长度为n_grades的数组.
+        """
+        Calc merged-grade Threat Score (TS), return array of length n_grades.
 
-        对第i个阈值,将等级i+1及以上视为正例,其余为负例,构造2*2联表:
-        na = 观测正且预报正, nb = 观测负且预报正, nc = 观测正且预报负.
+        For i-th threshold, grade i+1+ as positive, else negative,
+        build 2x2 table: na = obs+ fcst+, nb = obs- fcst+, nc = obs+ fcst-.
+
+        Returns:
+            np.ndarray: Merged-grade TS array.
         """
         ts = np.zeros(self._n_grades, dtype=np.float32)
         for i in range(self._n_grades):
@@ -269,7 +384,12 @@ class VisAcc:
         return ts
 
     def get_ets2(self) -> np.ndarray:
-        """计算合并等级的公平威胁评分(Equitable Threat Score, ETS)."""
+        """
+        Calc merged-grade Equitable Threat Score (ETS).
+
+        Returns:
+            np.ndarray: Merged-grade ETS array.
+        """
         ets = np.zeros(self._n_grades, dtype=np.float32)
         for i in range(self._n_grades):
             na = np.sum(self._hxjz[i + 1:, i + 1:])
@@ -277,11 +397,17 @@ class VisAcc:
             nc = np.sum(self._hxjz[i + 1:, :i + 1])
             nd = np.sum(self._hxjz[:i + 1, :i + 1])
             r = (na + nb) / (na + nb + nc + nd) * (na + nc)
-            ets[i] = (na - r) / (na + nb + nc - r) if na + nb + nc != 0 else np.nan
+            denom = na + nb + nc - r
+            ets[i] = (na - r) / denom if na + nb + nc != 0 else np.nan
         return ets
 
     def get_hss2(self) -> np.ndarray:
-        """计算合并等级的Heidke技巧评分(Heidke Skill Score, HSS)."""
+        """
+        Calc merged-grade Heidke Skill Score (HSS).
+
+        Returns:
+            np.ndarray: Merged-grade HSS array.
+        """
         hss = np.zeros(self._n_grades, dtype=np.float32) + np.nan
         for i in range(self._n_grades):
             na = np.sum(self._hxjz[i + 1:, i + 1:])
@@ -294,7 +420,12 @@ class VisAcc:
         return hss
 
     def get_tss2(self) -> np.ndarray:
-        """计算合并等级的True Skill Statistic(TSS,即Pierce's Skill Score)."""
+        """
+        Calc merged-grade True Skill Statistic (TSS, Pierce's Skill Score).
+
+        Returns:
+            np.ndarray: Merged-grade TSS array.
+        """
         tss = np.zeros(self._n_grades, dtype=np.float32) + np.nan
         for i in range(self._n_grades):
             na = np.sum(self._hxjz[i + 1:, i + 1:])
@@ -308,7 +439,12 @@ class VisAcc:
         return tss
 
     def get_bias2(self) -> np.ndarray:
-        """计算合并等级的频率偏差(Frequency BIAS)."""
+        """
+        Calc merged-grade Frequency BIAS.
+
+        Returns:
+            np.ndarray: Merged-grade BIAS array.
+        """
         bias = np.zeros(self._n_grades, dtype=np.float32) + np.nan
         for i in range(self._n_grades):
             na = np.sum(self._hxjz[i + 1:, i + 1:])
@@ -320,7 +456,12 @@ class VisAcc:
         return bias
 
     def get_far2(self) -> np.ndarray:
-        """计算合并等级的空报率(False Alarm Ratio, FAR)."""
+        """
+        Calc merged-grade False Alarm Ratio (FAR).
+
+        Returns:
+            np.ndarray: Merged-grade FAR array.
+        """
         far = np.zeros(self._n_grades, dtype=np.float32) + np.nan
         for i in range(self._n_grades):
             na = np.sum(self._hxjz[i + 1:, i + 1:])
@@ -331,7 +472,12 @@ class VisAcc:
         return far
 
     def get_mar2(self) -> np.ndarray:
-        """计算合并等级的漏报率(Miss Alarm Ratio, MAR)."""
+        """
+        Calc merged-grade Miss Alarm Ratio (MAR).
+
+        Returns:
+            np.ndarray: Merged-grade MAR array.
+        """
         mar = np.zeros(self._n_grades, dtype=np.float32) + np.nan
         for i in range(self._n_grades):
             na = np.sum(self._hxjz[i + 1:, i + 1:])
@@ -342,7 +488,12 @@ class VisAcc:
         return mar
 
     def get_pod2(self) -> np.ndarray:
-        """计算合并等级的命中率(Probability of Detection, POD)."""
+        """
+        Calc merged-grade Probability of Detection (POD).
+
+        Returns:
+            np.ndarray: Merged-grade POD array.
+        """
         pod = np.zeros(self._n_grades, dtype=np.float32) + np.nan
         for i in range(self._n_grades):
             na = np.sum(self._hxjz[i + 1:, i + 1:])

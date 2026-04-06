@@ -63,7 +63,8 @@ class PDF:
                     right = mid
                 else:
                     left = mid
-            k = (self.c[right, 0] - self.c[left, 0]) / (self.c[right, 1] - self.c[left, 1])
+            k = (self.c[right, 0] - self.c[left, 0])
+            k /= (self.c[right, 1] - self.c[left, 1])
             pr[i] = self.c[left, 0] + k * (value - self.c[left, 1])
         pr = np.reshape(pr, shape)
         return pr
@@ -83,10 +84,12 @@ class VisAcc:
         self.pr_grade[~np.isnan(self.pr)] = 0
         for i in range(self.n_grades):
             self.pr_grade[self.pr < self.thres[i]] = i + 1
-        self.hxjz = np.zeros((self.n_grades + 1, self.n_grades + 1), dtype=np.int_)
+        shape = (self.n_grades + 1, self.n_grades + 1)
+        self.hxjz = np.zeros(shape, dtype=np.int_)
         for i in range(self.n_grades + 1):
             for j in range(self.n_grades + 1):
-                self.hxjz[i, j] = np.sum((self.ob_grade == i) & (self.pr_grade == j))
+                mask = (self.ob_grade == i) & (self.pr_grade == j)
+                self.hxjz[i, j] = np.sum(mask)
         self.n = np.sum(self.hxjz)
 
     def get_me(self) -> float:
@@ -159,7 +162,8 @@ class VisAcc:
             nc = np.sum(self.hxjz[i + 1:, :i + 1])
             nd = np.sum(self.hxjz[:i + 1, :i + 1])
             r = (na + nb) / (na + nb + nc + nd) * (na + nc)
-            ets[i] = (na - r) / (na + nb + nc - r) if na + nb + nc != 0 else np.nan
+            denom = na + nb + nc - r
+            ets[i] = (na - r) / denom if na + nb + nc != 0 else np.nan
         return ets
 
     def get_bias2(self) -> np.ndarray:
@@ -207,9 +211,9 @@ def format_time(second: float, is_abbreviation: bool = False) -> str:
     r"""Format time.
 
     :param second: A float number representing the number of seconds.
-    :param is_abbreviation: A boolean variable representing whether processing to abbreviation.
+    :param is_abbreviation: Whether to use abbreviation format.
         The default value is False.
-    :return: A sequence of strings representing the time. For example: '43.5 seconds'
+    :return: Formatted time string, e.g., '43.5 seconds'.
     :raise ValueError: The value of input parameter 'second' is wrong.
     """
     if second < 0:
@@ -235,21 +239,28 @@ def format_time(second: float, is_abbreviation: bool = False) -> str:
 
 
 def main() -> None:
+    # 1. Load station info and build region filters
     sta = pd.read_csv(r'D:\data\vis\sta2411.csv', low_memory=False)
     index_zgdb = np.zeros(2411, dtype=np.bool_)
     index_cjzxy = np.zeros(1183, dtype=np.bool_)
+    # 1.1 Filter stations by eastern China provinces
     for i in range(2411):
-        if sta.loc[i, 'province'] in ('北京市', '上海市', '天津市', '安徽省', '福建省', '广东省', '江苏省', '江西省', '河北省',
-                                      '河南省', '湖北省', '湖南省', '山东省', '山西省', '浙江省'):
+        provs = ('北京市', '上海市', '天津市', '安徽省', '福建省', '广东省',
+                 '江苏省', '江西省', '河北省', '河南省', '湖北省', '湖南省',
+                 '山东省', '山西省', '浙江省')
+        if sta.loc[i, 'province'] in provs:
             index_zgdb[i] = True
     sta = sta.loc[index_zgdb]
     sta.reset_index(drop=True, inplace=True)
     for i in range(1183):
-        if sta.loc[i, 'province'] in ('湖北省', '湖南省', '江西省', '安徽省', '江苏省', '浙江省', '上海市'):
+        provs2 = ('湖北省', '湖南省', '江西省', '安徽省', '江苏省', '浙江省', '上海市')
+        if sta.loc[i, 'province'] in provs2:
             index_cjzxy[i] = True
+    # 2. Load visibility observation and forecast data
     ob = np.load(r'D:\data\vis\vis1183_ob.npy')[:, :, 1:, :]
-    ob[ob >= 999990] = np.nan
+    ob[ob >= 999990] = np.nan  # Missing value marker
     pr = np.load(r'D:\data\vis\vis_gjz.npy')[:1461, :, 1:, :]
+    # 2.1 Split into train/validation sets (last 365 days as validation)
     train_ob = ob[:-365, :, :, :]
     train_pr = pr[:-365, :, :, :]
     val_ob = ob[-365:, :, :, :]
@@ -262,6 +273,7 @@ def main() -> None:
 
     train_ob_cjzxy = train_ob[..., index_cjzxy]
     train_pr_cjzxy = train_pr[..., index_cjzxy]
+    # 3. Scheme 1: Overall PDF matching
     print('Scheme 1')
     time_arrow = arrow.now()
     acc = VisAcc(train_ob, train_pr)
@@ -277,9 +289,10 @@ def main() -> None:
                 n = 0
                 vis = 0
                 for ii in range(24):
-                    if 0 <= i + j - ii < 8760 and ~np.isnan(pred_pdfm[i + j - ii, ii, k]):
+                    idx = i + j - ii
+                    if 0 <= idx < 8760 and ~np.isnan(pred_pdfm[idx, ii, k]):
                         n += 1
-                        vis += pred_pdfm[i + j - ii, ii, k]
+                        vis += pred_pdfm[idx, ii, k]
                 if n > 0:
                     pred_pdfm_tle[i, j, k] = vis / n
         print(i)
@@ -299,20 +312,22 @@ def main() -> None:
                 n = 0
                 vis = 0
                 for ii in range(24):
-                    if 0 <= i + j - ii < 8760 and ~np.isnan(pred_pdfm[i + j - ii, ii, k]):
+                    idx = i + j - ii
+                    if 0 <= idx < 8760 and ~np.isnan(pred_pdfm[idx, ii, k]):
                         n += 1
-                        vis += pred_pdfm[i + j - ii, ii, k]
+                        vis += pred_pdfm[idx, ii, k]
                 if n > 0:
                     pred_pdfm_tle[i, j, k] = vis / n
         print(i)
     pred_pdfm_tle = np.reshape(pred_pdfm_tle, (365, 24, 24, 502))
     np.save(r'D:\data\vis\vis_gjz_pred0_cjzxy.npy', pred_pdfm_tle)
     del acc, pred_pdfm, model
+    # 4. Scheme 2: Hour-specific PDF matching
     print('Scheme 2')
     pred_pdfm = np.zeros_like(val_pr, dtype=np.float32) + np.nan
     time_arrow = arrow.now()
     models = list()
-    for i in range(24):
+    for i in range(24):  # Build model for each init hour
         acc = VisAcc(train_ob[:, :, i, :], train_pr[:, :, i, :])
         models.append(acc.get_pdf_model())
     print((arrow.now() - time_arrow).total_seconds() / 60)
@@ -327,9 +342,10 @@ def main() -> None:
                 n = 0
                 vis = 0
                 for ii in range(24):
-                    if 0 <= i + j - ii < 8760 and ~np.isnan(pred_pdfm[i + j - ii, ii, k]):
+                    idx = i + j - ii
+                    if 0 <= idx < 8760 and ~np.isnan(pred_pdfm[idx, ii, k]):
                         n += 1
-                        vis += pred_pdfm[i + j - ii, ii, k]
+                        vis += pred_pdfm[idx, ii, k]
                 if n > 0:
                     pred_pdfm_tle[i, j, k] = vis / n
         print(i)
@@ -353,20 +369,22 @@ def main() -> None:
                 n = 0
                 vis = 0
                 for ii in range(24):
-                    if 0 <= i + j - ii < 8760 and ~np.isnan(pred_pdfm[i + j - ii, ii, k]):
+                    idx = i + j - ii
+                    if 0 <= idx < 8760 and ~np.isnan(pred_pdfm[idx, ii, k]):
                         n += 1
-                        vis += pred_pdfm[i + j - ii, ii, k]
+                        vis += pred_pdfm[idx, ii, k]
                 if n > 0:
                     pred_pdfm_tle[i, j, k] = vis / n
         print(i)
     pred_pdfm_tle = np.reshape(pred_pdfm_tle, (365, 24, 24, 502))
     np.save(r'D:\data\vis\vis_gjz_pred1_cjzxy.npy', pred_pdfm_tle)
     del acc, pred_pdfm, models
+    # 5. Scheme 3: Station-specific PDF matching
     print('Scheme 3')
     pred_pdfm = np.zeros_like(val_pr, dtype=np.float32) + np.nan
     time_arrow = arrow.now()
     models = list()
-    for i in range(1183):
+    for i in range(1183):  # Build model for each station
         acc = VisAcc(train_ob[:, :, :, i], train_pr[:, :, :, i])
         models.append(acc.get_pdf_model())
     print((arrow.now() - time_arrow).total_seconds() / 60)
@@ -381,9 +399,10 @@ def main() -> None:
                 n = 0
                 vis = 0
                 for ii in range(24):
-                    if 0 <= i + j - ii < 8760 and ~np.isnan(pred_pdfm[i + j - ii, ii, k]):
+                    idx = i + j - ii
+                    if 0 <= idx < 8760 and ~np.isnan(pred_pdfm[idx, ii, k]):
                         n += 1
-                        vis += pred_pdfm[i + j - ii, ii, k]
+                        vis += pred_pdfm[idx, ii, k]
                 if n > 0:
                     pred_pdfm_tle[i, j, k] = vis / n
         print(i)
@@ -399,9 +418,10 @@ def main() -> None:
                 n = 0
                 vis = 0
                 for ii in range(24):
-                    if 0 <= i + j - ii < 8760 and ~np.isnan(val_pr[i + j - ii, ii, k]):
+                    idx = i + j - ii
+                    if 0 <= idx < 8760 and ~np.isnan(val_pr[idx, ii, k]):
                         n += 1
-                        vis += val_pr[i + j - ii, ii, k]
+                        vis += val_pr[idx, ii, k]
                 if n > 0:
                     pred_tle[i, j, k] = vis / n
         print(i)
@@ -426,9 +446,10 @@ def main() -> None:
                 n = 0
                 vis = 0
                 for ii in range(24):
-                    if 0 <= i + j - ii < 8760 and ~np.isnan(pred_pdfm[i + j - ii, ii, k]):
+                    idx = i + j - ii
+                    if 0 <= idx < 8760 and ~np.isnan(pred_pdfm[idx, ii, k]):
                         n += 1
-                        vis += pred_pdfm[i + j - ii, ii, k]
+                        vis += pred_pdfm[idx, ii, k]
                 if n > 0:
                     pred_pdfm_tle[i, j, k] = vis / n
     pred_pdfm = np.reshape(pred_pdfm, (365, 24, 24, 502))
@@ -443,9 +464,10 @@ def main() -> None:
                 n = 0
                 vis = 0
                 for ii in range(24):
-                    if 0 <= i + j - ii < 8760 and ~np.isnan(val_pr[i + j - ii, ii, k]):
+                    idx = i + j - ii
+                    if 0 <= idx < 8760 and ~np.isnan(val_pr[idx, ii, k]):
                         n += 1
-                        vis += val_pr[i + j - ii, ii, k]
+                        vis += val_pr[idx, ii, k]
                 if n > 0:
                     pred_tle[i, j, k] = vis / n
     val_pr = np.reshape(val_pr, (365, 24, 24, 502))
@@ -569,4 +591,5 @@ if __name__ == '__main__':
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
-    print(f'Program access.py finished, total time: {format_time(total_elapsed)}')
+    elapsed_str = format_time(total_elapsed)
+    print(f'Program access.py finished, total time: {elapsed_str}')

@@ -13,7 +13,7 @@ def format_time(second: float, is_abbreviation: bool = False) -> str:
 
     Args:
         second: Seconds, float;
-        is_abbreviation: Use abbreviation format (e.g., '12.5m'), default False;
+        is_abbreviation: Use abbreviation (e.g., '12.5m'), default False;
 
     Returns:
         Formatted time string, e.g., '43.5 seconds' or '12.5m';
