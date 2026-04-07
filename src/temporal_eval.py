@@ -57,7 +57,7 @@ def _append_metrics(
         group (typing.Dict[str, dict]): Metric group dict to append to.
         name (str): Name key for the metric group.
     """
-    ts = acc.get_ts2()
+    ts = acc.get_ts_ge()
     group['corr'][name].append(acc.get_r())
     group['mae'][name].append(acc.get_mae())
     group['rmse'][name].append(acc.get_rmse())
@@ -112,8 +112,11 @@ def calc_temporal_metrics(
     """
     # 1. Build forecast hour index and init metric groups
     fhour_ind = build_fhour_index()
+    # vt: Valid Time / Lead Time metrics (按预报时效分组指标)
     vt = _create_group(('vt', 'CMA-SH-WARR', 'PDFM-TLE'))
+    # shour: Start Hour metrics (按起报时次分组指标)
     shour = _create_group(('shour', 'CMA-SH-WARR', 'PDFM-TLE'))
+    # fhour: Forecast Hour metrics (按预报时间分组指标)
     fhour = _create_group(('fhour', 'CMA-SH-WARR', 'PDFM-TLE'))
     hour_access = np.zeros((4, 24, 24, 10), dtype=np.float32) + np.nan
 
@@ -154,27 +157,27 @@ def calc_temporal_metrics(
             hour_access[0, i, j, 1] = acc_nwp.get_mae()
             hour_access[0, i, j, 2] = acc_nwp.get_rmse()
             hour_access[0, i, j, 3] = acc_nwp.get_mre()
-            hour_access[0, i, j, 4:] = acc_nwp.get_ts2()
+            hour_access[0, i, j, 4:] = acc_nwp.get_ts_ge()
             # PDFM-TLE metrics
             acc = VisAcc(vis_ob[i::24, j, :], pred_pdfm_tle2[i::24, j, :])
             hour_access[1, i, j, 0] = acc.get_r()
             hour_access[1, i, j, 1] = acc.get_mae()
             hour_access[1, i, j, 2] = acc.get_rmse()
             hour_access[1, i, j, 3] = acc.get_mre()
-            hour_access[1, i, j, 4:] = acc.get_ts2()
+            hour_access[1, i, j, 4:] = acc.get_ts_ge()
             # Additional experiments (3, 4)
             acc_nwp = VisAcc(vis_ob[i::24, j, :], pred_pdfm_tle2[i::24, j, :])
             hour_access[2, i, j, 0] = acc_nwp.get_r()
             hour_access[2, i, j, 1] = acc_nwp.get_mae()
             hour_access[2, i, j, 2] = acc_nwp.get_rmse()
             hour_access[2, i, j, 3] = acc_nwp.get_mre()
-            hour_access[2, i, j, 4:] = acc_nwp.get_ts2()
+            hour_access[2, i, j, 4:] = acc_nwp.get_ts_ge()
             acc = VisAcc(vis_ob[i::24, j, :], pred_pdfm_tle2[i::24, j, :])
             hour_access[3, i, j, 0] = acc.get_r()
             hour_access[3, i, j, 1] = acc.get_mae()
             hour_access[3, i, j, 2] = acc.get_rmse()
             hour_access[3, i, j, 3] = acc.get_mre()
-            hour_access[3, i, j, 4:] = acc.get_ts2()
+            hour_access[3, i, j, 4:] = acc.get_ts_ge()
 
     # 3. Save results to CSV and NPY
     csv_dir = pathlib.Path(output_dir) / 'csv'
@@ -187,19 +190,20 @@ def calc_temporal_metrics(
     return hour_access
 
 
-def load_v_type(data_dir: str, index_cjzxy: np.ndarray) -> np.ndarray:
+def load_v_type(data_dir: str, idx_mlyr: np.ndarray) -> np.ndarray:
     """
     Load visibility type data.
 
     Args:
         data_dir (str): Data root directory.
-        index_cjzxy (np.ndarray): Middle-lower Yangtze station filter index.
+        idx_mlyr (np.ndarray): Index for MLYR (Middle-Lower Yangtze River).
 
     Returns:
         np.ndarray: Visibility type array.
     """
+    # v_type: Visibility Type (能见度类型: 1=precip, 2=fog, 3=haze)
     v_type = np.load(str(pathlib.Path(data_dir) / 'v_type.npy'))
-    v_type = np.reshape(v_type[-365:, :, :, index_cjzxy], (-1, 24, 502))
+    v_type = np.reshape(v_type[-365:, :, :, idx_mlyr], (-1, 24, 502))
     return v_type
 
 
@@ -216,7 +220,7 @@ def calc_type_metrics(
         vis_ob (np.ndarray): Observation array.
         cma_sh_warr (np.ndarray): CMA-SH-WARR forecast array.
         pred_pdfm_tle0 (np.ndarray): PDFM-TLE experiment 0.
-        v_type (np.ndarray): Visibility type mask array.
+        v_type (np.ndarray): Visibility Type (能见度类型: 1=precip, 2=fog, 3=haze).
 
     Returns:
         dict: DataFrames for each metric.

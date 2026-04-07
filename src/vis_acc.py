@@ -34,7 +34,7 @@ class VisAcc:
         _pr: Forecast array.
         _ob_grade: Observation grade array.
         _pr_grade: Forecast grade array.
-        _hxjz: Confusion matrix (n_grades+1)^2.
+        _conf_mat: Confusion matrix (n_grades+1)^2.
         _n: Total valid samples.
     """
 
@@ -68,14 +68,15 @@ class VisAcc:
 
         # Build (n_grades+1)^2 confusion matrix
         shape = (self._n_grades + 1, self._n_grades + 1)
-        self._hxjz = np.zeros(shape, dtype=np.int_)
+        # _conf_mat: Confusion matrix (混淆矩阵): shape (n_grades+1, n_grades+1)
+        self._conf_mat = np.zeros(shape, dtype=np.int_)
         for i in range(self._n_grades + 1):
             for j in range(self._n_grades + 1):
                 mask = (self._ob_grade == i) & (self._pr_grade == j)
-                self._hxjz[i, j] = np.sum(mask)
+                self._conf_mat[i, j] = np.sum(mask)
 
         # Total valid samples
-        self._n = np.sum(self._hxjz)
+        self._n = np.sum(self._conf_mat)
 
     def copy(self) -> 'VisAcc':
         """
@@ -222,7 +223,7 @@ class VisAcc:
             r = np.nan
         return r
 
-    def get_me1(self) -> np.ndarray:
+    def get_me_grade(self) -> np.ndarray:
         """
         Calc ME by obs grade, return array of length n_grades+1.
 
@@ -239,7 +240,7 @@ class VisAcc:
                 me[i] = np.mean(pr - ob)
         return me
 
-    def get_mae1(self) -> np.ndarray:
+    def get_mae_grade(self) -> np.ndarray:
         """
         Calc MAE by obs grade, return array of length n_grades+1.
 
@@ -256,7 +257,7 @@ class VisAcc:
                 mae[i] = np.mean(np.abs(pr - ob))
         return mae
 
-    def get_rmse1(self) -> np.ndarray:
+    def get_rmse_grade(self) -> np.ndarray:
         """
         Calc RMSE by obs grade, return array of length n_grades+1.
 
@@ -273,7 +274,7 @@ class VisAcc:
                 rmse[i] = np.mean((pr - ob) ** 2) ** 0.5
         return rmse
 
-    def get_mre1(self) -> np.ndarray:
+    def get_mre_grade(self) -> np.ndarray:
         """
         Calc MRE by obs grade, return array of length n_grades+1.
 
@@ -294,7 +295,7 @@ class VisAcc:
                 mre[i] = np.mean(np.abs((pr - ob) / (pr + ob)))
         return mre
 
-    def get_r1(self) -> np.ndarray:
+    def get_r_grade(self) -> np.ndarray:
         """
         Calc Pearson R by obs grade, return array of length n_grades+1.
 
@@ -315,29 +316,30 @@ class VisAcc:
                 r[i] = stats.pearsonr(ob, pr)[0]
         return r
 
-    def get_hxjz(self) -> np.ndarray:
+    def get_conf_mat(self) -> np.ndarray:
         """
         Return confusion matrix (int counts).
 
         Returns:
-            np.ndarray: Confusion matrix array.
+            np.ndarray: Confusion matrix array (7x7, grade 0-6).
         """
-        return self._hxjz
+        return self._conf_mat
 
-    def get_hxjz2(self) -> np.ndarray:
+    def get_conf_mat_norm(self) -> np.ndarray:
         """
         Return normalized confusion matrix, each row divided by obs total.
 
         Returns:
-            np.ndarray: Normalized confusion matrix array.
+            np.ndarray: Normalized confusion matrix array (row sum = 1).
         """
-        hxjz2 = np.zeros_like(self._hxjz, dtype=np.float32) + np.nan
+        # conf_mat_norm: Normalized confusion matrix (归一化混淆矩阵)
+        conf_mat_norm = np.zeros_like(self._conf_mat, dtype=np.float32) + np.nan
         for i in range(self._n_grades + 1):
-            row_sum = np.sum(self._hxjz[i, :])
+            row_sum = np.sum(self._conf_mat[i, :])
             if row_sum > 0:
                 for j in range(self._n_grades + 1):
-                    hxjz2[i, j] = self._hxjz[i, j] / row_sum
-        return hxjz2
+                    conf_mat_norm[i, j] = self._conf_mat[i, j] / row_sum
+        return conf_mat_norm
 
     def get_oa(self) -> float:
         """
@@ -353,7 +355,7 @@ class VisAcc:
         if self._n == 0:
             return np.nan
         # Diagonal elements represent correct grade forecasts
-        return np.sum(np.diag(self._hxjz)) / self._n
+        return np.sum(np.diag(self._conf_mat)) / self._n
 
     def get_kappa(self) -> float:
         """
@@ -370,8 +372,8 @@ class VisAcc:
         if self._n == 0:
             return np.nan
         # Calculate marginal frequencies (row and column sums)
-        a = np.sum(self._hxjz, axis=1).astype(np.float32)
-        b = np.sum(self._hxjz, axis=0).astype(np.float32)
+        a = np.sum(self._conf_mat, axis=1).astype(np.float32)
+        b = np.sum(self._conf_mat, axis=0).astype(np.float32)
         # Expected agreement by chance (Pe)
         pe = np.sum(a * b) / self._n / self._n
         # Guard against degenerate case (all forecasts same)
@@ -392,16 +394,16 @@ class VisAcc:
         ts = np.zeros(self._n_grades + 1, dtype=np.float32)
         for i in range(self._n_grades + 1):
             # na: correct forecasts for grade i (hits)
-            na = self._hxjz[i, i]
+            na = self._conf_mat[i, i]
             # nb: false alarms (forecast grade i, obs not i)
-            nb = np.sum(self._hxjz[:, i]) - na
+            nb = np.sum(self._conf_mat[:, i]) - na
             # nc: misses (obs grade i, forecast not i)
-            nc = np.sum(self._hxjz[i, :]) - na
+            nc = np.sum(self._conf_mat[i, :]) - na
             # Avoid division by zero
             ts[i] = na / (na + nb + nc) if na + nb + nc != 0 else np.nan
         return ts
 
-    def get_ts2(self) -> np.ndarray:
+    def get_ts_ge(self) -> np.ndarray:
         """
         Calc merged-grade Threat Score (TS), return array of length n_grades.
 
@@ -413,13 +415,13 @@ class VisAcc:
         """
         ts = np.zeros(self._n_grades, dtype=np.float32)
         for i in range(self._n_grades):
-            na = np.sum(self._hxjz[i + 1:, i + 1:])
-            nb = np.sum(self._hxjz[:i + 1, i + 1:])
-            nc = np.sum(self._hxjz[i + 1:, :i + 1])
+            na = np.sum(self._conf_mat[i + 1:, i + 1:])
+            nb = np.sum(self._conf_mat[:i + 1, i + 1:])
+            nc = np.sum(self._conf_mat[i + 1:, :i + 1])
             ts[i] = na / (na + nb + nc) if na + nb + nc != 0 else np.nan
         return ts
 
-    def get_ets2(self) -> np.ndarray:
+    def get_ets_ge(self) -> np.ndarray:
         """
         Calc merged-grade Equitable Threat Score (ETS).
 
@@ -428,16 +430,16 @@ class VisAcc:
         """
         ets = np.zeros(self._n_grades, dtype=np.float32)
         for i in range(self._n_grades):
-            na = np.sum(self._hxjz[i + 1:, i + 1:])
-            nb = np.sum(self._hxjz[:i + 1, i + 1:])
-            nc = np.sum(self._hxjz[i + 1:, :i + 1])
-            nd = np.sum(self._hxjz[:i + 1, :i + 1])
+            na = np.sum(self._conf_mat[i + 1:, i + 1:])
+            nb = np.sum(self._conf_mat[:i + 1, i + 1:])
+            nc = np.sum(self._conf_mat[i + 1:, :i + 1])
+            nd = np.sum(self._conf_mat[:i + 1, :i + 1])
             r = (na + nb) / (na + nb + nc + nd) * (na + nc)
             denom = na + nb + nc - r
             ets[i] = (na - r) / denom if na + nb + nc != 0 else np.nan
         return ets
 
-    def get_hss2(self) -> np.ndarray:
+    def get_hss_ge(self) -> np.ndarray:
         """
         Calc merged-grade Heidke Skill Score (HSS).
 
@@ -446,16 +448,16 @@ class VisAcc:
         """
         hss = np.zeros(self._n_grades, dtype=np.float32) + np.nan
         for i in range(self._n_grades):
-            na = np.sum(self._hxjz[i + 1:, i + 1:])
-            nb = np.sum(self._hxjz[:i + 1, i + 1:])
-            nc = np.sum(self._hxjz[i + 1:, :i + 1])
-            nd = np.sum(self._hxjz[:i + 1, :i + 1])
+            na = np.sum(self._conf_mat[i + 1:, i + 1:])
+            nb = np.sum(self._conf_mat[:i + 1, i + 1:])
+            nc = np.sum(self._conf_mat[i + 1:, :i + 1])
+            nd = np.sum(self._conf_mat[:i + 1, :i + 1])
             denom = (na + nc) * (nc + nd) + (na + nb) * (nb + nd)
             if abs(denom) > 1e-6:
                 hss[i] = 2 * (na * nd - nb * nc) / denom
         return hss
 
-    def get_tss2(self) -> np.ndarray:
+    def get_tss_ge(self) -> np.ndarray:
         """
         Calc merged-grade True Skill Statistic (TSS, Pierce's Skill Score).
 
@@ -464,17 +466,17 @@ class VisAcc:
         """
         tss = np.zeros(self._n_grades, dtype=np.float32) + np.nan
         for i in range(self._n_grades):
-            na = np.sum(self._hxjz[i + 1:, i + 1:])
-            nb = np.sum(self._hxjz[:i + 1, i + 1:])
-            nc = np.sum(self._hxjz[i + 1:, :i + 1])
-            nd = np.sum(self._hxjz[:i + 1, :i + 1])
+            na = np.sum(self._conf_mat[i + 1:, i + 1:])
+            nb = np.sum(self._conf_mat[:i + 1, i + 1:])
+            nc = np.sum(self._conf_mat[i + 1:, :i + 1])
+            nd = np.sum(self._conf_mat[:i + 1, :i + 1])
             denom1 = na + nc
             denom2 = nb + nd
             if abs(denom1) > 1e-6 and abs(denom2) > 1e-6:
                 tss[i] = (na * nd - nb * nc) / denom1 / denom2
         return tss
 
-    def get_bias2(self) -> np.ndarray:
+    def get_bias_ge(self) -> np.ndarray:
         """
         Calc merged-grade Frequency BIAS.
 
@@ -483,15 +485,15 @@ class VisAcc:
         """
         bias = np.zeros(self._n_grades, dtype=np.float32) + np.nan
         for i in range(self._n_grades):
-            na = np.sum(self._hxjz[i + 1:, i + 1:])
-            nb = np.sum(self._hxjz[:i + 1, i + 1:])
-            nc = np.sum(self._hxjz[i + 1:, :i + 1])
+            na = np.sum(self._conf_mat[i + 1:, i + 1:])
+            nb = np.sum(self._conf_mat[:i + 1, i + 1:])
+            nc = np.sum(self._conf_mat[i + 1:, :i + 1])
             denom = na + nc
             if abs(denom) > 1e-6:
                 bias[i] = (na + nb) / denom
         return bias
 
-    def get_far2(self) -> np.ndarray:
+    def get_far_ge(self) -> np.ndarray:
         """
         Calc merged-grade False Alarm Ratio (FAR).
 
@@ -500,14 +502,14 @@ class VisAcc:
         """
         far = np.zeros(self._n_grades, dtype=np.float32) + np.nan
         for i in range(self._n_grades):
-            na = np.sum(self._hxjz[i + 1:, i + 1:])
-            nb = np.sum(self._hxjz[:i + 1, i + 1:])
+            na = np.sum(self._conf_mat[i + 1:, i + 1:])
+            nb = np.sum(self._conf_mat[:i + 1, i + 1:])
             denom = na + nb
             if abs(denom) > 1e-6:
                 far[i] = nb / denom
         return far
 
-    def get_mar2(self) -> np.ndarray:
+    def get_mar_ge(self) -> np.ndarray:
         """
         Calc merged-grade Miss Alarm Ratio (MAR).
 
@@ -516,14 +518,14 @@ class VisAcc:
         """
         mar = np.zeros(self._n_grades, dtype=np.float32) + np.nan
         for i in range(self._n_grades):
-            na = np.sum(self._hxjz[i + 1:, i + 1:])
-            nc = np.sum(self._hxjz[i + 1:, :i + 1])
+            na = np.sum(self._conf_mat[i + 1:, i + 1:])
+            nc = np.sum(self._conf_mat[i + 1:, :i + 1])
             denom = na + nc
             if abs(denom) > 1e-6:
                 mar[i] = nc / denom
         return mar
 
-    def get_pod2(self) -> np.ndarray:
+    def get_pod_ge(self) -> np.ndarray:
         """
         Calc merged-grade Probability of Detection (POD).
 
@@ -532,8 +534,8 @@ class VisAcc:
         """
         pod = np.zeros(self._n_grades, dtype=np.float32) + np.nan
         for i in range(self._n_grades):
-            na = np.sum(self._hxjz[i + 1:, i + 1:])
-            nc = np.sum(self._hxjz[i + 1:, :i + 1])
+            na = np.sum(self._conf_mat[i + 1:, i + 1:])
+            nc = np.sum(self._conf_mat[i + 1:, :i + 1])
             denom = na + nc
             if abs(denom) > 1e-6:
                 pod[i] = na / denom

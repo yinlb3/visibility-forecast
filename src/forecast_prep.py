@@ -21,28 +21,28 @@ VisAcc = vis_acc.VisAcc
 
 def load_forecast_data(
     data_dir: str,
-    index_cjzxy: np.ndarray
+    idx_mlyr: np.ndarray
 ) -> typing.Tuple[np.ndarray, np.ndarray]:
     """
     Load last 365 days (2020-2023) obs and CMA-SH-WARR forecast data.
 
     Args:
         data_dir (str): Data root directory.
-        index_cjzxy (np.ndarray): Middle-lower Yangtze station filter index.
+        idx_mlyr (np.ndarray): Index for MLYR (Middle-Lower Yangtze River).
 
     Returns:
         tuple: (vis_ob, cma_sh_warr), arrays of shape (-1, 24, 502).
     """
     # 1. Load obs data (last 365 days, skip first lead)
     path = str(pathlib.Path(data_dir) / 'vis1183_ob.npy')
-    vis_ob = np.load(path)[-365:, :, 1:, index_cjzxy]
+    vis_ob = np.load(path)[-365:, :, 1:, idx_mlyr]
     vis_ob = np.reshape(vis_ob, (-1, 24, 502))
     vis_ob[vis_ob >= 999990] = np.nan  # Missing marker
     vis_ob[vis_ob >= 30000] = 30000    # Cap at 30000m
 
     # 2. Load CMA-SH-WARR forecast data
     pr_path = str(pathlib.Path(data_dir) / 'vis1183_pr.npy')
-    cma_sh_warr = np.load(pr_path)[-365:, :, 1:, index_cjzxy]
+    cma_sh_warr = np.load(pr_path)[-365:, :, 1:, idx_mlyr]
     cma_sh_warr = np.reshape(cma_sh_warr, (-1, 24, 502))
     cma_sh_warr[cma_sh_warr >= 30000] = 30000
 
@@ -95,13 +95,13 @@ def print_overall_metrics(
     print(f'  MAE  = {acc.get_mae():.4f} m')
     print(f'  RMSE = {acc.get_rmse():.4f} m')
     print(f'  MRE  = {acc.get_mre():.4f}')
-    print(f'  TS2  = {_fmt_arr(acc.get_ts2())}')
-    print(f'  ETS2 = {_fmt_arr(acc.get_ets2())}')
-    print(f'  HSS2 = {_fmt_arr(acc.get_hss2())}')
-    print(f'  TSS2 = {_fmt_arr(acc.get_tss2())}')
-    print(f'  FAR2 = {_fmt_arr(acc.get_far2())}')
-    print(f'  MAR2 = {_fmt_arr(acc.get_mar2())}')
-    print(f'  POD2 = {_fmt_arr(acc.get_pod2())}')
+    print(f'  TS_GE  = {_fmt_arr(acc.get_ts_ge())}')
+    print(f'  ETS_GE = {_fmt_arr(acc.get_ets_ge())}')
+    print(f'  HSS_GE = {_fmt_arr(acc.get_hss_ge())}')
+    print(f'  TSS_GE = {_fmt_arr(acc.get_tss_ge())}')
+    print(f'  FAR_GE = {_fmt_arr(acc.get_far_ge())}')
+    print(f'  MAR_GE = {_fmt_arr(acc.get_mar_ge())}')
+    print(f'  POD_GE = {_fmt_arr(acc.get_pod_ge())}')
 
 
 def calc_and_save_station_metrics(
@@ -153,7 +153,7 @@ def calc_and_save_station_metrics(
         metrics['mae']['CMA-SH-WARR'].append(acc_nwp.get_mae())
         metrics['rmse']['CMA-SH-WARR'].append(acc_nwp.get_rmse())
         metrics['mre']['CMA-SH-WARR'].append(acc_nwp.get_mre())
-        ts = acc_nwp.get_ts2()
+        ts = acc_nwp.get_ts_ge()
         metrics['ts1']['CMA-SH-WARR'].append(ts[0])
         metrics['ts2']['CMA-SH-WARR'].append(ts[1])
         metrics['ts3']['CMA-SH-WARR'].append(ts[2])
@@ -167,7 +167,7 @@ def calc_and_save_station_metrics(
         metrics['mae']['PDFM-TLE'].append(acc.get_mae())
         metrics['rmse']['PDFM-TLE'].append(acc.get_rmse())
         metrics['mre']['PDFM-TLE'].append(acc.get_mre())
-        ts = acc.get_ts2()
+        ts = acc.get_ts_ge()
         metrics['ts1']['PDFM-TLE'].append(ts[0])
         metrics['ts2']['PDFM-TLE'].append(ts[1])
         metrics['ts3']['PDFM-TLE'].append(ts[2])

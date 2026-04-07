@@ -35,42 +35,43 @@ def read_sta(sta_path: str, provinces: tuple) -> tuple:
     sta.reset_index(drop=True, inplace=True)
 
     # 2. Build province filter mask (OR logic for multiple provinces)
-    index_zgdb = None
+    # idx_east_china: Index for East China stations (中国东部站点索引)
+    idx_east_china = None
     for province in provinces:
-        if index_zgdb is None:
-            index_zgdb = sta.loc[:, 'province'] == province
+        if idx_east_china is None:
+            idx_east_china = sta.loc[:, 'province'] == province
         else:
-            index_zgdb |= sta.loc[:, 'province'] == province
+            idx_east_china |= sta.loc[:, 'province'] == province
 
     # 3. Apply filter and reset index
-    sta = sta.loc[index_zgdb]
+    sta = sta.loc[idx_east_china]
     sta.reset_index(drop=True, inplace=True)
-    return sta, index_zgdb.values
+    return sta, idx_east_china.values
 
 
-def load_obs(data_dir: str, index_zgdb: np.ndarray) -> tuple:
+def load_obs(data_dir: str, idx_east_china: np.ndarray) -> tuple:
     """
     Load vis/precip/RH obs data and apply QC.
 
     Args:
         data_dir (str): Data directory path, no trailing slash.
-        index_zgdb (np.ndarray): Initial station filter bool index.
+        idx_east_china (np.ndarray): Index for East China stations.
 
     Returns:
         tuple: (vis, pre, rhu), all QC-ed numpy arrays.
     """
     # 1. Load visibility data and apply QC (capped at 30000m)
-    vis = np.load(str(pathlib.Path(data_dir) / 'vis20-23.npy'))[:, index_zgdb]
+    vis = np.load(str(pathlib.Path(data_dir) / 'vis20-23.npy'))[:, idx_east_china]
     vis[vis >= 999990] = np.nan  # Missing value marker
     vis[vis >= 30000] = 30000    # Cap at 30000m
 
     # 2. Load precipitation data and apply QC
-    pre = np.load(str(pathlib.Path(data_dir) / 'pre20-23.npy'))[:, index_zgdb]
+    pre = np.load(str(pathlib.Path(data_dir) / 'pre20-23.npy'))[:, idx_east_china]
     pre[pre >= 200] = np.nan     # Extreme precip as missing
     pre[pre >= 30000] = 30000
 
     # 3. Load relative humidity and apply range limit [0, 100]
-    rhu = np.load(str(pathlib.Path(data_dir) / 'rhu20-23.npy'))[:, index_zgdb]
+    rhu = np.load(str(pathlib.Path(data_dir) / 'rhu20-23.npy'))[:, idx_east_china]
     rhu[rhu >= 999990] = np.nan
     rhu[rhu > 100] = 100
     rhu[rhu < 0] = 0
@@ -99,20 +100,21 @@ def filter_region(
         tuple: (Filtered sta, vis, pre, rhu, secondary filter bool index).
     """
     n_sta = len(sta)
-    index_region = np.zeros(n_sta, dtype=np.bool_)
+    # idx_mlyr: Index for MLYR (Middle-Lower Yangtze River, 长江中下游区域索引)
+    idx_mlyr = np.zeros(n_sta, dtype=np.bool_)
     for i in range(n_sta):
         if sta.loc[i, 'province'] in region_provinces:
-            index_region[i] = True
+            idx_mlyr[i] = True
 
-    sta = sta.loc[index_region]
+    sta = sta.loc[idx_mlyr]
     sta.reset_index(drop=True, inplace=True)
     sta = sta.astype({'data0': float})
 
-    vis = vis[:, index_region]
-    pre = pre[:, index_region]
-    rhu = rhu[:, index_region]
+    vis = vis[:, idx_mlyr]
+    pre = pre[:, idx_mlyr]
+    rhu = rhu[:, idx_mlyr]
 
-    return sta, vis, pre, rhu, index_region
+    return sta, vis, pre, rhu, idx_mlyr
 
 
 def grade_visibility(vis: np.ndarray) -> np.ndarray:

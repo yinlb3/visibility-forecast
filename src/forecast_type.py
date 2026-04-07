@@ -20,20 +20,21 @@ from src import vis_acc
 VisAcc = vis_acc.VisAcc
 
 
-def load_weather_type(data_dir: str, index_cjzxy: np.ndarray) -> np.ndarray:
+def load_weather_type(data_dir: str, idx_mlyr: np.ndarray) -> np.ndarray:
     """
     Load weather type data and reshape to match forecast.
 
     Args:
         data_dir (str): Data root directory.
-        index_cjzxy (np.ndarray): Middle-lower Yangtze station filter index.
+        idx_mlyr (np.ndarray): Index for MLYR (Middle-Lower Yangtze River).
 
     Returns:
         np.ndarray: Weather type array, shape (-1, 24, 502).
     """
     path = pathlib.Path(data_dir) / 'weather_type.npy'
     weather_type = np.load(str(path), mmap_mode='r')
-    val_wt = np.reshape(weather_type[1096:1461, ..., index_cjzxy],
+    # val_wt: Validation period Weather Type (验证时段天气类型)
+    val_wt = np.reshape(weather_type[1096:1461, ..., idx_mlyr],
                         shape=(-1, 24, 502))
     return val_wt
 
@@ -53,16 +54,16 @@ def calc_weather_type_metrics(
         vis_ob (np.ndarray): Observation array.
         preds (tuple): Forecast array tuple, usually
             [CMA-SH-WARR, S1, S2, S3, S4, S5].
-        val_wt (np.ndarray): Weather type mask array (values 1,2,3).
+        val_wt (np.ndarray): Validation period Weather Type (验证时段天气类型: 1=precip, 2=fog, 3=haze).
 
     Returns:
         tuple: (qem, cem).
     """
     # 1. Init result arrays
     n_pred = len(preds)
-    # Quantitative metrics
+    # qem: Quantitative Evaluation Metrics (定量指标: R, MAE, RMSE, MRE)
     qem = np.zeros((4, n_pred, 3), dtype=np.float32) + np.nan
-    # Grade metrics
+    # cem: Categorical/Grade Evaluation Metrics (等级指标: TS, FAR, MAR, POD)
     cem = np.zeros((6, 4, n_pred, 3), dtype=np.float32) + np.nan
     # 2. Loop through 3 weather types (1=precip, 2=fog, 3=haze)
     for i in range(3):
@@ -78,10 +79,10 @@ def calc_weather_type_metrics(
             qem[2, j, i] = acc.get_rmse()
             qem[3, j, i] = acc.get_mre()
             # 3.2 Store grade metrics (TS, FAR, MAR, POD)
-            cem[:, 0, j, i] = acc.get_ts2()
-            cem[:, 1, j, i] = acc.get_far2()
-            cem[:, 2, j, i] = acc.get_mar2()
-            cem[:, 3, j, i] = acc.get_pod2()
+            cem[:, 0, j, i] = acc.get_ts_ge()
+            cem[:, 1, j, i] = acc.get_far_ge()
+            cem[:, 2, j, i] = acc.get_mar_ge()
+            cem[:, 3, j, i] = acc.get_pod_ge()
     return qem, cem
 
 

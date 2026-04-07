@@ -40,12 +40,12 @@ Before running, please confirm:
 |------|-------------|-----------------|
 | Project Setup & Documentation | Initialize git repository, configure .gitignore, set up dual-platform sync (Gitee/GitHub), add code comments/docstrings, and translate all documentation to English | 2026-04-02 ~ 2026-04-05 |
 | draw.py Refactoring | Split `draw.py` into 9 `src/` modules by stage (1 stage = 1 file); extract shared utilities; standardize console output and file structure | 2026-04-06 |
+| A10 Code Style Check | Standardize naming: region indices (`idx_east_china`, `idx_mlyr`), masks (`mask_lv4plus_*`), confusion matrix (`get_conf_mat/_norm`), metrics (`get_*_grade` for by-grade, `get_*_ge` for >=grade), case study vars (`ts_ge4_cma_all` format), output labels (TS_GE, FAR_GE, etc.), add `docs/ABBREVIATIONS.md` | 2026-04-07 |
 
 ### In Progress
 | Task | Description | Notes |
 |------|-------------|-------|
-| Code Refactoring | Continue eliminating duplicate code in `access.py`, `tl.py`, `ots.py` | — |
-| A10 Code Style Check | Check variable naming in `schematic.py`, `src/__init__.py`, `src/case_study.py`, `src/data_prep.py`, `src/data_stats.py`, `src/forecast_dist.py`, `src/forecast_prep.py`, `src/forecast_type.py`, `src/plot_obs.py`, `src/plot_spatiotemporal.py`, `src/temporal_eval.py`, `src/utils.py`, `src/vis_acc.py` | draw.py done |
+| Code Refactoring | Continue eliminating duplicate code in `access.py`, `huanghua.py`, `ots.py`, `tl.py`, `vis_grade.py`, `vis2411.py` | — |
 
 ### Todo
 | Task | Description | Priority |

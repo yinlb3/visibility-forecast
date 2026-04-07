@@ -84,17 +84,21 @@ def plot_obs_violin_box(
         rhu (np.ndarray): Relative humidity array.
         output_dir (str): Output directory path.
     """
-    # 1. Create masks for vis < 500m by weather type
-    index0 = vis < 500                           # All low visibility
-    index1 = (vis < 500) & (pre > 0)             # With precipitation
-    index2 = (vis < 500) & (pre == 0) & (rhu >= 80)  # Fog
-    index3 = (vis < 500) & (pre == 0) & (rhu < 80)   # Haze
+    # 1. Create masks for vis < 500m (grade 4+) by weather type
+    # mask_lv4plus: Mask for visibility grade 4+ (vis < 500m, 4级及以上低能见度)
+    mask_lv4plus = vis < 500
+    # mask_lv4plus_pre: Mask for grade 4+ with precipitation (降水型4级及以上低能见度)
+    mask_lv4plus_pre = (vis < 500) & (pre > 0)
+    # mask_lv4plus_fog: Mask for grade 4+ fog events (雾型4级及以上低能见度)
+    mask_lv4plus_fog = (vis < 500) & (pre == 0) & (rhu >= 80)
+    # mask_lv4plus_haze: Mask for grade 4+ haze events (霾型4级及以上低能见度)
+    mask_lv4plus_haze = (vis < 500) & (pre == 0) & (rhu < 80)
     # 2. Prepare data dict (convert to km)
     data = {
-        'Overall': vis[index0] / 1000,
-        'Precip': vis[index1] / 1000,
-        'Fog': vis[index2] / 1000,
-        'Haze': vis[index3] / 1000
+        'Overall': vis[mask_lv4plus] / 1000,
+        'Precip': vis[mask_lv4plus_pre] / 1000,
+        'Fog': vis[mask_lv4plus_fog] / 1000,
+        'Haze': vis[mask_lv4plus_haze] / 1000
     }
 
     fig, ax = plt.subplots(figsize=(5, 5), dpi=800)
