@@ -8,12 +8,15 @@ Modified in 2026-04-04
 """
 
 import os
+import pathlib
 import typing
 
 import numpy as np
 import pandas as pd
 
-from src.vis_acc import VisAcc
+from src import vis_acc
+
+VisAcc = vis_acc.VisAcc
 
 
 def load_forecast_data(
@@ -31,14 +34,14 @@ def load_forecast_data(
         tuple: (vis_ob, cma_sh_warr), arrays of shape (-1, 24, 502).
     """
     # 1. Load obs data (last 365 days, skip first lead)
-    path = rf'{data_dir}\vis1183_ob.npy'
+    path = str(pathlib.Path(data_dir) / 'vis1183_ob.npy')
     vis_ob = np.load(path)[-365:, :, 1:, index_cjzxy]
     vis_ob = np.reshape(vis_ob, (-1, 24, 502))
     vis_ob[vis_ob >= 999990] = np.nan  # Missing marker
     vis_ob[vis_ob >= 30000] = 30000    # Cap at 30000m
 
     # 2. Load CMA-SH-WARR forecast data
-    pr_path = rf'{data_dir}\vis1183_pr.npy'
+    pr_path = str(pathlib.Path(data_dir) / 'vis1183_pr.npy')
     cma_sh_warr = np.load(pr_path)[-365:, :, 1:, index_cjzxy]
     cma_sh_warr = np.reshape(cma_sh_warr, (-1, 24, 502))
     cma_sh_warr[cma_sh_warr >= 30000] = 30000
@@ -58,7 +61,7 @@ def load_experiment_preds(data_dir: str) -> typing.Tuple[np.ndarray, ...]:
     """
     preds = list()
     for i in range(5):
-        path = rf'{data_dir}\vis_gjz_pdfm_tle{i}_cjzxy.npy'
+        path = str(pathlib.Path(data_dir) / f'vis_gjz_pdfm_tle{i}_cjzxy.npy')
         pred = np.load(path)
         pred = np.reshape(pred, (-1, 24, 502))
         pred[pred >= 30000] = 30000
@@ -120,8 +123,8 @@ def calc_and_save_station_metrics(
         output_dir (str): Output directory path.
     """
     # 1. Prepare output directory
-    csv_dir = rf'{output_dir}\csv'
-    os.makedirs(csv_dir, exist_ok=True)
+    csv_dir = pathlib.Path(output_dir) / 'csv'
+    csv_dir.mkdir(parents=True, exist_ok=True)
 
     # 2. Init metrics containers for all stations
     metrics: typing.Dict[str, typing.Dict[str, list]] = {
@@ -174,10 +177,11 @@ def calc_and_save_station_metrics(
 
     # 4. Save all metrics to CSV files
     for key, data in metrics.items():
-        pd.DataFrame(data).to_csv(rf'{csv_dir}\vis_sta_{key}.csv', index=False)
+        pd.DataFrame(data).to_csv(
+            str(csv_dir / f'vis_sta_{key}.csv'), index=False)
     # Rename ts1~ts6 files to match expected names with '+' suffix
     for i in range(1, 7):
-        old_path = rf'{csv_dir}\vis_sta_ts{i}.csv'
-        new_path = rf'{csv_dir}\vis_sta_ts{i}+.csv'
+        old_path = str(csv_dir / f'vis_sta_ts{i}.csv')
+        new_path = str(csv_dir / f'vis_sta_ts{i}+.csv')
         if os.path.exists(old_path):
             os.replace(old_path, new_path)

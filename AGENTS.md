@@ -110,6 +110,7 @@ Refer to `user-preferences` skill B.4.
 | Task | Description | Notes |
 |------|-------------|-------|
 | Code Refactoring | Continue eliminating duplicate code in `access.py`, `tl.py`, `ots.py` | — |
+| A10 Code Style Check | Check variable naming in `schematic.py`, `src/__init__.py`, `src/case_study.py`, `src/data_prep.py`, `src/data_stats.py`, `src/forecast_dist.py`, `src/forecast_prep.py`, `src/forecast_type.py`, `src/plot_obs.py`, `src/plot_spatiotemporal.py`, `src/temporal_eval.py`, `src/utils.py`, `src/vis_acc.py` | draw.py done |
 
 ### Todo
 | Task | Description | Priority |
@@ -119,4 +120,4 @@ Refer to `user-preferences` skill B.4.
 
 ---
 
-**Last Updated**: 2026-04-06
+**Last Updated**: 2026-04-07

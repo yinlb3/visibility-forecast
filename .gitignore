@@ -1,6 +1,26 @@
+# Local configuration files (privacy/security)
+config/*.local.yaml
+config/*.local.windows.yaml
+config/*.local.linux.yaml
+config.local.yaml
+
 # IDE configuration
 .idea/
 .vscode/
+*.swp
+
+# Virtual environments
+venv/
+.env/
+.venv/
+
+# Python packaging
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
 
 # Python cache
 __pycache__/

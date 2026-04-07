@@ -14,6 +14,9 @@ from scipy import stats
 
 
 # Six-grade visibility thresholds (m): <10000, <2000, <1000, <500, <200, <50
+# Grade 0: >=10000m (good), Grade 1-5: moderate to poor,
+# Grade 6: <50m (dense fog)
+# Based on China Meteorological Administration visibility grade standards
 THRES = (10000., 2000., 1000., 500., 200., 50.)
 
 
@@ -23,6 +26,16 @@ class VisAcc:
 
     Auto-grade visibility from obs/fcst arrays and build confusion matrix,
     providing metrics (ME, MAE, RMSE, MRE, R, TS, ETS, HSS, BIAS, FAR, etc).
+
+    Attributes:
+        _thres: Grade thresholds tuple.
+        _n_grades: Number of grades.
+        _ob: Observation array.
+        _pr: Forecast array.
+        _ob_grade: Observation grade array.
+        _pr_grade: Forecast grade array.
+        _hxjz: Confusion matrix (n_grades+1)^2.
+        _n: Total valid samples.
     """
 
     def __init__(self, ob: np.ndarray, pr: np.ndarray) -> None:
@@ -39,9 +52,12 @@ class VisAcc:
         self._pr = pr
 
         # Init obs grade: -1=missing, 0=above max, 1-6 by thresholds
+        # Note: Lower grade number = better visibility (Grade 0 is best)
         self._ob_grade = np.zeros_like(self._ob, dtype=np.int_) - 1
         self._ob_grade[~np.isnan(self._ob)] = 0
         for i in range(self._n_grades):
+            # Assign grade i+1 if visibility below threshold i
+            # This creates an ordered grade system: lower vis = higher grade
             self._ob_grade[self._ob < self._thres[i]] = i + 1
 
         # Init forecast grade matrix, same logic
@@ -327,41 +343,61 @@ class VisAcc:
         """
         Calc Overall Accuracy (OA), ratio of diagonal sum to total samples.
 
+        OA = (correct forecasts) / (total samples)
+        Correct means forecast grade exactly matches observed grade.
+
         Returns:
-            float: Overall accuracy value.
+            float: Overall accuracy value, or NaN if no valid samples.
         """
+        # Guard against empty data (no valid obs/forecast pairs)
         if self._n == 0:
             return np.nan
+        # Diagonal elements represent correct grade forecasts
         return np.sum(np.diag(self._hxjz)) / self._n
 
     def get_kappa(self) -> float:
         """
         Calc Kappa coefficient, measuring grade consistency.
 
+        Kappa accounts for chance agreement, more robust than OA alone.
+        Formula: (OA - Pe) / (1 - Pe), where Pe is expected agreement
+        by chance.
+
         Returns:
-            float: Kappa coefficient value.
+            float: Kappa coefficient value, or NaN if undefined.
         """
+        # Guard against empty data
         if self._n == 0:
             return np.nan
+        # Calculate marginal frequencies (row and column sums)
         a = np.sum(self._hxjz, axis=1).astype(np.float32)
         b = np.sum(self._hxjz, axis=0).astype(np.float32)
+        # Expected agreement by chance (Pe)
         pe = np.sum(a * b) / self._n / self._n
+        # Guard against degenerate case (all forecasts same)
         if abs(1 - pe) < 1e-6:
-            return np.nan  # Avoid div zero
+            return np.nan
         return (self.get_oa() - pe) / (1 - pe)
 
     def get_ts(self) -> np.ndarray:
         """
         Calc Threat Score (TS) for each grade.
 
+        TS = hits / (hits + misses + false alarms)
+        Also known as Critical Success Index (CSI).
+
         Returns:
             np.ndarray: TS array by grade.
         """
         ts = np.zeros(self._n_grades + 1, dtype=np.float32)
         for i in range(self._n_grades + 1):
+            # na: correct forecasts for grade i (hits)
             na = self._hxjz[i, i]
+            # nb: false alarms (forecast grade i, obs not i)
             nb = np.sum(self._hxjz[:, i]) - na
+            # nc: misses (obs grade i, forecast not i)
             nc = np.sum(self._hxjz[i, :]) - na
+            # Avoid division by zero
             ts[i] = na / (na + nb + nc) if na + nb + nc != 0 else np.nan
         return ts
 

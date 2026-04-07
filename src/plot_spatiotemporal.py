@@ -8,6 +8,7 @@ Modified in 2026-04-04
 """
 
 import gc
+import pathlib
 
 import numpy as np
 import pandas as pd
@@ -24,7 +25,8 @@ def plot_hour_access_heatmaps(output_dir: str) -> None:
     Including TS4+ heatmaps for CMA-SH-WARR, PDFM-TLE and improvement rate.
     """
     # 1. Load pre-calculated hour_access data
-    hour_access = np.load(rf'{output_dir}\csv\hour_access.npy')
+    csv_dir = pathlib.Path(output_dir) / 'csv'
+    hour_access = np.load(str(csv_dir / 'hour_access.npy'))
     gc.collect()
 
     # 2. Plot CMA-SH-WARR TS4+ heatmap
@@ -39,10 +41,12 @@ def plot_hour_access_heatmaps(output_dir: str) -> None:
     plt.xlabel('预报时效 (h) ')
     plt.ylabel('起报时次 (UTC) ')
     plt.savefig(
-        rf'{output_dir}\npw_hour_ts4+.png', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'npw_hour_ts4+.png'),
+        bbox_inches='tight', dpi=800
     )
     plt.savefig(
-        rf'{output_dir}\npw_hour_ts4+.pdf', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'npw_hour_ts4+.pdf'),
+        bbox_inches='tight', dpi=800
     )
     plt.cla()
     plt.close('all')
@@ -64,10 +68,12 @@ def plot_hour_access_heatmaps(output_dir: str) -> None:
     plt.xlabel('预报时效 (h) ')
     plt.ylabel('起报时次 (UTC) ')
     plt.savefig(
-        rf'{output_dir}\pdf-tl_hour_ts4+.png', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'pdf-tl_hour_ts4+.png'),
+        bbox_inches='tight', dpi=800
     )
     plt.savefig(
-        rf'{output_dir}\pdf-tl_hour_ts4+.pdf', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'pdf-tl_hour_ts4+.pdf'),
+        bbox_inches='tight', dpi=800
     )
     plt.cla()
     plt.close('all')
@@ -81,6 +87,8 @@ def plot_hour_access_heatmaps(output_dir: str) -> None:
     ts_before = hour_access[0, :, :, 7]
     ts_after = hour_access[3, :, :, 7]
     ts_improvement = (ts_after - ts_before) / ts_before * 100
+    # 4. Plot improvement rate heatmap (PDFM-TLE vs CMA-SH-WARR)
+    # Red color scale highlights areas with significant improvement
     sns.heatmap(ts_improvement, cmap='Reds', vmin=0, vmax=150, linewidths=0.3)
     plt.xticks(np.arange(24) + 0.5, [str(x + 1) for x in range(24)])
     yticks = [f'{x:02d}:00' for x in range(24)]
@@ -90,16 +98,17 @@ def plot_hour_access_heatmaps(output_dir: str) -> None:
     plt.xlabel('预报时效 (h) ')
     plt.ylabel('起报时次 (UTC) ')
     plt.savefig(
-        rf'{output_dir}\pdf-tl_hour_ts4+_improvement.png',
+        str(pathlib.Path(output_dir) / 'pdf-tl_hour_ts4+_improvement.png'),
         bbox_inches='tight', dpi=800
     )
     plt.savefig(
-        rf'{output_dir}\pdf-tl_hour_ts4+_improvement.pdf',
+        str(pathlib.Path(output_dir) / 'pdf-tl_hour_ts4+_improvement.pdf'),
         bbox_inches='tight', dpi=800
     )
     plt.cla()
     plt.close('all')
     gc.collect()
+    # Find location of maximum improvement for diagnostic output
     loc = np.where(ts_improvement == np.max(ts_improvement))
     ts_min = np.min(ts_improvement)
     ts_max = np.max(ts_improvement)
@@ -115,11 +124,13 @@ def plot_ts_comparison_bars(output_dir: str) -> None:
     """
     8.2 Plot TS4+ comparison bars for lead time and forecast time.
     """
-    # Forecast lead time
-    csv_path = rf'{output_dir}\csv\vis_vt_ts4+.csv'
+    # 1. Load verification data for lead time (VT) analysis
+    csv_path = str(pathlib.Path(output_dir) / 'csv' / 'vis_vt_ts4+.csv')
     df_vt_ts4 = pd.read_csv(filepath_or_buffer=csv_path, low_memory=False)
+    # Extract TS4+ scores before and after correction
     ts_before = np.array(df_vt_ts4.loc[:, 'CMA-SH-WARR'])
     ts_after = np.array(df_vt_ts4.loc[:, 'PDFM-TLE'])
+    # Calculate percentage improvement
     ts_improvement = (ts_after - ts_before) / ts_before * 100
     ts_min = np.min(ts_improvement)
     ts_max = np.max(ts_improvement)
@@ -165,10 +176,12 @@ def plot_ts_comparison_bars(output_dir: str) -> None:
     ax2.legend(loc='upper left')
     plt.xlabel('预报时效 (h) ')
     plt.savefig(
-        rf'{output_dir}\vis_vt_ts4+.png', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'vis_vt_ts4+.png'),
+        bbox_inches='tight', dpi=800
     )
     plt.savefig(
-        rf'{output_dir}\vis_vt_ts4+.pdf', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'vis_vt_ts4+.pdf'),
+        bbox_inches='tight', dpi=800
     )
     plt.cla()
     plt.close('all')
@@ -176,7 +189,7 @@ def plot_ts_comparison_bars(output_dir: str) -> None:
     gc.collect()
 
     # Forecast time
-    csv_path = rf'{output_dir}\csv\vis_fhour_ts4+.csv'
+    csv_path = str(pathlib.Path(output_dir) / 'csv' / 'vis_fhour_ts4+.csv')
     df_fhour_ts4 = pd.read_csv(filepath_or_buffer=csv_path, low_memory=False)
     ts_before = np.array(df_fhour_ts4.loc[:, 'CMA-SH-WARR'])
     ts_after = np.array(df_fhour_ts4.loc[:, 'PDFM-TLE'])
@@ -225,10 +238,12 @@ def plot_ts_comparison_bars(output_dir: str) -> None:
     ax2.legend(loc='upper left')
     plt.xlabel('预报时间 (UTC) ')
     plt.savefig(
-        rf'{output_dir}\vis_fhour_ts4+.png', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'vis_fhour_ts4+.png'),
+        bbox_inches='tight', dpi=800
     )
     plt.savefig(
-        rf'{output_dir}\vis_fhour_ts4+.pdf', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'vis_fhour_ts4+.pdf'),
+        bbox_inches='tight', dpi=800
     )
     plt.cla()
     plt.close('all')
@@ -252,7 +267,7 @@ def plot_sta_ts4_maps(sta: pd.DataFrame, output_dir: str) -> None:
         sta (pd.DataFrame): Station info DataFrame.
         output_dir (str): Output directory path.
     """
-    csv_path = rf'{output_dir}\csv\vis_sta_ts4+.csv'
+    csv_path = str(pathlib.Path(output_dir) / 'csv' / 'vis_sta_ts4+.csv')
     df_sta = pd.read_csv(csv_path, low_memory=False)
     prefix = '[plot_sta_ts4_maps]'
     ts_min = np.min(df_sta.loc[:, 'CMA-SH-WARR'])
@@ -294,7 +309,7 @@ def plot_sta_ts4_maps(sta: pd.DataFrame, output_dir: str) -> None:
         cmap=cmap,
         extend='max',
         title=[''],
-        save_path=rf'{output_dir}\sta_ts4+_nwp.png',
+        save_path=str(pathlib.Path(output_dir) / 'sta_ts4+_nwp.png'),
         dpi=800
     )
     meb.tool.plot_tools.scatter_sta(
@@ -305,7 +320,7 @@ def plot_sta_ts4_maps(sta: pd.DataFrame, output_dir: str) -> None:
         cmap=cmap,
         extend='max',
         title=[''],
-        save_path=rf'{output_dir}\sta_ts4+_nwp.pdf',
+        save_path=str(pathlib.Path(output_dir) / 'sta_ts4+_nwp.pdf'),
         dpi=800
     )
 
@@ -319,7 +334,7 @@ def plot_sta_ts4_maps(sta: pd.DataFrame, output_dir: str) -> None:
         cmap=cmap,
         extend='max',
         title=[''],
-        save_path=rf'{output_dir}\sta_ts4+.png',
+        save_path=str(pathlib.Path(output_dir) / 'sta_ts4+.png'),
         dpi=800
     )
     meb.tool.plot_tools.scatter_sta(
@@ -330,7 +345,7 @@ def plot_sta_ts4_maps(sta: pd.DataFrame, output_dir: str) -> None:
         cmap=cmap,
         extend='max',
         title=[''],
-        save_path=rf'{output_dir}\sta_ts4+.pdf',
+        save_path=str(pathlib.Path(output_dir) / 'sta_ts4+.pdf'),
         dpi=800
     )
 
@@ -343,7 +358,7 @@ def plot_mre_violins(sta: pd.DataFrame, output_dir: str) -> None:
         sta (pd.DataFrame): Station info DataFrame.
         output_dir (str): Output directory path.
     """
-    csv_path = rf'{output_dir}\csv\vis_sta_mre.csv'
+    csv_path = str(pathlib.Path(output_dir) / 'csv' / 'vis_sta_mre.csv')
     df_sta = pd.read_csv(csv_path, low_memory=False)
     mre_before = np.array(df_sta.loc[:, 'CMA-SH-WARR'])
     mre_after = np.array(df_sta.loc[:, 'PDFM-TLE'])
@@ -363,10 +378,12 @@ def plot_mre_violins(sta: pd.DataFrame, output_dir: str) -> None:
     )
     plt.ylabel('MRE')
     plt.savefig(
-        rf'{output_dir}\boxplot_mre.png', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'boxplot_mre.png'),
+        bbox_inches='tight', dpi=800
     )
     plt.savefig(
-        rf'{output_dir}\boxplot_mre.pdf', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'boxplot_mre.pdf'),
+        bbox_inches='tight', dpi=800
     )
     plt.cla()
     plt.close('all')
@@ -386,11 +403,11 @@ def plot_mre_violins(sta: pd.DataFrame, output_dir: str) -> None:
     )
     plt.ylabel('MRE改善率')
     plt.savefig(
-        rf'{output_dir}\boxplot_mre_improvement.png',
+        str(pathlib.Path(output_dir) / 'boxplot_mre_improvement.png'),
         bbox_inches='tight', dpi=800
     )
     plt.savefig(
-        rf'{output_dir}\boxplot_mre_improvement.pdf',
+        str(pathlib.Path(output_dir) / 'boxplot_mre_improvement.pdf'),
         bbox_inches='tight', dpi=800
     )
     plt.cla()

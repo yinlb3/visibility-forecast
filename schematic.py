@@ -10,19 +10,25 @@ Modified in 2026-04-04
 @author: yinlb
 """
 
+import pathlib
+
 import arrow
 import numpy as np
 from matplotlib import font_manager as fm
 from matplotlib import patches
 from matplotlib import pyplot as plt
 
+from src import CFG
+
 # ==================== Global Configuration ====================
 
-GRID_SIZE = 24  # Grid size 24x24
-FIG_WIDTH = 12  # Figure width (inches)
-FIG_HEIGHT = 14  # Figure height (inches)
-COLOR_MAP_NAME = 'rainbow'  # Colormap name
-OUTPUT_DPI = 800
+# Load configuration from config/config.yaml
+_PLOT_CFG = CFG['plot']
+GRID_SIZE = _PLOT_CFG['grid_size']
+FIG_WIDTH = _PLOT_CFG['fig_width']
+FIG_HEIGHT = _PLOT_CFG['fig_height']
+COLOR_MAP_NAME = _PLOT_CFG['color_map']
+OUTPUT_DPI = _PLOT_CFG['dpi']
 CHINESE_FONT_PATH = None  # Chinese font path (auto-detect)
 
 
@@ -38,14 +44,9 @@ def setup_chinese_font():
     """
     global CHINESE_FONT_PATH
 
-    # Common Chinese font paths (Windows)
-    possible_fonts = [
-        r'C:\Windows\Fonts\msyh.ttc',  # Microsoft YaHei
-        r'C:\Windows\Fonts\msyhbd.ttc',  # Microsoft YaHei Bold
-        r'C:\Windows\Fonts\simhei.ttf',  # SimHei
-        r'C:\Windows\Fonts\STSONG.TTC',  # SimSun
-        r'C:\Windows\Fonts\ARIALUNI.TTF',  # Arial Unicode
-    ]
+    # Get Chinese font paths from config
+    fonts_cfg = CFG['fonts']
+    possible_fonts = fonts_cfg['chinese']
 
     # Try to find available Chinese font
     for font_path in possible_fonts:
@@ -312,14 +313,15 @@ def main() -> None:
                      y=0.98)
 
     # Save files (use lower DPI to save memory)
-    output_path_pdf = r'D:\Project\vis\figures\diagonal_grid_fixed.pdf'
+    out_dir = CFG['paths']['output_dir']
+    output_path_pdf = str(pathlib.Path(out_dir) / 'diagonal_grid_fixed.pdf')
     plt.savefig(
         output_path_pdf, dpi=OUTPUT_DPI, bbox_inches='tight',
         format='pdf', facecolor='white', edgecolor='none'
     )
     print(f'PDF figure saved to {output_path_pdf}')
 
-    output_path_eps = r'D:\Project\vis\figures\diagonal_grid_fixed.eps'
+    output_path_eps = str(pathlib.Path(out_dir) / 'diagonal_grid_fixed.eps')
     plt.savefig(
         output_path_eps, dpi=OUTPUT_DPI, bbox_inches='tight',
         format='eps', facecolor='white', edgecolor='none'

@@ -38,13 +38,14 @@ python tl.py
 ### 已完成
 | 任务 | 描述 | 完成时间 |
 |------|------|----------|
-| 项目基础建设与文档完善 | 初始化 Git 仓库、配置 .gitignore、搭建双平台同步（Gitee/GitHub）、补充代码注释与文档字符串、翻译所有文档为英文 | 2026-04-02 ~ 2026-04-05 |
-| draw.py 重构 | 将 `draw.py` 按 9 个阶段拆分为 `src/` 模块（1 阶段 = 1 文件）；提取公共工具；统一控制台输出与文件结构 | 2026-04-06 |
+| 项目基础建设与文档完善 | 初始化 Git 仓库、配置 .gitignore、搭建双平台同步（Gitee/GitHub）、补充代码注释与文档字符串、翻译所有文档为英文 | 2026-04-05 |
+| draw.py 重构 | 将 `draw.py` 按 9 个阶段拆分为 `src/` 模块（1 阶段 = 1 文件）；提取公共工具；统一控制台输出与文件结构 | 2026-04-07 |
 
 ### 进行中
 | 任务 | 描述 | 备注 |
 |------|------|------|
 | 代码重构 | 继续消除 `access.py`、`huanghua.py`、`ots.py`、`tl.py` 、`vis_grade.py` 、`vis2411.py` 中的重复代码 | — |
+| A10 代码规范检查 | 检查 `schematic.py`, `src/__init__.py`, `src/case_study.py`, `src/data_prep.py`, `src/data_stats.py`, `src/forecast_dist.py`, `src/forecast_prep.py`, `src/forecast_type.py`, `src/plot_obs.py`, `src/plot_spatiotemporal.py`, `src/temporal_eval.py`, `src/utils.py`, `src/vis_acc.py` 变量命名 | draw.py 已完成 |
 
 ### 待办
 | 任务 | 描述 | 优先级 |

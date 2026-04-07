@@ -1,0 +1,92 @@
+# 注释率统计结果
+
+## 各文件统计详情
+
+### 1. draw.py (418 行)
+- 文件头 docstring (3-11行): 不算注释
+- 编码声明行 (2行): 排除
+- 有效注释行统计:
+  - 行37-38: # Load configuration... (2行)
+  - 行41: # Provincial-level... (1行)
+  - 行44-45: # Stage control... (1行)
+  - 行47-49: # Output directories... (3行)
+  - 行109: # Stage 1... (1行)
+  - 行113: # 1.1 Read... (1行)
+  - 行123: # 1.2 Filter... (1行)
+  - 行139: # 1.3 Load... (1行)
+  - 行148: # Stage 2... (1行)
+  - 行152: # 2.1 Build... (1行)
+  - 行175: # 2.2 Output... (1行)
+  - 行183: # Read pre-generated... (1行)
+  - 行194: # Stage 3... (1行)
+  - 行198: # 3.1 Plot... (1行)
+  - 行207: # 3.2 Plot... (1行)
+  - 行215: # 3.3 Plot... (1行)
+  - 行228: # 3.4 Plot... (1行)
+  - 行239: # 3.5 Plot... (1行)
+  - 行252: # Stage 4... (1行)
+  - 行256: # 4.1 Load... (1行)
+  - 行265: # 4.2 Calc... (1行)
+  - 行270: # 4.3 Calc... (1行)
+  - 行276: # Stage 5... (1行)
+  - 行279: # 5.1 Calc... (1行)
+  - 行290: # 5.2 Plot... (1行)
+  - 行308: # 5.3 Calc... (1行)
+  - 行317: # Stage 6... (1行)
+  - 行320: # 6.1 Plot... (1行)
+  - 行327: # 6.2 Plot... (1行)
+  - 行341: # Stage 7... (1行)
+  - 行345: # 7.1-7.3... (1行)
+  - 行354: # 7.4 Calc... (1行)
+  - 行368: # Stage 8... (1行)
+  - 行371: # 8.1 Plot... (1行)
+  - 行374: # 8.2 Plot... (1行)
+  - 行377: # 8.3 Plot... (1行)
+  - 行380: # 8.4 Plot... (1行)
+  - 行384: # Stage 9... (1行)
+  - 行387: # 9.1 Load... (1行)
+  - 行398: # 9.2 Output... (1行)
+  - 行403: # 9.3 Calc... (1行)
+- 注释行总计: 43 行
+- 代码行: 418 - 12(空行) - 9(docstring) - 2(编码) - 43 = 352 行
+- 注释率: 43 / (43+352) = 10.89%
+
+### 2. schematic.py (379 行)
+- 有效注释:
+  - 行23: # Global Configuration
+  - 行32: # Chinese font path
+  - 行35: # Font Configuration
+  - 行47-48: # Get Chinese font...
+  - 行51: # Try to find...
+  - 行67-69: # If Chinese font...
+  - 行72: # Set matplotlib...
+  - 行79: # Correct minus...
+  - 行81-86: # If Chinese font...
+  - 行90: # Core Functions
+  - 行149: # Batch draw...
+  - 行166-167: # Force garbage...
+  - 行171-174: # Set axis...
+  - 行189: # Limit color count
+  - 行191-192: # Batch draw...
+  - 行201-205: # Set axis
+  - 行220-221: # Reduce label...
+  - 行232-237: # Use smaller...
+  - 行241: # Add arrow...
+  - 行264: # Main Entry
+  - 行279: # 1. Setup Chinese...
+  - 行283-287: # 2. Create figure...
+  - 行289-291: # 3. Generate...
+  - 行293-294: # 4. Draw main...
+  - 行297-300: # 5. Add number...
+  - 行302-313: # 6. Set title...
+  - 行315-328: # Save files...
+  - 行333-334: # Clean up...
+  - 行349: # < 0 check
+  - 行351-356: # abbreviation
+  - 行358-365: # normal format
+  - 行369: # Execution
+- 注释行总计: 45 行
+- 代码行: 379 - 45 = 334 行（估算）
+- 注释率: 45 / (45+334) = 11.88%
+
+...

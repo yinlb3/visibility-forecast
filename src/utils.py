@@ -2,9 +2,15 @@
 """General utility functions.
 
 Founded in 2026-04-04
-Modified in 2026-04-04
+Modified in 2026-04-07
 @author: yinlb
 """
+
+import platform
+import pathlib
+import typing
+
+import yaml
 
 
 def format_time(second: float, is_abbreviation: bool = False) -> str:
@@ -41,3 +47,128 @@ def format_time(second: float, is_abbreviation: bool = False) -> str:
             time_str = str(second / 3600) + 'hours'
 
     return time_str
+
+
+# ==================== Configuration Loader ====================
+
+
+def _deep_merge(
+    base: typing.Dict[str, typing.Any],
+    override: typing.Dict[str, typing.Any]
+) -> typing.Dict[str, typing.Any]:
+    """
+    Recursively merge two dictionaries.
+
+    Override values take precedence. Nested dicts are merged,
+    non-dict values are replaced.
+
+    Args:
+        base: Base configuration dict.
+        override: Override configuration dict.
+
+    Returns:
+        Merged configuration dict.
+    """
+    result: typing.Dict[str, typing.Any] = base.copy()
+    for key, value in override.items():
+        if (
+            key in result
+            and isinstance(result[key], dict)
+            and isinstance(value, dict)
+        ):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
+def _load_yaml(path: pathlib.Path) -> typing.Dict[str, typing.Any]:
+    """
+    Load YAML file if exists.
+
+    Args:
+        path: pathlib.Path to YAML file.
+
+    Returns:
+        Loaded dict or empty dict if file not found.
+    """
+    if path.exists():
+        with open(path, 'r', encoding='utf-8') as f:
+            return yaml.safe_load(f) or {}
+    return {}
+
+
+def load_config() -> typing.Dict[str, typing.Any]:
+    """
+    Load configuration with platform-specific local override.
+
+    Loads config/config.yaml first, then merges with
+    config/config.local.{platform}.yaml if it exists.
+    Local config overrides base config values.
+
+    Returns:
+        Merged configuration dictionary.
+    """
+    # Get config directory (project_root/config/)
+    config_dir = pathlib.Path(__file__).parent.parent / 'config'
+
+    # Load base configuration
+    base_config = _load_yaml(config_dir / 'config.yaml')
+
+    # Determine platform-specific local config filename
+    system = platform.system().lower()
+    if system == 'windows':
+        local_file = 'config.local.windows.yaml'
+    elif system == 'linux':
+        local_file = 'config.local.linux.yaml'
+    else:
+        local_file = 'config.local.yaml'
+
+    # Load and merge local configuration if exists
+    local_config = _load_yaml(config_dir / local_file)
+    if local_config:
+        return _deep_merge(base_config, local_config)
+
+    return base_config
+
+
+def _validate_config(cfg: typing.Dict[str, typing.Any]) -> None:
+    """
+    Validate required configuration keys exist.
+
+    Raises informative KeyError if any required key is missing.
+
+    Args:
+        cfg: Loaded configuration dictionary.
+
+    Raises:
+        KeyError: If required configuration key is missing.
+    """
+    required_keys = [
+        'paths.data_dir',
+        'paths.output_dir',
+        'paths.cache_dir',
+        'stages',
+        'regions.provinces',
+        'regions.cjzxy_provinces',
+    ]
+
+    for key_path in required_keys:
+        parts = key_path.split('.')
+        current = cfg
+        for part in parts:
+            if not isinstance(current, dict) or part not in current:
+                raise KeyError(
+                    f"Missing required config: '{key_path}'. "
+                    f"Please check config/config.yaml and "
+                    f"config.local.{platform.system().lower()}.yaml"
+                )
+            current = current[part]
+
+
+# Load and validate configuration
+_CFG: typing.Dict[str, typing.Any] = load_config()
+_validate_config(_CFG)
+
+# Global config instance (validated)
+CFG: typing.Dict[str, typing.Any] = _CFG

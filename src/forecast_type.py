@@ -9,12 +9,15 @@ Modified in 2026-04-04
 
 import gc
 import os
+import pathlib
 import typing
 
 import numpy as np
 from matplotlib import pyplot as plt
 
-from src.vis_acc import VisAcc
+from src import vis_acc
+
+VisAcc = vis_acc.VisAcc
 
 
 def load_weather_type(data_dir: str, index_cjzxy: np.ndarray) -> np.ndarray:
@@ -28,7 +31,8 @@ def load_weather_type(data_dir: str, index_cjzxy: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: Weather type array, shape (-1, 24, 502).
     """
-    weather_type = np.load(rf'{data_dir}\weather_type.npy', mmap_mode='r')
+    path = pathlib.Path(data_dir) / 'weather_type.npy'
+    weather_type = np.load(str(path), mmap_mode='r')
     val_wt = np.reshape(weather_type[1096:1461, ..., index_cjzxy],
                         shape=(-1, 24, 502))
     return val_wt
@@ -132,12 +136,12 @@ def plot_vis_cdf(
     ax.set_ylabel('累积概率')
     ax.legend()
     fig.savefig(
-        fname=rf'{output_dir}\vis_cdf.png',
+        fname=str(pathlib.Path(output_dir) / 'vis_cdf.png'),
         bbox_inches='tight',
         dpi=800
     )
     fig.savefig(
-        fname=rf'{output_dir}\vis_cdf.pdf',
+        fname=str(pathlib.Path(output_dir) / 'vis_cdf.pdf'),
         bbox_inches='tight',
         dpi=800
     )
@@ -199,7 +203,7 @@ def plot_weather_type_eval_bw(
     ax.legend()
     # Save as PDF and release memory
     fig.savefig(
-        fname=rf'{output_dir}\{filename}.pdf',
+        fname=str(pathlib.Path(output_dir) / f'{filename}.pdf'),
         bbox_inches='tight',
         dpi=800
     )

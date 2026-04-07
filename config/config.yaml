@@ -1,0 +1,69 @@
+# Vis Project Configuration
+# Base configuration with placeholders for privacy-sensitive values
+# Copy to config.local.windows.yaml or config.local.linux.yaml and fill in real paths
+
+paths:
+  # External data directory - MUST be overridden in local config (absolute path)
+  data_dir: '<DATA_DIR>'
+  # Project output directory - relative path, cross-platform compatible
+  output_dir: './figures'
+  cache_dir: './figures/csv'
+
+# Font configuration (system paths, platform-specific)
+fonts:
+  chinese:
+    - '<FONT_PATH_1>'
+    - '<FONT_PATH_2>'
+    - '<FONT_PATH_3>'
+    - '<FONT_PATH_4>'
+    - '<FONT_PATH_5>'
+
+# Stage control flags
+stages:
+  data_prep: true
+  stats_calc: true
+  obs_viz: true
+  forecast_prep: true
+  type_eval: true
+  dist_analysis: true
+  temporal: true
+  spatiotemporal: true
+  case_study: true
+
+# Plot configuration
+plot:
+  grid_size: 24
+  fig_width: 12
+  fig_height: 14
+  color_map: 'rainbow'
+  dpi: 800
+
+# Regional configuration
+regions:
+  provinces:
+    - '北京市'
+    - '上海市'
+    - '天津市'
+    - '安徽省'
+    - '福建省'
+    - '广东省'
+    - '江苏省'
+    - '江西省'
+    - '河北省'
+    - '河南省'
+    - '湖北省'
+    - '湖南省'
+    - '山东省'
+    - '山西省'
+    - '浙江省'
+  cjzxy_provinces:
+    - 'Hubei'
+    - 'Hunan'
+    - 'Jiangxi'
+    - 'Anhui'
+    - 'Jiangsu'
+    - 'Zhejiang'
+    - 'Shanghai'
+
+# Placeholder for future credentials (currently unused)
+credentials: {}

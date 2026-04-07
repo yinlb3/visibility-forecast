@@ -8,6 +8,7 @@ Modified in 2026-04-04
 """
 
 import gc
+import pathlib
 import typing
 
 import numpy as np
@@ -39,9 +40,11 @@ def plot_obs_pies(
         # 1.1 Create mask for current grade with valid pre/rhu
         index = (vis_grade == i + 1) & ~np.isnan(pre) & ~np.isnan(rhu)
         # 1.2 Count samples by weather type
-        a = np.sum((pre > 0) & index)              # Precipitation
-        b = np.sum((pre == 0) & (rhu >= 80) & index)  # Fog
-        c = np.sum((pre == 0) & (rhu < 80) & index)   # Haze
+        # Classify: precip > 0; fog = no precip + RH>=80%;
+        # haze = no precip + RH<80%
+        a = np.sum((pre > 0) & index)              # Precipitation events
+        b = np.sum((pre == 0) & (rhu >= 80) & index)  # Fog events
+        c = np.sum((pre == 0) & (rhu < 80) & index)   # Haze events
         abc = np.array([a, b, c])
         pct = abc / np.sum(abc) * 100
         prefix = '[plot_obs_pies]'
@@ -54,10 +57,12 @@ def plot_obs_pies(
             x=(a, b, c), labels=labels, autopct='%.2f%%', startangle=90
         )
         fig.savefig(
-            rf'{output_dir}\pie_{i + 1}.png', bbox_inches='tight', dpi=800
+            str(pathlib.Path(output_dir) / f'pie_{i + 1}.png'),
+            bbox_inches='tight', dpi=800
         )
         fig.savefig(
-            rf'{output_dir}\pie_{i + 1}.pdf', bbox_inches='tight', dpi=800
+            str(pathlib.Path(output_dir) / f'pie_{i + 1}.pdf'),
+            bbox_inches='tight', dpi=800
         )
         plt.close(fig)
         del fig, ax
@@ -97,10 +102,12 @@ def plot_obs_violin_box(
     ax.set_xlabel('低能见度事件类型')
     ax.set_ylabel('能见度 (km) ')
     plt.savefig(
-        rf'{output_dir}\violinplot_ob.png', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'violinplot_ob.png'),
+        bbox_inches='tight', dpi=800
     )
     plt.savefig(
-        rf'{output_dir}\violinplot_ob.pdf', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'violinplot_ob.pdf'),
+        bbox_inches='tight', dpi=800
     )
     plt.close(fig)
     del fig, ax
@@ -117,10 +124,12 @@ def plot_obs_violin_box(
     ax.set_xlabel('低能见度事件类型')
     ax.set_ylabel('能见度 (km) ')
     plt.savefig(
-        rf'{output_dir}\boxplot_ob.png', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'boxplot_ob.png'),
+        bbox_inches='tight', dpi=800
     )
     plt.savefig(
-        rf'{output_dir}\boxplot_ob.pdf', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'boxplot_ob.pdf'),
+        bbox_inches='tight', dpi=800
     )
     plt.close(fig)
     del fig, ax
@@ -146,17 +155,21 @@ def _plot_stack_bar(
         haze (np.ndarray): Haze values.
         color (bool): Use color or B&W.
     """
+    # Use tab10 color scheme for color version, B&W for print version
     if color:
+        # Blue for precip, orange for fog, green for haze (tab10 palette)
         c_pre = (31 / 255, 119 / 255, 180 / 255)
         c_fog = (255 / 255, 127 / 255, 14 / 255)
         c_haze = (44 / 255, 160 / 255, 44 / 255)
-        ax.bar(x=x, height=pre, width=0.4,
-               color=c_pre, label='Precip')  # Bar
-        ax.bar(x=x, height=fog, bottom=pre, width=0.4, color=c_fog,
-               label='Fog')
+        # Stack bars: precip at bottom, fog in middle, haze on top
+        ax.bar(x=x, height=pre, width=0.4, color=c_pre, label='Precip')
+        ax.bar(
+            x=x, height=fog, bottom=pre, width=0.4, color=c_fog, label='Fog'
+        )
         ax.bar(x=x, height=haze, bottom=pre + fog, width=0.4, color=c_haze,
                label='Haze')
     else:
+        # B&W version: solid black for precip, hatched for fog, white for haze
         ax.bar(x=x, height=pre, width=0.4, color='black',
                edgecolor='black', label='Precip')
         ax.bar(x=x, height=fog, bottom=pre, width=0.4, color='white',
@@ -193,10 +206,12 @@ def plot_monthly_bars(
     ax.set_ylabel('概率')
     ax.legend()
     fig.savefig(
-        rf'{output_dir}\month_1+.png', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'month_1+.png'),
+        bbox_inches='tight', dpi=800
     )
     fig.savefig(
-        rf'{output_dir}\month_1+.pdf', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'month_1+.pdf'),
+        bbox_inches='tight', dpi=800
     )
     plt.close(fig)
     del fig, ax
@@ -219,10 +234,12 @@ def plot_monthly_bars(
     ax.set_ylabel('概率')
     ax.legend()
     fig.savefig(
-        rf'{output_dir}\month_1+_bw.png', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'month_1+_bw.png'),
+        bbox_inches='tight', dpi=800
     )
     fig.savefig(
-        rf'{output_dir}\month_1+_bw.pdf', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'month_1+_bw.pdf'),
+        bbox_inches='tight', dpi=800
     )
     plt.close(fig)
     del fig, ax
@@ -271,10 +288,12 @@ def plot_monthly_violins(
         ax.set_xlabel('月份')
         ax.set_ylabel('能见度(km)')
         fig.savefig(
-            rf'{output_dir}\{fname}.png', bbox_inches='tight', dpi=800
+            str(pathlib.Path(output_dir) / f'{fname}.png'),
+            bbox_inches='tight', dpi=800
         )
         fig.savefig(
-            rf'{output_dir}\{fname}.pdf', bbox_inches='tight', dpi=800
+            str(pathlib.Path(output_dir) / f'{fname}.pdf'),
+            bbox_inches='tight', dpi=800
         )
         if fname == 'boxplot_ob_month_haze':
             plt.close('all')
@@ -312,10 +331,12 @@ def plot_hourly_bars(
     ax.set_ylabel('概率')
     ax.legend()
     fig.savefig(
-        rf'{output_dir}\hour_1+.png', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'hour_1+.png'),
+        bbox_inches='tight', dpi=800
     )
     fig.savefig(
-        rf'{output_dir}\hour_1+.pdf', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'hour_1+.pdf'),
+        bbox_inches='tight', dpi=800
     )
     plt.close(fig)
     del fig, ax
@@ -338,10 +359,12 @@ def plot_hourly_bars(
     ax.set_ylabel('概率')
     ax.legend()
     fig.savefig(
-        rf'{output_dir}\hour_1+_bw.png', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'hour_1+_bw.png'),
+        bbox_inches='tight', dpi=800
     )
     fig.savefig(
-        rf'{output_dir}\hour_1+_bw.pdf', bbox_inches='tight', dpi=800
+        str(pathlib.Path(output_dir) / 'hour_1+_bw.pdf'),
+        bbox_inches='tight', dpi=800
     )
     plt.close(fig)
     del fig, ax
@@ -392,10 +415,12 @@ def plot_hourly_violins(
         ax.set_xlabel('小时(UTC)')
         ax.set_ylabel('能见度(km)')
         fig.savefig(
-            rf'{output_dir}\{fname}.png', bbox_inches='tight', dpi=800
+            str(pathlib.Path(output_dir) / f'{fname}.png'),
+            bbox_inches='tight', dpi=800
         )
         fig.savefig(
-            rf'{output_dir}\{fname}.pdf', bbox_inches='tight', dpi=800
+            str(pathlib.Path(output_dir) / f'{fname}.pdf'),
+            bbox_inches='tight', dpi=800
         )
         plt.close(fig)
         del fig, ax
@@ -420,7 +445,7 @@ def _scatter_sta_pair(sta0: pd.DataFrame, save_path: str, cmap, clevs) -> None:
         cmap=cmap,
         extend='max',
         title=[''],
-        save_path=rf'{save_path}.png',
+        save_path=str(pathlib.Path(save_path).with_suffix('.png')),
         dpi=800
     )
     meb.tool.plot_tools.scatter_sta(
@@ -431,7 +456,7 @@ def _scatter_sta_pair(sta0: pd.DataFrame, save_path: str, cmap, clevs) -> None:
         cmap=cmap,
         extend='max',
         title=[''],
-        save_path=rf'{save_path}.pdf',
+        save_path=str(pathlib.Path(save_path).with_suffix('.pdf')),
         dpi=800
     )
 
@@ -485,7 +510,8 @@ def plot_sta_frequency_maps(
     cmap, clevs = meb.def_cmap_clevs(cmap0, clevs=clevs_lve)
     sta0 = sta.loc[:, cols]
     sta0.loc[:, 'data0'] = df_sta.loc[:, '1']
-    _scatter_sta_pair(sta0, rf'{output_dir}\sta_1+', cmap, clevs)
+    _scatter_sta_pair(
+        sta0, str(pathlib.Path(output_dir) / 'sta_1+'), cmap, clevs)
     mean_in, mean_out = _calc_region_mean(df_sta, '1', sta, ('湖南省',))
     print(f'{prefix} LVE (in/out Hunan): {mean_in:.4f}, {mean_out:.4f}')
 
@@ -495,7 +521,8 @@ def plot_sta_frequency_maps(
                   0.12, 0.14, 0.16, 0.18, 0.2]
     cmap, clevs = meb.def_cmap_clevs(cmap0, clevs=clevs_lvpe)
     sta0.loc[:, 'data0'] = df_sta.loc[:, '1pre']
-    _scatter_sta_pair(sta0, rf'{output_dir}\sta_1+_pre', cmap, clevs)
+    _scatter_sta_pair(
+        sta0, str(pathlib.Path(output_dir) / 'sta_1+_pre'), cmap, clevs)
     prov = ('湖南省', '江西省', '浙江省')
     mean_in, mean_out = _calc_region_mean(df_sta, '1pre', sta, prov)
     lvpe_str = f'{prefix} LVPE (in/out Hunan/Jiangxi/Zhe): '
@@ -508,14 +535,16 @@ def plot_sta_frequency_maps(
                   0.24, 0.28, 0.32, 0.36, 0.4]
     cmap, clevs = meb.def_cmap_clevs(cmap0, clevs=clevs_lvfe)
     sta0.loc[:, 'data0'] = df_sta.loc[:, '1fog']
-    _scatter_sta_pair(sta0, rf'{output_dir}\sta_1+_fog', cmap, clevs)
+    _scatter_sta_pair(
+        sta0, str(pathlib.Path(output_dir) / 'sta_1+_fog'), cmap, clevs)
     mean_in, mean_out = _calc_region_mean(df_sta, '1fog', sta, ('湖南省', '江苏省'))
     lvfe_str = f'{prefix} LVFE (in/out Hunan/JS): '
     print(f'{lvfe_str}{mean_in:.4f}, {mean_out:.4f}')
 
     # LVHE
     sta0.loc[:, 'data0'] = df_sta.loc[:, '1haze']
-    _scatter_sta_pair(sta0, rf'{output_dir}\sta_1+_haze', cmap, clevs)
+    _scatter_sta_pair(
+        sta0, str(pathlib.Path(output_dir) / 'sta_1+_haze'), cmap, clevs)
     mean_in, mean_out = _calc_region_mean(df_sta, '1haze', sta, ('湖南省',))
     print(f'{prefix} LVHE (in/out Hunan): {mean_in:.4f}, {mean_out:.4f}')
 
@@ -541,7 +570,8 @@ def plot_sta_mean_maps(
 
     # mean
     sta0.loc[:, 'data0'] = df_sta.loc[:, 'mean'] / 1000
-    _scatter_sta_pair(sta0, rf'{output_dir}\sta_ob_mean', cmap, clevs)
+    _scatter_sta_pair(
+        sta0, str(pathlib.Path(output_dir) / 'sta_ob_mean'), cmap, clevs)
     provinces = ('湖南省', '江苏省', '浙江省')
     mean_in, mean_out = _calc_region_mean(df_sta, 'mean', sta, provinces)
     prefix = '[plot_sta_mean_maps]'
@@ -550,15 +580,18 @@ def plot_sta_mean_maps(
 
     # lvpe
     sta0.loc[:, 'data0'] = df_sta.loc[:, 'lvpe'] / 1000
-    _scatter_sta_pair(sta0, rf'{output_dir}\sta_ob_lvpe_mean', cmap, clevs)
+    _scatter_sta_pair(
+        sta0, str(pathlib.Path(output_dir) / 'sta_ob_lvpe_mean'), cmap, clevs)
 
     # lvfe
     sta0.loc[:, 'data0'] = df_sta.loc[:, 'lvfe'] / 1000
-    _scatter_sta_pair(sta0, rf'{output_dir}\sta_ob_lvfe_mean', cmap, clevs)
+    _scatter_sta_pair(
+        sta0, str(pathlib.Path(output_dir) / 'sta_ob_lvfe_mean'), cmap, clevs)
 
     # lvhe
     sta0.loc[:, 'data0'] = df_sta.loc[:, 'lvhe'] / 1000
-    _scatter_sta_pair(sta0, rf'{output_dir}\sta_ob_lvhe_mean', cmap, clevs)
+    _scatter_sta_pair(
+        sta0, str(pathlib.Path(output_dir) / 'sta_ob_lvhe_mean'), cmap, clevs)
 
 
 def show_cmap_legend(output_dir: str) -> None:
@@ -570,8 +603,8 @@ def show_cmap_legend(output_dir: str) -> None:
     """
     cmap, clevs = meb.def_cmap_clevs(meb.cmaps.ts)
     meb.tool.color_tools.show_cmap_clev(
-        cmap, clevs, save_path=rf'{output_dir}\000.png'
+        cmap, clevs, save_path=str(pathlib.Path(output_dir) / '000.png')
     )
     meb.tool.color_tools.show_cmap_clev(
-        cmap, clevs, save_path=rf'{output_dir}\000.pdf'
+        cmap, clevs, save_path=str(pathlib.Path(output_dir) / '000.pdf')
     )

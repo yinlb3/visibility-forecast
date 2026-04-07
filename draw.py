@@ -12,12 +12,15 @@ Modified in 2026-03-17
 """
 
 import os
+import pathlib
 
 import arrow
+
 import numpy as np
 import pandas as pd
 
 from src import (
+    CFG,
     case_study,
     data_prep,
     data_stats,
@@ -27,35 +30,24 @@ from src import (
     plot_obs,
     plot_spatiotemporal,
     temporal_eval,
+    utils,
+    vis_acc,
 )
-from src.utils import format_time
-from src.vis_acc import THRES, VisAcc
+
+# Load configuration from config/config.yaml
+# Local overrides are merged from config.local.{platform}.yaml
+CFG = CFG
 
 # Provincial-level regions for initial station filtering
-PROVINCES = (
-    '北京市', '上海市', '天津市', '安徽省', '福建省', '广东省',
-    '江苏省',
-    '江西省', '河北省', '河南省', '湖北省', '湖南省',
-    '山东省', '山西省',
-    '浙江省'
-)
+PROVINCES = tuple(CFG['regions']['provinces'])
 
 # Stage control flags: set to False to skip computation and read from cache
-STAGES = {
-    'data_prep': True,      # Stage 1: Data preparation (Type1 + Type3)
-    'stats_calc': True,     # Stage 2: Statistics calculation (Type3)
-    'obs_viz': True,        # Stage 3: Observation visualization (Type3)
-    'forecast_prep': True,  # Stage 4: Forecast verification (Type1 + Type3)
-    'type_eval': True,      # Stage 5: Weather type evaluation (Type3)
-    'dist_analysis': True,  # Stage 6: Distribution analysis (Type3)
-    'temporal': True,       # Stage 7: Temporal analysis (Type3)
-    'spatiotemporal': True, # Stage 8: Spatiotemporal visualization (Type3)
-    'case_study': True,     # Stage 9: 2024 case study (Type1 + Type3)
-}
+STAGES = CFG['stages']
 
-# Output directories
-OUTPUT_DIR = r'D:\Project\vis\figures'
-CACHE_DIR = r'D:\Project\vis\figures\csv'
+# Output directories (resolved from config)
+OUTPUT_DIR = CFG['paths']['output_dir']
+CACHE_DIR = CFG['paths']['cache_dir']
+DATA_DIR = CFG['paths']['data_dir']
 
 
 def _save_stage1_cache(sta, vis, pre, rhu, vis_grade, month_ind,
@@ -73,13 +65,13 @@ def _save_stage1_cache(sta, vis, pre, rhu, vis_grade, month_ind,
         index_cjzxy (np.ndarray): CJZXY station filter index.
     """
     os.makedirs(CACHE_DIR, exist_ok=True)
-    sta.to_csv(rf'{CACHE_DIR}\sta.csv', index=False)
-    np.save(rf'{CACHE_DIR}\vis.npy', vis)
-    np.save(rf'{CACHE_DIR}\pre.npy', pre)
-    np.save(rf'{CACHE_DIR}\rhu.npy', rhu)
-    np.save(rf'{CACHE_DIR}\vis_grade.npy', vis_grade)
-    np.save(rf'{CACHE_DIR}\month_ind.npy', month_ind)
-    np.save(rf'{CACHE_DIR}\index_cjzxy.npy', index_cjzxy)
+    sta.to_csv(str(pathlib.Path(CACHE_DIR) / 'sta.csv'), index=False)
+    np.save(str(pathlib.Path(CACHE_DIR) / 'vis.npy'), vis)
+    np.save(str(pathlib.Path(CACHE_DIR) / 'pre.npy'), pre)
+    np.save(str(pathlib.Path(CACHE_DIR) / 'rhu.npy'), rhu)
+    np.save(str(pathlib.Path(CACHE_DIR) / 'vis_grade.npy'), vis_grade)
+    np.save(str(pathlib.Path(CACHE_DIR) / 'month_ind.npy'), month_ind)
+    np.save(str(pathlib.Path(CACHE_DIR) / 'index_cjzxy.npy'), index_cjzxy)
 
 
 def _load_stage1_cache():
@@ -89,13 +81,13 @@ def _load_stage1_cache():
     Returns:
         tuple: (sta, vis, pre, rhu, vis_grade, month_ind, index_cjzxy).
     """
-    sta = pd.read_csv(rf'{CACHE_DIR}\sta.csv')
-    vis = np.load(rf'{CACHE_DIR}\vis.npy')
-    pre = np.load(rf'{CACHE_DIR}\pre.npy')
-    rhu = np.load(rf'{CACHE_DIR}\rhu.npy')
-    vis_grade = np.load(rf'{CACHE_DIR}\vis_grade.npy')
-    month_ind = np.load(rf'{CACHE_DIR}\month_ind.npy')
-    index_cjzxy = np.load(rf'{CACHE_DIR}\index_cjzxy.npy')
+    sta = pd.read_csv(str(pathlib.Path(CACHE_DIR) / 'sta.csv'))
+    vis = np.load(str(pathlib.Path(CACHE_DIR) / 'vis.npy'))
+    pre = np.load(str(pathlib.Path(CACHE_DIR) / 'pre.npy'))
+    rhu = np.load(str(pathlib.Path(CACHE_DIR) / 'rhu.npy'))
+    vis_grade = np.load(str(pathlib.Path(CACHE_DIR) / 'vis_grade.npy'))
+    month_ind = np.load(str(pathlib.Path(CACHE_DIR) / 'month_ind.npy'))
+    index_cjzxy = np.load(str(pathlib.Path(CACHE_DIR) / 'index_cjzxy.npy'))
     return sta, vis, pre, rhu, vis_grade, month_ind, index_cjzxy
 
 
@@ -120,19 +112,16 @@ def main() -> None:
     if STAGES['data_prep']:
         # 1.1 Read China eastern station info and obs data (Type1, no output)
         sta, index_zgdb = data_prep.read_sta(
-            sta_path=r'D:\data\vis\sta2411.csv',
+            sta_path=str(pathlib.Path(DATA_DIR) / 'sta2411.csv'),
             provinces=PROVINCES
         )
         vis, pre, rhu = data_prep.load_obs(
-            data_dir=r'D:\data\vis',
+            data_dir=DATA_DIR,
             index_zgdb=index_zgdb
         )
 
         # 1.2 Filter to middle-lower Yangtze region and cache (Type 3)
-        CJZXY_PROVINCES = (
-            'Hubei', 'Hunan', 'Jiangxi', 'Anhui',
-            'Jiangsu', 'Zhejiang', 'Shanghai'
-        )
+        CJZXY_PROVINCES = tuple(CFG['regions']['cjzxy_provinces'])
         sta, vis, pre, rhu, index_cjzxy = data_prep.filter_region(
             sta=sta,
             vis=vis,
@@ -166,13 +155,13 @@ def main() -> None:
             pre=pre,
             rhu=rhu,
             month_ind=month_ind,
-            thres=THRES
+            thres=vis_acc.THRES
         ))
         df_hour = pd.DataFrame(data_stats.build_hour_stats(
             vis_grade=vis_grade,
             pre=pre,
             rhu=rhu,
-            thres=THRES
+            thres=vis_acc.THRES
         ))
         df_sta = pd.DataFrame(data_stats.build_sta_stats(
             sta=sta,
@@ -180,7 +169,7 @@ def main() -> None:
             vis_grade=vis_grade,
             pre=pre,
             rhu=rhu,
-            thres=THRES
+            thres=vis_acc.THRES
         ))
 
         # 2.2 Output stats to CSV
@@ -193,14 +182,15 @@ def main() -> None:
     else:
         # Read pre-generated CSV
         print('[Cache] Loading stage 2 from cache...')
-        csv_dir = rf'{OUTPUT_DIR}\csv'
+        csv_dir = str(pathlib.Path(OUTPUT_DIR) / 'csv')
+        csv_path_month = str(pathlib.Path(csv_dir) / 'vis_month.csv')
         df_month = pd.read_csv(
-            filepath_or_buffer=rf'{csv_dir}\vis_month.csv', low_memory=False
-        )
+            filepath_or_buffer=csv_path_month, low_memory=False)
+        csv_path_hour = str(pathlib.Path(csv_dir) / 'vis_hour.csv')
         df_hour = pd.read_csv(
-            filepath_or_buffer=rf'{csv_dir}\vis_hour.csv', low_memory=False
-        )
-        df_sta = pd.read_csv(rf'{csv_dir}\vis_sta.csv', low_memory=False)
+            filepath_or_buffer=csv_path_hour, low_memory=False)
+        csv_path_sta = str(pathlib.Path(csv_dir) / 'vis_sta.csv')
+        df_sta = pd.read_csv(filepath_or_buffer=csv_path_sta, low_memory=False)
 
     # ==========================================
     # Stage 3. Observation data visualization (CJZXY)
@@ -211,7 +201,7 @@ def main() -> None:
             vis_grade=vis_grade,
             pre=pre,
             rhu=rhu,
-            thres=THRES,
+            thres=vis_acc.THRES,
             output_dir=OUTPUT_DIR
         )
 
@@ -266,12 +256,14 @@ def main() -> None:
     if STAGES['forecast_prep']:
         # 4.1 Load forecast data (Type1: basic data prep, no output)
         vis_ob, cma_sh_warr = forecast_prep.load_forecast_data(
-            data_dir=r'D:\data\vis',
+            data_dir=DATA_DIR,
             index_cjzxy=index_cjzxy
         )
         pred_tle = forecast_prep.load_experiment_preds(
-            data_dir=r'D:\data\vis'
+            data_dir=DATA_DIR
         )
+        pred_pdfm_tle0, pred_pdfm_tle1, pred_pdfm_tle2, pred_pdfm_tle3, \
+            pred_pdfm_tle4 = pred_tle
 
         # 4.2 Calc and output overall metrics (Type3: CJZXY output)
         forecast_prep.print_overall_metrics(vis_ob, cma_sh_warr, 'CMA-SH-WARR')
@@ -289,7 +281,7 @@ def main() -> None:
     if STAGES['type_eval']:
         # 5.1 Calc quantitative/grade metrics by weather type
         val_wt = forecast_type.load_weather_type(
-            data_dir=r'D:\data\vis',
+            data_dir=DATA_DIR,
             index_cjzxy=index_cjzxy
         )
         qem, cem = forecast_type.calc_weather_type_metrics(
@@ -345,7 +337,7 @@ def main() -> None:
                 'TL': pred_pdfm_tle3,
                 'PDFM-TLE': pred_pdfm_tle4,
             },
-            thres=THRES,
+            thres=vis_acc.THRES,
             output_dir=OUTPUT_DIR
         )
 
@@ -364,7 +356,7 @@ def main() -> None:
 
         # 7.4 Calc metrics by visibility type
         v_type = temporal_eval.load_v_type(
-            data_dir=r'D:\data\vis',
+            data_dir=DATA_DIR,
             index_cjzxy=index_cjzxy
         )
         type_dfs = temporal_eval.calc_type_metrics(
@@ -397,13 +389,13 @@ def main() -> None:
     if STAGES['case_study']:
         # 9.1 Load 2024 obs and forecast data (Type1, no output)
         vis_ob_2024 = case_study.load_2024_obs(
-            data_dir=r'D:\data\vis', index_cjzxy=index_cjzxy
+            data_dir=DATA_DIR, index_cjzxy=index_cjzxy
         )
         pred_pdfm2, pred_tle2 = case_study.load_2024_preds(
-            data_dir=r'D:\data\vis'
+            data_dir=DATA_DIR
         )
         cma_sh_warr_2024, pred_pdfm2_2024 = case_study.load_2024_eval_data(
-            data_dir=r'D:\data\vis', index_cjzxy=index_cjzxy
+            data_dir=DATA_DIR, index_cjzxy=index_cjzxy
         )
 
         # 9.2 Output PDFM/TLE overall metrics (Type3: CJZXY output)
@@ -425,5 +417,5 @@ if __name__ == '__main__':
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
-    elapsed_str = format_time(total_elapsed)
+    elapsed_str = utils.format_time(total_elapsed)
     print(f'Program draw.py finished, total time: {elapsed_str}')

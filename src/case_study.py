@@ -7,16 +7,20 @@ Modified in 2026-04-04
 @author: yinlb
 """
 
+import pathlib
+
 import arrow
 import numpy as np
 
-from src.vis_acc import VisAcc
+from src import vis_acc
+
+VisAcc = vis_acc.VisAcc
 
 
 def load_2024_obs(data_dir: str, index_cjzxy: np.ndarray) -> np.ndarray:
     """Load 2024 observation data for case study."""
     # 1. Load raw obs data and reshape to (time, lead, station)
-    vis_ob = np.load(rf'{data_dir}\vis1183_ob_2024.npy')
+    vis_ob = np.load(str(pathlib.Path(data_dir) / 'vis1183_ob_2024.npy'))
     vis_ob = np.reshape(vis_ob[:, 1:, index_cjzxy], shape=(-1, 24, 502))
     # 2. Apply QC: mark missing values and cap at 30000m
     vis_ob[vis_ob >= 999990] = np.nan
@@ -34,11 +38,13 @@ def load_2024_preds(data_dir: str) -> tuple:
     Returns:
         tuple: (pred_pdfm2, pred_tle2).
     """
-    pred_pdfm2 = np.load(rf'{data_dir}\vis_gjz_pdfm2_cjzxy_2024.npy')
+    path = pathlib.Path(data_dir) / 'vis_gjz_pdfm2_cjzxy_2024.npy'
+    pred_pdfm2 = np.load(str(path))
     pred_pdfm2 = np.reshape(pred_pdfm2, shape=(-1, 24, 502))
     pred_pdfm2[pred_pdfm2 >= 30000] = 30000
 
-    pred_tle2 = np.load(rf'{data_dir}\vis_gjz_tle2_cjzxy_2024.npy')
+    path = pathlib.Path(data_dir) / 'vis_gjz_tle2_cjzxy_2024.npy'
+    pred_tle2 = np.load(str(path))
     pred_tle2 = np.reshape(pred_tle2, shape=(-1, 24, 502))
     pred_tle2[pred_tle2 >= 30000] = 30000
 
@@ -99,13 +105,14 @@ def load_2024_eval_data(data_dir: str, index_cjzxy: np.ndarray) -> tuple:
     Returns:
         tuple: (cma_sh_warr, pred_pdfm2).
     """
-    cma_sh_warr = np.load(rf'{data_dir}\vis_gjz_2024.npy')
+    cma_sh_warr = np.load(str(pathlib.Path(data_dir) / 'vis_gjz_2024.npy'))
     cma_sh_warr = np.reshape(
         cma_sh_warr[:, 1:, index_cjzxy], shape=(-1, 24, 502)
     )
     cma_sh_warr[cma_sh_warr >= 30000] = 30000
 
-    pred_pdfm2 = np.load(rf'{data_dir}\vis_gjz_pdfm2_cjzxy_2024.npy')
+    path = pathlib.Path(data_dir) / 'vis_gjz_pdfm2_cjzxy_2024.npy'
+    pred_pdfm2 = np.load(str(path))
     pred_pdfm2 = np.reshape(pred_pdfm2, shape=(-1, 24, 502))
     pred_pdfm2[pred_pdfm2 >= 30000] = 30000
 

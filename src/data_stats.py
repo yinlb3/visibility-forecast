@@ -7,6 +7,7 @@ Modified in 2026-04-04
 @author: yinlb
 """
 
+import pathlib
 import typing
 
 import numpy as np
@@ -54,6 +55,7 @@ def build_month_stats(
                 df_month[str(i + 1) + 'fog'] = list()
                 df_month[str(i + 1) + 'haze'] = list()
             # 2.3 Calc valid samples and freq for each weather type
+            # Filter data for current month (j+1 = 1-12)
             valid = np.sum(vis_grade[month_ind == j + 1, :] >= 0)
             vg = vis_grade[month_ind == j + 1, :]
             df_month[str(i + 1)].append(np.sum(vg >= i + 1) / valid)
@@ -84,14 +86,21 @@ def build_hour_stats(
     Returns:
         dict: Hourly stats dict.
     """
+    # 1. Init result container with hour labels
     df_hour = {'hour': list()}
+    # 2. Loop through each visibility grade
     for i in range(len(thres)):
+        # 2.1 Create weather type masks (same logic as monthly)
+        # Precip mask: keep only precip events (pre > 0)
         a = np.copy(vis_grade)
         a[pre == 0] = -1
+        # Fog mask: no precip + high RH (>=80%)
         b = np.copy(vis_grade)
         b[(pre > 0) | (rhu < 80)] = -1
+        # Haze mask: no precip + low RH (<80%)
         c = np.copy(vis_grade)
         c[(pre < 0) | (rhu >= 80)] = -1
+        # 2.2 Loop through 24 hours of the day
         for j in range(24):
             if i == 0:
                 df_hour['hour'].append(j)
@@ -100,6 +109,7 @@ def build_hour_stats(
                 df_hour[str(i + 1) + 'pre'] = list()
                 df_hour[str(i + 1) + 'fog'] = list()
                 df_hour[str(i + 1) + 'haze'] = list()
+            # j::24 selects all data at hour j (e.g., 0, 24, 48... for hour 0)
             valid = np.sum(vis_grade[j::24, :] >= 0)
             vg_h = vis_grade[j::24, :]
             df_hour[str(i + 1)].append(np.sum(vg_h >= i + 1) / valid)
@@ -192,12 +202,12 @@ def save_obs_stats(
         output_dir (str): Output directory path.
     """
     import os
-    csv_dir = rf'{output_dir}\csv'
-    os.makedirs(csv_dir, exist_ok=True)
+    csv_dir = pathlib.Path(output_dir) / 'csv'
+    csv_dir.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(df_month).to_csv(
-        path_or_buf=rf'{csv_dir}\vis_month.csv', index=False
+        path_or_buf=str(csv_dir / 'vis_month.csv'), index=False
     )
     pd.DataFrame(df_hour).to_csv(
-        path_or_buf=rf'{csv_dir}\vis_hour.csv', index=False
+        path_or_buf=str(csv_dir / 'vis_hour.csv'), index=False
     )
-    pd.DataFrame(df_sta).to_csv(rf'{csv_dir}\vis_sta.csv', index=False)
+    pd.DataFrame(df_sta).to_csv(str(csv_dir / 'vis_sta.csv'), index=False)

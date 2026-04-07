@@ -7,12 +7,15 @@ Modified in 2026-04-04
 @author: yinlb
 """
 
+import pathlib
 import typing
 
 import numpy as np
 import pandas as pd
 
-from src.vis_acc import VisAcc
+from src import vis_acc
+
+VisAcc = vis_acc.VisAcc
 
 
 def _create_group(keys: typing.Tuple[str, ...]) -> typing.Dict[str, dict]:
@@ -174,13 +177,13 @@ def calc_temporal_metrics(
             hour_access[3, i, j, 4:] = acc.get_ts2()
 
     # 3. Save results to CSV and NPY
-    import os
-    csv_dir = rf'{output_dir}\csv'
-    os.makedirs(csv_dir, exist_ok=True)
-    pd.DataFrame(vt['ts4']).to_csv(rf'{csv_dir}\vis_vt_ts4+.csv', index=False)
+    csv_dir = pathlib.Path(output_dir) / 'csv'
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(vt['ts4']).to_csv(
+        str(csv_dir / 'vis_vt_ts4+.csv'), index=False)
     pd.DataFrame(fhour['ts4']).to_csv(
-        rf'{csv_dir}\vis_fhour_ts4+.csv', index=False)
-    np.save(rf'{csv_dir}\hour_access.npy', hour_access)
+        str(csv_dir / 'vis_fhour_ts4+.csv'), index=False)
+    np.save(str(csv_dir / 'hour_access.npy'), hour_access)
     return hour_access
 
 
@@ -195,7 +198,7 @@ def load_v_type(data_dir: str, index_cjzxy: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: Visibility type array.
     """
-    v_type = np.load(rf'{data_dir}\v_type.npy')
+    v_type = np.load(str(pathlib.Path(data_dir) / 'v_type.npy'))
     v_type = np.reshape(v_type[-365:, :, :, index_cjzxy], (-1, 24, 502))
     return v_type
 
@@ -266,14 +269,15 @@ def save_type_results(
 ) -> None:
     """Save visibility type metrics to CSV."""
     import os
-    csv_dir = rf'{output_dir}\csv'
-    os.makedirs(csv_dir, exist_ok=True)
-    dfs['corr'].to_csv(rf'{csv_dir}\vis_type_corr.csv', index=False)
-    dfs['mae'].to_csv(rf'{csv_dir}\vis_type_mae.csv', index=False)
-    dfs['rmse'].to_csv(rf'{csv_dir}\vis_type_rmse.csv', index=False)
-    dfs['mre'].to_csv(rf'{csv_dir}\vis_type_mre.csv', index=False)
+    csv_dir = pathlib.Path(output_dir) / 'csv'
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    dfs['corr'].to_csv(str(csv_dir / 'vis_type_corr.csv'), index=False)
+    dfs['mae'].to_csv(str(csv_dir / 'vis_type_mae.csv'), index=False)
+    dfs['rmse'].to_csv(str(csv_dir / 'vis_type_rmse.csv'), index=False)
+    dfs['mre'].to_csv(str(csv_dir / 'vis_type_mre.csv'), index=False)
     for i in range(1, 7):
-        dfs[f'ts{i}'].to_csv(rf'{csv_dir}\vis_type_ts{i}+.csv', index=False)
+        dfs[f'ts{i}'].to_csv(
+            str(csv_dir / f'vis_type_ts{i}+.csv'), index=False)
 
 
 

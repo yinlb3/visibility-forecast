@@ -7,11 +7,15 @@ Modified in 2026-04-04
 @author: yinlb
 """
 
+import pathlib
+
 import arrow
 import numpy as np
 import pandas as pd
 
-from src.vis_acc import THRES
+from src import vis_acc
+
+THRES = vis_acc.THRES
 
 
 def read_sta(sta_path: str, provinces: tuple) -> tuple:
@@ -56,17 +60,17 @@ def load_obs(data_dir: str, index_zgdb: np.ndarray) -> tuple:
         tuple: (vis, pre, rhu), all QC-ed numpy arrays.
     """
     # 1. Load visibility data and apply QC (capped at 30000m)
-    vis = np.load(rf'{data_dir}\vis20-23.npy')[:, index_zgdb]
+    vis = np.load(str(pathlib.Path(data_dir) / 'vis20-23.npy'))[:, index_zgdb]
     vis[vis >= 999990] = np.nan  # Missing value marker
     vis[vis >= 30000] = 30000    # Cap at 30000m
 
     # 2. Load precipitation data and apply QC
-    pre = np.load(rf'{data_dir}\pre20-23.npy')[:, index_zgdb]
+    pre = np.load(str(pathlib.Path(data_dir) / 'pre20-23.npy'))[:, index_zgdb]
     pre[pre >= 200] = np.nan     # Extreme precip as missing
     pre[pre >= 30000] = 30000
 
     # 3. Load relative humidity and apply range limit [0, 100]
-    rhu = np.load(rf'{data_dir}\rhu20-23.npy')[:, index_zgdb]
+    rhu = np.load(str(pathlib.Path(data_dir) / 'rhu20-23.npy'))[:, index_zgdb]
     rhu[rhu >= 999990] = np.nan
     rhu[rhu > 100] = 100
     rhu[rhu < 0] = 0
