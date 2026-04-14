@@ -10,7 +10,55 @@ import platform
 import pathlib
 import typing
 
+from matplotlib import figure
 import yaml
+
+
+# ==================== Figure Save Utility ====================
+
+
+def save_figure(
+    fig: figure.Figure,
+    base_path: pathlib.Path,
+    cfg: typing.Dict[str, typing.Any],
+    **save_kwargs
+) -> None:
+    """
+    Save figure to multiple formats specified in config.
+
+    Reads output_formats from cfg['plot']['output_formats'].
+    Tries each format in order, logs error and continues if one fails.
+
+    Args:
+        fig: Matplotlib figure to save.
+        base_path: Base file path without extension (e.g., Path('output/fig1')).
+        cfg: Configuration dictionary containing plot settings.
+        **save_kwargs: Additional kwargs passed to fig.savefig().
+
+    Example:
+        >>> save_figure(fig, Path('figures/chart'), cfg, dpi=300, bbox_inches='tight')
+        [save_figure] Saved: figures/chart.png
+        [save_figure] Saved: figures/chart.pdf
+    """
+    # Get formats from config, default to png only
+    formats = cfg.get('plot', {}).get('output_formats', ['png'])
+    if not formats:
+        formats = ['png']
+
+    # Ensure base_path is Path object
+    base = pathlib.Path(base_path)
+
+    for fmt in formats:
+        # Clean format string (remove leading dot if present)
+        fmt_clean = fmt.lstrip('.').lower()
+        filepath = base.with_suffix(f'.{fmt_clean}')
+
+        try:
+            fig.savefig(str(filepath), format=fmt_clean, **save_kwargs)
+            print(f'[save_figure] Saved: {filepath}')
+        except Exception as e:
+            print(f'[save_figure] Error saving {fmt_clean}: {e}')
+            continue
 
 
 def format_time(second: float, is_abbreviation: bool = False) -> str:
@@ -28,7 +76,7 @@ def format_time(second: float, is_abbreviation: bool = False) -> str:
         ValueError: When second is negative.
     """
     if second < 0:
-        raise ValueError("Parameter 'second' cannot be negative.")
+        raise ValueError('Parameter \'second\' cannot be negative.')
     elif is_abbreviation:
         if second <= 60:
             time_str = str(second) + 's'
@@ -150,7 +198,7 @@ def _validate_config(cfg: typing.Dict[str, typing.Any]) -> None:
         'paths.cache_dir',
         'stages',
         'regions.provinces',
-        'regions.cjzxy_provinces',
+        'regions.mlyr_provinces',
     ]
 
     for key_path in required_keys:
@@ -159,9 +207,9 @@ def _validate_config(cfg: typing.Dict[str, typing.Any]) -> None:
         for part in parts:
             if not isinstance(current, dict) or part not in current:
                 raise KeyError(
-                    f"Missing required config: '{key_path}'. "
-                    f"Please check config/config.yaml and "
-                    f"config.local.{platform.system().lower()}.yaml"
+                    f'Missing required config: \'{key_path}\'. '
+                    f'Please check config/config.yaml and '
+                    f'config.local.{platform.system().lower()}.yaml'
                 )
             current = current[part]
 

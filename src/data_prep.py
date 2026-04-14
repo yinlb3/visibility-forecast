@@ -30,7 +30,7 @@ def read_sta(sta_path: str, provinces: tuple) -> tuple:
         tuple: (Filtered station DataFrame, initial filter bool index).
     """
     # 1. Load station data and sort by ID
-    sta = pd.read_csv(filepath_or_buffer=sta_path, low_memory=False)
+    sta = pd.read_csv(filepath_or_buffer=sta_path, low_memory=False, encoding='utf-8')
     sta = sta.sort_values(by=['id'])
     sta.reset_index(drop=True, inplace=True)
 

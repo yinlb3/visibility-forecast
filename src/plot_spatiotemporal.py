@@ -9,6 +9,7 @@ Modified in 2026-04-04
 
 import gc
 import pathlib
+import typing
 
 import numpy as np
 import pandas as pd
@@ -136,7 +137,7 @@ def plot_ts_comparison_bars(output_dir: str) -> None:
     ts_max = np.max(ts_improvement)
     prefix = '[plot_ts_comparison_bars]'
     print(f'{prefix} VT TS improve: {ts_min:.4f}% ~ {ts_max:.4f}%')
-    ts_str = " ".join(f"{x:.4f}" for x in ts_improvement)
+    ts_str = ' '.join(f'{x:.4f}' for x in ts_improvement)
     print(f'[plot_ts_comparison_bars] VT TS improve: [{ts_str}]')
     ts_max_val = np.max(df_vt_ts4.loc[:, 'PDFM-TLE'])
     print(f'[plot_ts_comparison_bars] VT PDFM-TLE max: {ts_max_val:.4f}')
@@ -198,7 +199,7 @@ def plot_ts_comparison_bars(output_dir: str) -> None:
     ts_max = np.max(ts_improvement)
     prefix = '[plot_ts_comparison_bars]'
     print(f'{prefix} FHour TS improve: {ts_min:.4f}% ~ {ts_max:.4f}%')
-    ts_str = " ".join(f"{x:.4f}" for x in ts_improvement)
+    ts_str = ' '.join(f'{x:.4f}' for x in ts_improvement)
     print(f'[plot_ts_comparison_bars] FHour TS improve: [{ts_str}]')
     ts_max_val = np.max(df_fhour_ts4.loc[:, 'PDFM-TLE'])
     print(f'[plot_ts_comparison_bars] FHour PDFM-TLE max: {ts_max_val:.4f}')

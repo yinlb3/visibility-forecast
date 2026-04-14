@@ -17,13 +17,16 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from meteva import base as meb
 
+from src import utils
+
 
 def plot_obs_pies(
     vis_grade: np.ndarray,
     pre: np.ndarray,
     rhu: np.ndarray,
     thres: typing.Tuple[float, ...],
-    output_dir: str
+    output_dir: str,
+    cfg: typing.Optional[typing.Dict[str, typing.Any]] = None
 ) -> None:
     """
     Plot weather type proportion pie charts by grade.
@@ -34,6 +37,7 @@ def plot_obs_pies(
         rhu (np.ndarray): Relative humidity array.
         thres (typing.Tuple[float, ...]): Visibility grade thresholds.
         output_dir (str): Output directory path.
+        cfg (Optional[Dict]): Configuration dict for output formats.
     """
     # 1. Loop through each visibility grade
     for i in range(len(thres)):
@@ -56,14 +60,15 @@ def plot_obs_pies(
         ax.pie(
             x=(a, b, c), labels=labels, autopct='%.2f%%', startangle=90
         )
-        fig.savefig(
-            str(pathlib.Path(output_dir) / f'pie_{i + 1}.png'),
-            bbox_inches='tight', dpi=800
-        )
-        fig.savefig(
-            str(pathlib.Path(output_dir) / f'pie_{i + 1}.pdf'),
-            bbox_inches='tight', dpi=800
-        )
+        base_path = pathlib.Path(output_dir) / f'pie_{i + 1}'
+        if cfg:
+            utils.save_figure(fig, base_path, cfg, bbox_inches='tight', dpi=800)
+        else:
+            # Fallback: save png and pdf
+            fig.savefig(str(base_path.with_suffix('.png')),
+                        bbox_inches='tight', dpi=800)
+            fig.savefig(str(base_path.with_suffix('.pdf')),
+                        bbox_inches='tight', dpi=800)
         plt.close(fig)
         del fig, ax
         gc.collect()
@@ -73,7 +78,8 @@ def plot_obs_violin_box(
     vis: np.ndarray,
     pre: np.ndarray,
     rhu: np.ndarray,
-    output_dir: str
+    output_dir: str,
+    cfg: typing.Optional[typing.Dict[str, typing.Any]] = None
 ) -> None:
     """
     Plot violin/box for vis < 500m events.
@@ -105,14 +111,14 @@ def plot_obs_violin_box(
     sns.violinplot(data=data, color='skyblue')  # Plot violin
     ax.set_xlabel('低能见度事件类型')
     ax.set_ylabel('能见度 (km) ')
-    plt.savefig(
-        str(pathlib.Path(output_dir) / 'violinplot_ob.png'),
-        bbox_inches='tight', dpi=800
-    )
-    plt.savefig(
-        str(pathlib.Path(output_dir) / 'violinplot_ob.pdf'),
-        bbox_inches='tight', dpi=800
-    )
+    base_path = pathlib.Path(output_dir) / 'violinplot_ob'
+    if cfg:
+        utils.save_figure(fig, base_path, cfg, bbox_inches='tight', dpi=800)
+    else:
+        fig.savefig(str(base_path.with_suffix('.png')),
+                    bbox_inches='tight', dpi=800)
+        fig.savefig(str(base_path.with_suffix('.pdf')),
+                    bbox_inches='tight', dpi=800)
     plt.close(fig)
     del fig, ax
     gc.collect()
@@ -127,14 +133,14 @@ def plot_obs_violin_box(
     )
     ax.set_xlabel('低能见度事件类型')
     ax.set_ylabel('能见度 (km) ')
-    plt.savefig(
-        str(pathlib.Path(output_dir) / 'boxplot_ob.png'),
-        bbox_inches='tight', dpi=800
-    )
-    plt.savefig(
-        str(pathlib.Path(output_dir) / 'boxplot_ob.pdf'),
-        bbox_inches='tight', dpi=800
-    )
+    base_path = pathlib.Path(output_dir) / 'boxplot_ob'
+    if cfg:
+        utils.save_figure(fig, base_path, cfg, bbox_inches='tight', dpi=800)
+    else:
+        fig.savefig(str(base_path.with_suffix('.png')),
+                    bbox_inches='tight', dpi=800)
+        fig.savefig(str(base_path.with_suffix('.pdf')),
+                    bbox_inches='tight', dpi=800)
     plt.close(fig)
     del fig, ax
     gc.collect()
@@ -184,7 +190,8 @@ def _plot_stack_bar(
 
 def plot_monthly_bars(
     df_month: pd.DataFrame,
-    output_dir: str
+    output_dir: str,
+    cfg: typing.Optional[typing.Dict[str, typing.Any]] = None
 ) -> None:
     """
     Plot monthly prob stacked bars (color and B&W).
@@ -209,14 +216,14 @@ def plot_monthly_bars(
     ax.set_xlabel('月份')
     ax.set_ylabel('概率')
     ax.legend()
-    fig.savefig(
-        str(pathlib.Path(output_dir) / 'month_1+.png'),
-        bbox_inches='tight', dpi=800
-    )
-    fig.savefig(
-        str(pathlib.Path(output_dir) / 'month_1+.pdf'),
-        bbox_inches='tight', dpi=800
-    )
+    base_path = pathlib.Path(output_dir) / 'month_1+'
+    if cfg:
+        utils.save_figure(fig, base_path, cfg, bbox_inches='tight', dpi=800)
+    else:
+        fig.savefig(str(base_path.with_suffix('.png')),
+                    bbox_inches='tight', dpi=800)
+        fig.savefig(str(base_path.with_suffix('.pdf')),
+                    bbox_inches='tight', dpi=800)
     plt.close(fig)
     del fig, ax
     gc.collect()
@@ -237,14 +244,14 @@ def plot_monthly_bars(
     ax.set_xlabel('月份')
     ax.set_ylabel('概率')
     ax.legend()
-    fig.savefig(
-        str(pathlib.Path(output_dir) / 'month_1+_bw.png'),
-        bbox_inches='tight', dpi=800
-    )
-    fig.savefig(
-        str(pathlib.Path(output_dir) / 'month_1+_bw.pdf'),
-        bbox_inches='tight', dpi=800
-    )
+    base_path = pathlib.Path(output_dir) / 'month_1+_bw'
+    if cfg:
+        utils.save_figure(fig, base_path, cfg, bbox_inches='tight', dpi=800)
+    else:
+        fig.savefig(str(base_path.with_suffix('.png')),
+                    bbox_inches='tight', dpi=800)
+        fig.savefig(str(base_path.with_suffix('.pdf')),
+                    bbox_inches='tight', dpi=800)
     plt.close(fig)
     del fig, ax
     gc.collect()
@@ -254,8 +261,8 @@ def plot_monthly_bars(
     prefix = '[plot_monthly_bars]'
     max_month, max_val = np.argmax(lve) + 1, np.max(lve)
     min_month, min_val = np.argmin(lve) + 1, np.min(lve)
-    print(f'{prefix} LVE max: m={max_month}, v={max_val:.4f}')
-    print(f'{prefix} LVE min month: {min_month}, value: {min_val:.4f}')
+    print(f'{prefix} LVE max month: m={max_month}, value={max_val:.4f}')
+    print(f'{prefix} LVE min month: m={min_month}, value={min_val:.4f}')
 
 
 def plot_monthly_violins(
@@ -263,7 +270,8 @@ def plot_monthly_violins(
     pre: np.ndarray,
     rhu: np.ndarray,
     month_ind: np.ndarray,
-    output_dir: str
+    output_dir: str,
+    cfg: typing.Optional[typing.Dict[str, typing.Any]] = None
 ) -> None:
     """
     Plot monthly visibility violin by weather type.
@@ -291,14 +299,14 @@ def plot_monthly_violins(
         sns.violinplot(data=d, color='skyblue')
         ax.set_xlabel('月份')
         ax.set_ylabel('能见度(km)')
-        fig.savefig(
-            str(pathlib.Path(output_dir) / f'{fname}.png'),
-            bbox_inches='tight', dpi=800
-        )
-        fig.savefig(
-            str(pathlib.Path(output_dir) / f'{fname}.pdf'),
-            bbox_inches='tight', dpi=800
-        )
+        base_path = pathlib.Path(output_dir) / fname
+        if cfg:
+            utils.save_figure(fig, base_path, cfg, bbox_inches='tight', dpi=800)
+        else:
+            fig.savefig(str(base_path.with_suffix('.png')),
+                        bbox_inches='tight', dpi=800)
+            fig.savefig(str(base_path.with_suffix('.pdf')),
+                        bbox_inches='tight', dpi=800)
         if fname == 'boxplot_ob_month_haze':
             plt.close('all')
         else:
@@ -309,7 +317,8 @@ def plot_monthly_violins(
 
 def plot_hourly_bars(
     df_hour: pd.DataFrame,
-    output_dir: str
+    output_dir: str,
+    cfg: typing.Optional[typing.Dict[str, typing.Any]] = None
 ) -> None:
     """
     Plot hourly prob stacked bars (color and B&W).
@@ -334,14 +343,14 @@ def plot_hourly_bars(
     ax.set_xlabel('时间 (UTC) ')
     ax.set_ylabel('概率')
     ax.legend()
-    fig.savefig(
-        str(pathlib.Path(output_dir) / 'hour_1+.png'),
-        bbox_inches='tight', dpi=800
-    )
-    fig.savefig(
-        str(pathlib.Path(output_dir) / 'hour_1+.pdf'),
-        bbox_inches='tight', dpi=800
-    )
+    base_path = pathlib.Path(output_dir) / 'hour_1+'
+    if cfg:
+        utils.save_figure(fig, base_path, cfg, bbox_inches='tight', dpi=800)
+    else:
+        fig.savefig(str(base_path.with_suffix('.png')),
+                    bbox_inches='tight', dpi=800)
+        fig.savefig(str(base_path.with_suffix('.pdf')),
+                    bbox_inches='tight', dpi=800)
     plt.close(fig)
     del fig, ax
     gc.collect()
@@ -362,14 +371,14 @@ def plot_hourly_bars(
     ax.set_xlabel('时间 (UTC) ')
     ax.set_ylabel('概率')
     ax.legend()
-    fig.savefig(
-        str(pathlib.Path(output_dir) / 'hour_1+_bw.png'),
-        bbox_inches='tight', dpi=800
-    )
-    fig.savefig(
-        str(pathlib.Path(output_dir) / 'hour_1+_bw.pdf'),
-        bbox_inches='tight', dpi=800
-    )
+    base_path = pathlib.Path(output_dir) / 'hour_1+_bw'
+    if cfg:
+        utils.save_figure(fig, base_path, cfg, bbox_inches='tight', dpi=800)
+    else:
+        fig.savefig(str(base_path.with_suffix('.png')),
+                    bbox_inches='tight', dpi=800)
+        fig.savefig(str(base_path.with_suffix('.pdf')),
+                    bbox_inches='tight', dpi=800)
     plt.close(fig)
     del fig, ax
     gc.collect()
@@ -377,15 +386,16 @@ def plot_hourly_bars(
     lve = np.array(df_hour.loc[:, '1haze'] + df_hour.loc[:, '1pre'] +
                    df_hour.loc[:, '1fog'])
     prefix = '[plot_hourly_bars]'
-    print(f'{prefix} LVE max hour: {np.argmax(lve)}, value: {np.max(lve):.4f}')
-    print(f'{prefix} LVE min hour: {np.argmin(lve)}, value: {np.min(lve):.4f}')
+    print(f'{prefix} LVE max hour: h={np.argmax(lve)}, value={np.max(lve):.4f}')
+    print(f'{prefix} LVE min hour: h={np.argmin(lve)}, value={np.min(lve):.4f}')
 
 
 def plot_hourly_violins(
     vis: np.ndarray,
     pre: np.ndarray,
     rhu: np.ndarray,
-    output_dir: str
+    output_dir: str,
+    cfg: typing.Optional[typing.Dict[str, typing.Any]] = None
 ) -> None:
     """
     Plot hourly visibility violin by weather type.
@@ -418,14 +428,14 @@ def plot_hourly_violins(
         sns.violinplot(data=d, color='skyblue')
         ax.set_xlabel('小时(UTC)')
         ax.set_ylabel('能见度(km)')
-        fig.savefig(
-            str(pathlib.Path(output_dir) / f'{fname}.png'),
-            bbox_inches='tight', dpi=800
-        )
-        fig.savefig(
-            str(pathlib.Path(output_dir) / f'{fname}.pdf'),
-            bbox_inches='tight', dpi=800
-        )
+        base_path = pathlib.Path(output_dir) / fname
+        if cfg:
+            utils.save_figure(fig, base_path, cfg, bbox_inches='tight', dpi=800)
+        else:
+            fig.savefig(str(base_path.with_suffix('.png')),
+                        bbox_inches='tight', dpi=800)
+            fig.savefig(str(base_path.with_suffix('.pdf')),
+                        bbox_inches='tight', dpi=800)
         plt.close(fig)
         del fig, ax
         gc.collect()
@@ -529,7 +539,7 @@ def plot_sta_frequency_maps(
         sta0, str(pathlib.Path(output_dir) / 'sta_1+_pre'), cmap, clevs)
     prov = ('湖南省', '江西省', '浙江省')
     mean_in, mean_out = _calc_region_mean(df_sta, '1pre', sta, prov)
-    lvpe_str = f'{prefix} LVPE (in/out Hunan/Jiangxi/Zhe): '
+    lvpe_str = f'{prefix} LVPE (in/out Hunan/Jiangxi/Zhejiang): '
     lvpe_str += f'{mean_in:.4f}, {mean_out:.4f}'
     print(lvpe_str)
 
@@ -542,7 +552,7 @@ def plot_sta_frequency_maps(
     _scatter_sta_pair(
         sta0, str(pathlib.Path(output_dir) / 'sta_1+_fog'), cmap, clevs)
     mean_in, mean_out = _calc_region_mean(df_sta, '1fog', sta, ('湖南省', '江苏省'))
-    lvfe_str = f'{prefix} LVFE (in/out Hunan/JS): '
+    lvfe_str = f'{prefix} LVFE (in/out Hunan/Jiangsu): '
     print(f'{lvfe_str}{mean_in:.4f}, {mean_out:.4f}')
 
     # LVHE
@@ -596,19 +606,3 @@ def plot_sta_mean_maps(
     sta0.loc[:, 'data0'] = df_sta.loc[:, 'lvhe'] / 1000
     _scatter_sta_pair(
         sta0, str(pathlib.Path(output_dir) / 'sta_ob_lvhe_mean'), cmap, clevs)
-
-
-def show_cmap_legend(output_dir: str) -> None:
-    """
-    Output colorbar legend.
-
-    Args:
-        output_dir (str): Output directory path.
-    """
-    cmap, clevs = meb.def_cmap_clevs(meb.cmaps.ts)
-    meb.tool.color_tools.show_cmap_clev(
-        cmap, clevs, save_path=str(pathlib.Path(output_dir) / '000.png')
-    )
-    meb.tool.color_tools.show_cmap_clev(
-        cmap, clevs, save_path=str(pathlib.Path(output_dir) / '000.pdf')
-    )

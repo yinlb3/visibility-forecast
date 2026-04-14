@@ -46,6 +46,19 @@ def _fmt_list(lst: list) -> str:
     return '[' + ', '.join(f'{float(x):.4f}' for x in lst) + ']'
 
 
+def _fmt_list_m(lst: list) -> str:
+    """
+    Format a list of meter-based metrics with 1 decimal place.
+
+    Args:
+        lst (list): List of floats to format.
+
+    Returns:
+        str: Formatted string like '[123.4, 567.8]'.
+    """
+    return '[' + ', '.join(f'{float(x):.1f}' for x in lst) + ']'
+
+
 def _append_metrics(
     acc: VisAcc, group: typing.Dict[str, dict], name: str
 ) -> None:
@@ -236,10 +249,10 @@ def calc_type_metrics(
 
     print('[Type Metrics] CMA-SH-WARR')
     c_cma = _fmt_list(d['corr']['CMA-SH-WARR'])
-    a_cma = _fmt_list(d['mae']['CMA-SH-WARR'])
-    r_cma = _fmt_list(d['rmse']['CMA-SH-WARR'])
+    a_cma = _fmt_list_m(d['mae']['CMA-SH-WARR'])
+    r_cma = _fmt_list_m(d['rmse']['CMA-SH-WARR'])
     m_cma = _fmt_list(d['mre']['CMA-SH-WARR'])
-    print(f'  corr={c_cma}, mae={a_cma}, rmse={r_cma}, mre={m_cma}')
+    print(f'  corr={c_cma}, mae={a_cma} m, rmse={r_cma} m, mre={m_cma}')
     t1 = _fmt_list(d['ts1']['CMA-SH-WARR'])
     t2 = _fmt_list(d['ts2']['CMA-SH-WARR'])
     t3 = _fmt_list(d['ts3']['CMA-SH-WARR'])
@@ -250,8 +263,8 @@ def calc_type_metrics(
     print(f'  TS  = {ts_str}')
     print('[Type Metrics] PDFM-TLE')
     c_pdfm = _fmt_list(d['corr']['PDFM-TLE'])
-    a_pdfm = _fmt_list(d['mae']['PDFM-TLE'])
-    r_pdfm = _fmt_list(d['rmse']['PDFM-TLE'])
+    a_pdfm = _fmt_list_m(d['mae']['PDFM-TLE'])
+    r_pdfm = _fmt_list_m(d['rmse']['PDFM-TLE'])
     m_pdfm = _fmt_list(d['mre']['PDFM-TLE'])
     print(f'  corr={c_pdfm}, mae={a_pdfm}, rmse={r_pdfm}, mre={m_pdfm}')
     t1p = _fmt_list(d['ts1']['PDFM-TLE'])
@@ -282,6 +295,60 @@ def save_type_results(
     for i in range(1, 7):
         dfs[f'ts{i}'].to_csv(
             str(csv_dir / f'vis_type_ts{i}+.csv'), index=False)
+
+
+def load_temporal_metrics(output_dir: str) -> np.ndarray:
+    """
+    Load pre-calculated temporal metrics (hour_access) from NPY file.
+
+    Args:
+        output_dir (str): Output directory containing 'csv' subfolder.
+
+    Returns:
+        np.ndarray: hour_access 4D array, shape (4, 24, 24, 10).
+
+    Raises:
+        FileNotFoundError: If hour_access.npy does not exist.
+    """
+    csv_dir = pathlib.Path(output_dir) / 'csv'
+    file_path = csv_dir / 'hour_access.npy'
+    if not file_path.exists():
+        raise FileNotFoundError(f'Temporal metrics not found: {file_path}')
+    return np.load(str(file_path))
+
+
+def load_type_results(output_dir: str) -> typing.Dict[str, pd.DataFrame]:
+    """
+    Load pre-calculated visibility type metrics from CSV files.
+
+    Args:
+        output_dir (str): Output directory containing 'csv' subfolder.
+
+    Returns:
+        dict: Dictionary with metric names as keys and DataFrames as values.
+
+    Raises:
+        FileNotFoundError: If required CSV files do not exist.
+    """
+    csv_dir = pathlib.Path(output_dir) / 'csv'
+    metrics = {}
+    metric_names = ['corr', 'mae', 'rmse', 'mre']
+    
+    # Load basic metrics
+    for key in metric_names:
+        file_path = csv_dir / f'vis_type_{key}.csv'
+        if not file_path.exists():
+            raise FileNotFoundError(f'Type metrics file not found: {file_path}')
+        metrics[key] = pd.read_csv(str(file_path), low_memory=False)
+    
+    # Load TS metrics
+    for i in range(1, 7):
+        file_path = csv_dir / f'vis_type_ts{i}+.csv'
+        if not file_path.exists():
+            raise FileNotFoundError(f'Type metrics file not found: {file_path}')
+        metrics[f'ts{i}'] = pd.read_csv(str(file_path), low_memory=False)
+    
+    return metrics
 
 
 

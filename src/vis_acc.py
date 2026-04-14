@@ -1,23 +1,28 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Visibility forecast verification metrics calculation module.
 
 Founded in 2024-04-18
-Modified in 2026-04-04
+Modified in 2026-04-08
 @author: yinlb
 """
 
 import copy
+import typing
 
 import numpy as np
 from scipy import stats
 
+# Import load_config at module level for THRES initialization
+from src import utils
 
-# Six-grade visibility thresholds (m): <10000, <2000, <1000, <500, <200, <50
+# Visibility grade thresholds loaded from config
+# Default: [10000., 2000., 1000., 500., 200., 50.] (meters)
 # Grade 0: >=10000m (good), Grade 1-5: moderate to poor,
 # Grade 6: <50m (dense fog)
-# Based on China Meteorological Administration visibility grade standards
-THRES = (10000., 2000., 1000., 500., 200., 50.)
+THRES: typing.Tuple[float, ...] = tuple(
+    utils.load_config()['visibility']['grade_thresholds']
+)
 
 
 class VisAcc:

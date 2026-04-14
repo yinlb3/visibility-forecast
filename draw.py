@@ -1,4 +1,4 @@
-﻿#!user/bin.python3
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Main entry module for visibility data visualization. Responsibilities:
@@ -7,7 +7,7 @@ Main entry module for visibility data visualization. Responsibilities:
 3. Draw statistical charts for papers (bars, box, violin, pie, heatmap).
 
 Founded in 2024-04-18
-Modified in 2026-03-17
+Modified in 2026-04-08
 @author: yinlb
 """
 
@@ -15,12 +15,10 @@ import os
 import pathlib
 
 import arrow
-
 import numpy as np
 import pandas as pd
 
 from src import (
-    CFG,
     case_study,
     data_prep,
     data_stats,
@@ -34,24 +32,9 @@ from src import (
     vis_acc,
 )
 
-# Load configuration from config/config.yaml
-# Local overrides are merged from config.local.{platform}.yaml
-CFG = CFG
-
-# Provincial-level regions for initial station filtering
-PROVINCES = tuple(CFG['regions']['provinces'])
-
-# Stage control flags: set to False to skip computation and read from cache
-STAGES = CFG['stages']
-
-# Output directories (resolved from config)
-OUTPUT_DIR = CFG['paths']['output_dir']
-CACHE_DIR = CFG['paths']['cache_dir']
-DATA_DIR = CFG['paths']['data_dir']
-
 
 def _save_stage1_cache(sta, vis, pre, rhu, vis_grade, month_ind,
-                        index_cjzxy) -> None:
+                       idx_mlyr, cache_dir: str) -> None:
     """
     Save stage 1 intermediate results for skipping.
 
@@ -62,106 +45,123 @@ def _save_stage1_cache(sta, vis, pre, rhu, vis_grade, month_ind,
         rhu (np.ndarray): Relative humidity array.
         vis_grade (np.ndarray): Visibility grade array.
         month_ind (np.ndarray): Month index array.
-        index_cjzxy (np.ndarray): CJZXY station filter index.
+        idx_mlyr (np.ndarray): MLYR station filter index.
+        cache_dir (str): Cache directory path.
     """
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    sta.to_csv(str(pathlib.Path(CACHE_DIR) / 'sta.csv'), index=False)
-    np.save(str(pathlib.Path(CACHE_DIR) / 'vis.npy'), vis)
-    np.save(str(pathlib.Path(CACHE_DIR) / 'pre.npy'), pre)
-    np.save(str(pathlib.Path(CACHE_DIR) / 'rhu.npy'), rhu)
-    np.save(str(pathlib.Path(CACHE_DIR) / 'vis_grade.npy'), vis_grade)
-    np.save(str(pathlib.Path(CACHE_DIR) / 'month_ind.npy'), month_ind)
-    np.save(str(pathlib.Path(CACHE_DIR) / 'index_cjzxy.npy'), index_cjzxy)
+    os.makedirs(cache_dir, exist_ok=True)
+    sta.to_csv(str(pathlib.Path(cache_dir) / 'sta.csv'), index=False)
+    np.save(str(pathlib.Path(cache_dir) / 'vis.npy'), vis)
+    np.save(str(pathlib.Path(cache_dir) / 'pre.npy'), pre)
+    np.save(str(pathlib.Path(cache_dir) / 'rhu.npy'), rhu)
+    np.save(str(pathlib.Path(cache_dir) / 'vis_grade.npy'), vis_grade)
+    np.save(str(pathlib.Path(cache_dir) / 'month_ind.npy'), month_ind)
+    np.save(str(pathlib.Path(cache_dir) / 'index_mlyr.npy'), idx_mlyr)
 
 
-def _load_stage1_cache():
+def _load_stage1_cache(cache_dir: str):
     """
     Load stage 1 intermediate results.
 
+    Args:
+        cache_dir (str): Cache directory path.
+
     Returns:
-        tuple: (sta, vis, pre, rhu, vis_grade, month_ind, index_cjzxy).
+        tuple: (sta, vis, pre, rhu, vis_grade, month_ind, idx_mlyr).
     """
-    sta = pd.read_csv(str(pathlib.Path(CACHE_DIR) / 'sta.csv'))
-    vis = np.load(str(pathlib.Path(CACHE_DIR) / 'vis.npy'))
-    pre = np.load(str(pathlib.Path(CACHE_DIR) / 'pre.npy'))
-    rhu = np.load(str(pathlib.Path(CACHE_DIR) / 'rhu.npy'))
-    vis_grade = np.load(str(pathlib.Path(CACHE_DIR) / 'vis_grade.npy'))
-    month_ind = np.load(str(pathlib.Path(CACHE_DIR) / 'month_ind.npy'))
-    index_cjzxy = np.load(str(pathlib.Path(CACHE_DIR) / 'index_cjzxy.npy'))
-    return sta, vis, pre, rhu, vis_grade, month_ind, index_cjzxy
+    sta = pd.read_csv(str(pathlib.Path(cache_dir) / 'sta.csv'))
+    vis = np.load(str(pathlib.Path(cache_dir) / 'vis.npy'))
+    pre = np.load(str(pathlib.Path(cache_dir) / 'pre.npy'))
+    rhu = np.load(str(pathlib.Path(cache_dir) / 'rhu.npy'))
+    vis_grade = np.load(str(pathlib.Path(cache_dir) / 'vis_grade.npy'))
+    month_ind = np.load(str(pathlib.Path(cache_dir) / 'month_ind.npy'))
+    # idx_mlyr: index for Middle-Lower Yangtze River region
+    idx_mlyr = np.load(str(pathlib.Path(cache_dir) / 'index_mlyr.npy'))
+    return sta, vis, pre, rhu, vis_grade, month_ind, idx_mlyr
 
 
 def main() -> None:
     """
-    Main function: execute the 9-stage visibility analysis pipeline.
+    Main function: execute the 10-stage visibility analysis pipeline.
 
     Stages:
-        1. Data preparation
-        2. Observation statistics and output
-        3. Observation data visualization
-        4. Forecast data loading and verification
-        5. Weather-type forecast verification
-        6. Forecast data distribution analysis
-        7. Temporal analysis
-        8. Spatiotemporal feature visualization
-        9. 2024 independent case study analysis
+        1. Load configuration
+        2. Data preparation
+        3. Observation statistics and output
+        4. Observation data visualization
+        5. Forecast data loading and verification
+        6. Weather-type forecast verification
+        7. Forecast data distribution analysis
+        8. Temporal analysis
+        9. Spatiotemporal feature visualization
+        10. 2024 independent case study analysis
     """
+    # 1. Load configuration from config/config.yaml
+    # Local overrides are merged from config.local.{platform}.yaml
+    print('Loading configuration...')
+    cfg = utils.load_config()
+    provinces = tuple(cfg['regions']['provinces'])
+    stages = cfg['stages']
+    output_dir = cfg['paths']['output_dir']
+    cache_dir = cfg['paths']['cache_dir']
+    data_dir = cfg['paths']['data_dir']
+    thres = tuple(cfg['visibility']['grade_thresholds'])
+
     # ==========================================
-    # Stage 1. Data preparation
+    # Stage 2. Data preparation
     # ==========================================
-    if STAGES['data_prep']:
-        # 1.1 Read China eastern station info and obs data (Type1, no output)
-        sta, index_zgdb = data_prep.read_sta(
-            sta_path=str(pathlib.Path(DATA_DIR) / 'sta2411.csv'),
-            provinces=PROVINCES
+    if stages['data_prep']:
+        # 2.1 Read China eastern station info and obs data (Type1, no output)
+        sta, idx_east_china = data_prep.read_sta(
+            sta_path=str(pathlib.Path(data_dir) / 'sta2411.csv'),
+            provinces=provinces
         )
         vis, pre, rhu = data_prep.load_obs(
-            data_dir=DATA_DIR,
-            index_zgdb=index_zgdb
+            data_dir=data_dir,
+            idx_east_china=idx_east_china
         )
 
-        # 1.2 Filter to middle-lower Yangtze region and cache (Type 3)
-        CJZXY_PROVINCES = tuple(CFG['regions']['cjzxy_provinces'])
-        sta, vis, pre, rhu, index_cjzxy = data_prep.filter_region(
+        # 2.2 Filter to middle-lower Yangtze region and cache (Type 3)
+        # MLYR_PROVINCES: provinces in Middle-Lower Yangtze River region
+        mlyr_provinces = tuple(cfg['regions']['mlyr_provinces'])
+        sta, vis, pre, rhu, idx_mlyr = data_prep.filter_region(
             sta=sta,
             vis=vis,
             pre=pre,
             rhu=rhu,
-            region_provinces=CJZXY_PROVINCES
+            region_provinces=mlyr_provinces
         )
-        print(f'[Data Prep] Loaded {len(sta)} CJZXY stations')
+        print(f'[Data Prep] Loaded {len(sta)} MLYR stations')
         vis_grade = data_prep.grade_visibility(vis=vis)
         month_ind = data_prep.build_month_index(start_year=2020, n_hours=35064)
         _save_stage1_cache(
-            sta, vis, pre, rhu, vis_grade, month_ind, index_cjzxy
+            sta, vis, pre, rhu, vis_grade, month_ind, idx_mlyr, cache_dir
         )
     else:
-        # 1.3 Load CJZXY data from cache (Type3)
+        # 2.3 Load MLYR data from cache (Type3)
         print('[Cache] Loading stage 1 from cache...')
-        sta, vis, pre, rhu, vis_grade, month_ind, index_cjzxy = (
-            _load_stage1_cache()
+        sta, vis, pre, rhu, vis_grade, month_ind, idx_mlyr = (
+            _load_stage1_cache(cache_dir)
         )
         # Ensure output dir exists for subsequent stages
-        import os
-        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
 
     # ==========================================
-    # Stage 2. Observation statistics and output (CJZXY)
+    # Stage 3. Observation statistics and output (MLYR)
     # ==========================================
-    if STAGES['stats_calc']:
-        # 2.1 Build month/hour/sta stat dicts
+    if stages['stats_calc']:
+        # 3.1 Build month/hour/sta stat dicts
         df_month = pd.DataFrame(data_stats.build_month_stats(
             vis_grade=vis_grade,
             pre=pre,
             rhu=rhu,
             month_ind=month_ind,
-            thres=vis_acc.THRES
+            thres=thres
         ))
         df_hour = pd.DataFrame(data_stats.build_hour_stats(
             vis_grade=vis_grade,
             pre=pre,
             rhu=rhu,
-            thres=vis_acc.THRES
+            thres=thres
         ))
         df_sta = pd.DataFrame(data_stats.build_sta_stats(
             sta=sta,
@@ -169,20 +169,20 @@ def main() -> None:
             vis_grade=vis_grade,
             pre=pre,
             rhu=rhu,
-            thres=vis_acc.THRES
+            thres=thres
         ))
 
-        # 2.2 Output stats to CSV
+        # 3.2 Output stats to CSV
         data_stats.save_obs_stats(
             df_month=df_month,
             df_hour=df_hour,
             df_sta=df_sta,
-            output_dir=OUTPUT_DIR
+            output_dir=output_dir
         )
     else:
         # Read pre-generated CSV
         print('[Cache] Loading stage 2 from cache...')
-        csv_dir = str(pathlib.Path(OUTPUT_DIR) / 'csv')
+        csv_dir = str(pathlib.Path(output_dir) / 'csv')
         csv_path_month = str(pathlib.Path(csv_dir) / 'vis_month.csv')
         df_month = pd.read_csv(
             filepath_or_buffer=csv_path_month, low_memory=False)
@@ -193,141 +193,168 @@ def main() -> None:
         df_sta = pd.read_csv(filepath_or_buffer=csv_path_sta, low_memory=False)
 
     # ==========================================
-    # Stage 3. Observation data visualization (CJZXY)
+    # Stage 4. Observation data visualization (MLYR)
     # ==========================================
-    if STAGES['obs_viz']:
-        # 3.1 Plot weather type pie charts by grade
+    if stages['obs_viz']:
+        # 4.1 Plot weather type pie charts by grade
         plot_obs.plot_obs_pies(
             vis_grade=vis_grade,
             pre=pre,
             rhu=rhu,
-            thres=vis_acc.THRES,
-            output_dir=OUTPUT_DIR
+            thres=thres,
+            output_dir=output_dir
         )
 
-        # 3.2 Plot violin/box for vis < 500m events
+        # 4.2 Plot violin/box for vis < 500m events
         plot_obs.plot_obs_violin_box(
             vis=vis,
             pre=pre,
             rhu=rhu,
-            output_dir=OUTPUT_DIR
+            output_dir=output_dir
         )
 
-        # 3.3 Plot monthly prob stacked bars and box
+        # 4.3 Plot monthly prob stacked bars and box
         plot_obs.plot_monthly_bars(
             df_month=df_month,
-            output_dir=OUTPUT_DIR
+            output_dir=output_dir
         )
         plot_obs.plot_monthly_violins(
             vis=vis,
             pre=pre,
             rhu=rhu,
             month_ind=month_ind,
-            output_dir=OUTPUT_DIR
+            output_dir=output_dir
         )
 
-        # 3.4 Plot hourly prob stacked bars and box
+        # 4.4 Plot hourly prob stacked bars and box
         plot_obs.plot_hourly_bars(
             df_hour=df_hour,
-            output_dir=OUTPUT_DIR
+            output_dir=output_dir
         )
         plot_obs.plot_hourly_violins(
             vis=vis,
             pre=pre,
             rhu=rhu,
-            output_dir=OUTPUT_DIR
+            output_dir=output_dir
         )
-        # 3.5 Plot station spatial distribution
+        # 4.5 Plot station spatial distribution
         plot_obs.plot_sta_frequency_maps(
             sta=sta,
             df_sta=df_sta,
-            output_dir=OUTPUT_DIR
+            output_dir=output_dir
         )
         plot_obs.plot_sta_mean_maps(
             sta=sta,
             df_sta=df_sta,
-            output_dir=OUTPUT_DIR
+            output_dir=output_dir
         )
-        plot_obs.show_cmap_legend(output_dir=OUTPUT_DIR)
 
     # ==========================================
-    # Stage 4. Forecast data loading and verification
+    # Stage 5. Forecast data loading and verification
     # ==========================================
-    if STAGES['forecast_prep']:
-        # 4.1 Load forecast data (Type1: basic data prep, no output)
+    if stages['forecast_prep']:
+        # 5.1 Load forecast data (Type1: basic data prep, no output)
+        # cma_sh_warr: CMA Shanghai WARR model forecast
         vis_ob, cma_sh_warr = forecast_prep.load_forecast_data(
-            data_dir=DATA_DIR,
-            index_cjzxy=index_cjzxy
+            data_dir=data_dir,
+            idx_mlyr=idx_mlyr
         )
         pred_tle = forecast_prep.load_experiment_preds(
-            data_dir=DATA_DIR
+            data_dir=data_dir
         )
+        # pred_pdfm_tle: PDF matching temporal lead experiment predictions
         pred_pdfm_tle0, pred_pdfm_tle1, pred_pdfm_tle2, pred_pdfm_tle3, \
             pred_pdfm_tle4 = pred_tle
 
-        # 4.2 Calc and output overall metrics (Type3: CJZXY output)
+        # 5.2 Calc and output overall metrics (Type3: MLYR output)
         forecast_prep.print_overall_metrics(vis_ob, cma_sh_warr, 'CMA-SH-WARR')
         for i, pred in enumerate(pred_tle):
             forecast_prep.print_overall_metrics(vis_ob, pred, f'Scheme {i+1}')
 
-        # 4.3 Calc and save station-level metrics (Type3)
+        # 5.3 Calc and save station-level metrics (Type3)
         forecast_prep.calc_and_save_station_metrics(
-            vis_ob, cma_sh_warr, pred_tle[2], output_dir=OUTPUT_DIR
+            vis_ob, cma_sh_warr, pred_tle[2], output_dir=output_dir
         )
+    else:
+        # 5.4 Load pre-calculated forecast data and metrics from cache
+        print('[Cache] Loading stage 5 from cache...')
+        vis_ob, cma_sh_warr = forecast_prep.load_forecast_data(
+            data_dir=data_dir,
+            idx_mlyr=idx_mlyr
+        )
+        pred_tle = forecast_prep.load_experiment_preds(
+            data_dir=data_dir
+        )
+        pred_pdfm_tle0, pred_pdfm_tle1, pred_pdfm_tle2, pred_pdfm_tle3, \
+            pred_pdfm_tle4 = pred_tle
+        # Load station metrics to verify they exist
+        _ = forecast_prep.load_station_metrics(output_dir=output_dir)
 
     # ==========================================
-    # Stage 5. Weather-type forecast verification (CJZXY)
+    # Stage 6. Weather-type forecast verification (MLYR)
     # ==========================================
-    if STAGES['type_eval']:
-        # 5.1 Calc quantitative/grade metrics by weather type
+    if stages['type_eval']:
+        # 6.1 Calc quantitative/grade metrics by weather type
         val_wt = forecast_type.load_weather_type(
-            data_dir=DATA_DIR,
-            index_cjzxy=index_cjzxy
+            data_dir=data_dir,
+            idx_mlyr=idx_mlyr
         )
+        # qem: quantitative evaluation metrics (R, MAE, RMSE, MRE)
+        # cem: categorical/grade evaluation metrics (TS, FAR, MAR, POD)
         qem, cem = forecast_type.calc_weather_type_metrics(
             vis_ob=vis_ob,
             preds=(cma_sh_warr,) + pred_tle,
             val_wt=val_wt
         )
+        # Save weather type metrics for cache
+        forecast_type.save_weather_type_metrics(qem, cem, output_dir)
 
-        # 5.2 Plot weather type comparison
+        # 6.2 Plot weather type comparison
         forecast_type.plot_weather_type_eval_bw(
             qem=qem[0, ...], filename='wt_cc_bw',
-            max_y=0.4, output_dir=OUTPUT_DIR
+            max_y=0.4, output_dir=output_dir
         )
         forecast_type.plot_weather_type_eval_bw(
             qem=qem[1, ...], filename='wt_mae_bw', max_y=10,
-            output_dir=OUTPUT_DIR
+            output_dir=output_dir
         )
         forecast_type.plot_weather_type_eval_bw(
             qem=qem[2, ...], filename='wt_rmse_bw', max_y=15,
-            output_dir=OUTPUT_DIR
+            output_dir=output_dir
         )
         forecast_type.plot_weather_type_eval_bw(
             qem=qem[3, ...], filename='wt_mre_bw', max_y=0.6,
-            output_dir=OUTPUT_DIR
+            output_dir=output_dir
         )
 
-        # 5.3 Calc and plot visibility CDF
+        # 6.3 Calc and plot visibility CDF
         forecast_type.plot_vis_cdf(
             vis_ob=vis_ob,
             cma_sh_warr=cma_sh_warr,
             pred_pdfm_tle0=pred_pdfm_tle0,
-            output_dir=OUTPUT_DIR
+            output_dir=output_dir
         )
+    else:
+        # 6.4 Load pre-calculated weather type metrics from cache
+        print('[Cache] Loading stage 6 from cache...')
+        qem, cem = forecast_type.load_weather_type_metrics(output_dir)
 
     # ==========================================
-    # Stage 6. Forecast data distribution analysis (CJZXY)
+    # Stage 7. Forecast data distribution analysis (MLYR)
     # ==========================================
-    if STAGES['dist_analysis']:
-        # 6.1 Plot 2D freq distribution (fcst vs obs)
-        forecast_dist.plot_nwp_his2d(
-            vis_ob=vis_ob,
-            cma_sh_warr=cma_sh_warr,
-            output_dir=OUTPUT_DIR
-        )
+    if stages['dist_analysis']:
+        # NOTE: plot_nwp_his2d temporarily disabled due to data quality issues
+        # (CMA-SH-WARR shows weak correlation with obs, resulting in
+        # scattered distribution instead of diagonal concentration)
+        # forecast_dist.plot_nwp_his2d(
+        #     vis_ob=vis_ob,
+        #     cma_sh_warr=cma_sh_warr,
+        #     output_dir=output_dir,
+        #     n_bins=100,
+        #     max_points=100000,
+        # )
 
-        # 6.2 Plot grade freq distribution bars
+        # 7.1 Plot grade freq distribution bars
         forecast_dist.plot_grade_frequency(
             vis_ob=vis_ob,
             preds={
@@ -337,27 +364,27 @@ def main() -> None:
                 'TL': pred_pdfm_tle3,
                 'PDFM-TLE': pred_pdfm_tle4,
             },
-            thres=vis_acc.THRES,
-            output_dir=OUTPUT_DIR
+            thres=thres,
+            output_dir=output_dir
         )
 
     # ==========================================
-    # Stage 7. Temporal analysis (CJZXY)
+    # Stage 8. Temporal analysis (MLYR)
     # ==========================================
-    if STAGES['temporal']:
-        # 7.1-7.3 Calc init time/lead time/forecast time metrics
+    if stages['temporal']:
+        # 8.1-8.3 Calc init time/lead time/forecast time metrics
         temporal_eval.calc_temporal_metrics(
             vis_ob=vis_ob,
             cma_sh_warr=cma_sh_warr,
             pred_pdfm_tle0=pred_pdfm_tle0,
             pred_pdfm_tle2=pred_pdfm_tle2,
-            output_dir=OUTPUT_DIR
+            output_dir=output_dir
         )
 
-        # 7.4 Calc metrics by visibility type
+        # 8.4 Calc metrics by visibility type
         v_type = temporal_eval.load_v_type(
-            data_dir=DATA_DIR,
-            index_cjzxy=index_cjzxy
+            data_dir=data_dir,
+            idx_mlyr=idx_mlyr
         )
         type_dfs = temporal_eval.calc_type_metrics(
             vis_ob=vis_ob,
@@ -365,45 +392,49 @@ def main() -> None:
             pred_pdfm_tle0=pred_pdfm_tle0,
             v_type=v_type
         )
-        temporal_eval.save_type_results(type_dfs, output_dir=OUTPUT_DIR)
+        temporal_eval.save_type_results(type_dfs, output_dir=output_dir)
+    else:
+        # 8.5 Load pre-calculated temporal metrics from cache
+        print('[Cache] Loading stage 8 from cache...')
+        _ = temporal_eval.load_temporal_metrics(output_dir)
 
     # ==========================================
-    # Stage 8. Spatiotemporal feature visualization (CJZXY)
+    # Stage 9. Spatiotemporal feature visualization (MLYR)
     # ==========================================
-    if STAGES['spatiotemporal']:
-        # 8.1 Plot init time-lead time heatmap (CJZXY)
-        plot_spatiotemporal.plot_hour_access_heatmaps(output_dir=OUTPUT_DIR)
+    if stages['spatiotemporal']:
+        # 9.1 Plot init time-lead time heatmap (MLYR)
+        plot_spatiotemporal.plot_hour_access_heatmaps(output_dir=output_dir)
 
-        # 8.2 Plot lead time/forecast time TS4+ bars (CJZXY)
-        plot_spatiotemporal.plot_ts_comparison_bars(output_dir=OUTPUT_DIR)
+        # 9.2 Plot lead time/forecast time TS4+ bars (MLYR)
+        plot_spatiotemporal.plot_ts_comparison_bars(output_dir=output_dir)
 
-        # 8.3 Plot station-level TS4+ spatial map (CJZXY)
-        plot_spatiotemporal.plot_sta_ts4_maps(sta=sta, output_dir=OUTPUT_DIR)
+        # 9.3 Plot station-level TS4+ spatial map (MLYR)
+        plot_spatiotemporal.plot_sta_ts4_maps(sta=sta, output_dir=output_dir)
 
-        # 8.4 Plot MRE improvement box/violin (CJZXY)
-        plot_spatiotemporal.plot_mre_violins(sta=sta, output_dir=OUTPUT_DIR)
+        # 9.4 Plot MRE improvement box/violin (MLYR)
+        plot_spatiotemporal.plot_mre_violins(sta=sta, output_dir=output_dir)
 
     # ==========================================
-    # Stage 9. 2024 independent case study analysis
+    # Stage 10. 2024 independent case study analysis
     # ==========================================
-    if STAGES['case_study']:
-        # 9.1 Load 2024 obs and forecast data (Type1, no output)
+    if stages['case_study']:
+        # 10.1 Load 2024 obs and forecast data (Type1, no output)
         vis_ob_2024 = case_study.load_2024_obs(
-            data_dir=DATA_DIR, index_cjzxy=index_cjzxy
+            data_dir=data_dir, idx_mlyr=idx_mlyr
         )
         pred_pdfm2, pred_tle2 = case_study.load_2024_preds(
-            data_dir=DATA_DIR
+            data_dir=data_dir
         )
         cma_sh_warr_2024, pred_pdfm2_2024 = case_study.load_2024_eval_data(
-            data_dir=DATA_DIR, index_cjzxy=index_cjzxy
+            data_dir=data_dir, idx_mlyr=idx_mlyr
         )
 
-        # 9.2 Output PDFM/TLE overall metrics (Type3: CJZXY output)
+        # 10.2 Output PDFM/TLE overall metrics (Type3: MLYR output)
         case_study.print_2024_overall_metrics(
             vis_ob_2024, pred_pdfm2, pred_tle2
         )
 
-        # 9.3 Calc TS4+ for 18 cases (Type3)
+        # 10.3 Calc TS4+ for 18 cases (Type3)
         vis_ob_, cma_sh_warr_, pred_pdfm2_ = case_study.align_forecast_times(
             vis_ob_2024, cma_sh_warr_2024, pred_pdfm2_2024
         )

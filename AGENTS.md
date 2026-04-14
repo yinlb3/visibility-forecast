@@ -67,7 +67,7 @@ No unit test framework (no `pytest`, `unittest`). Verification method: run scrip
 Refer to `user-preferences` skill A.1-A.9.
 
 **Project-specific conventions**:
-1. **Pinyin Abbreviation Naming**: Variable naming mixes pinyin with English, e.g., `hxjz` (confusion matrix), `cjzxy` (middle-lower Yangtze)
+1. **Pinyin Abbreviation Naming**: Variable naming mixes pinyin with English, e.g., `mlyr` (Middle-Lower Yangtze River)
 2. **Memory Management**: Use `plt.close(fig)`, `del fig, ax`, `gc.collect()` to release matplotlib memory
 3. **Hard-coded Paths**: Input `D:\data\vis\...`, Output `D:\Project\vis\figures\...`
 4. **Data Cleaning**: Missing values as `999990`/`999999` -> `np.nan`; visibility capped at 30000m

@@ -6,11 +6,12 @@ Display color distribution along diagonal
 Fixed Chinese font and memory issues
 
 Founded in 2026-04-04
-Modified in 2026-04-04
+Modified in 2026-04-08
 @author: yinlb
 """
 
 import pathlib
+import typing
 
 import arrow
 import numpy as np
@@ -18,34 +19,22 @@ from matplotlib import font_manager as fm
 from matplotlib import patches
 from matplotlib import pyplot as plt
 
-from src import CFG
-
-# ==================== Global Configuration ====================
-
-# Load configuration from config/config.yaml
-_PLOT_CFG = CFG['plot']
-GRID_SIZE = _PLOT_CFG['grid_size']
-FIG_WIDTH = _PLOT_CFG['fig_width']
-FIG_HEIGHT = _PLOT_CFG['fig_height']
-COLOR_MAP_NAME = _PLOT_CFG['color_map']
-OUTPUT_DPI = _PLOT_CFG['dpi']
-CHINESE_FONT_PATH = None  # Chinese font path (auto-detect)
+from src import utils
 
 
-# ==================== Font Configuration ====================
-
-
-def setup_chinese_font():
+def setup_chinese_font(fonts_cfg: typing.Dict) -> typing.Optional[str]:
     """
     Configure Chinese font support.
 
     Auto-detect system Chinese fonts
     to fix DejaVu Sans missing CJK glyphs.
-    """
-    global CHINESE_FONT_PATH
 
-    # Get Chinese font paths from config
-    fonts_cfg = CFG['fonts']
+    Args:
+        fonts_cfg: Font configuration dict with 'chinese' key.
+
+    Returns:
+        Path to available Chinese font, or None if not found.
+    """
     possible_fonts = fonts_cfg['chinese']
 
     # Try to find available Chinese font
@@ -53,35 +42,37 @@ def setup_chinese_font():
         try:
             # Test if font is available
             prop = fm.FontProperties(fname=font_path)
-            text = u'Test Chinese'
+            text = 'Test Chinese'
             # Try to render test text
             fig_test = plt.figure()
             ax_test = fig_test.add_subplot(111)
             ax_test.text(0.5, 0.5, text, fontproperties=prop)
             plt.close(fig_test)
-            CHINESE_FONT_PATH = font_path
             print(f'Found font: {font_path}')
-            break
-        except Exception as e:
+            return font_path
+        except Exception:
             continue
 
-    if CHINESE_FONT_PATH is None:
-        print('Warning: No Chinese font found, using English title')
+    print('Warning: No Chinese font found, using English title')
+    return None
 
 
-def set_matplotlib_params():
+def set_matplotlib_params(chinese_font_path: typing.Optional[str]) -> None:
     """
     Set matplotlib parameters.
 
     Including fonts, backend, etc.
     Avoid font rendering issues.
+
+    Args:
+        chinese_font_path: Path to Chinese font, or None.
     """
     plt.rcParams['axes.unicode_minus'] = False  # Correct minus sign display
 
     # If Chinese font found, register and use
-    if CHINESE_FONT_PATH:
+    if chinese_font_path:
         # Register font
-        font_prop = fm.FontProperties(fname=CHINESE_FONT_PATH)
+        font_prop = fm.FontProperties(fname=chinese_font_path)
         # Set global font
         plt.rcParams['font.family'] = font_prop.get_name()
         print(f'Font set to: {font_prop.get_name()}')
@@ -90,7 +81,7 @@ def set_matplotlib_params():
 # ==================== Core Functions ====================
 
 
-def create_diagonal_matrix(size):
+def create_diagonal_matrix(size: int) -> np.ndarray:
     """
     Create diagonal index matrix.
 
@@ -113,7 +104,7 @@ def create_diagonal_matrix(size):
     return diagonal_idx
 
 
-def generate_color_map(num_colors):
+def generate_color_map(num_colors: int, color_map_name: str):
     """
     Generate color list of specified count.
 
@@ -122,11 +113,12 @@ def generate_color_map(num_colors):
 
     Args:
         num_colors: Number of colors needed
+        color_map_name: Name of matplotlib colormap
 
     Returns:
         colors: Color list
     """
-    base_cmap = plt.get_cmap(COLOR_MAP_NAME)
+    base_cmap = plt.get_cmap(color_map_name)
     colors = [base_cmap(i / max(1, num_colors - 1)) for i in range(num_colors)]
 
     return colors
@@ -276,33 +268,46 @@ def main() -> None:
         5. Add annotations and labels
         6. Save output files
     """
-    # 1. Setup Chinese font and matplotlib parameters
-    setup_chinese_font()
-    set_matplotlib_params()
+    # 1. Load configuration
+    print('Loading configuration...')
+    cfg = utils.load_config()
 
-    # 2. Create figure and define subplot areas
-    fig = plt.figure(figsize=(FIG_WIDTH, FIG_HEIGHT))
+    # 2. Extract commonly used configuration values
+    plot_cfg = cfg['plot']
+    grid_size = plot_cfg['grid_size']
+    fig_width = plot_cfg['fig_width']
+    fig_height = plot_cfg['fig_height']
+    color_map_name = plot_cfg['color_map']
+    output_dpi = plot_cfg['dpi']
+    out_dir = cfg['paths']['output_dir']
+
+    # 3. Setup Chinese font and matplotlib parameters
+    chinese_font_path = setup_chinese_font(cfg['fonts'])
+    set_matplotlib_params(chinese_font_path)
+
+    # 4. Create figure and define subplot areas
+    fig = plt.figure(figsize=(fig_width, fig_height))
     ax_grid = fig.add_axes([0.1, 0.15, 0.8, 0.75])      # Main grid area
     ax_colorbar = fig.add_axes([0.1, 0.05, 0.8, 0.08])  # Color bar area
     ax_labels = fig.add_axes([0.1, 0.15, 0.8, 0.75])    # Label overlay area
 
-    # 3. Generate diagonal matrix and color map
-    diagonal_matrix = create_diagonal_matrix(GRID_SIZE)
-    color_list = generate_color_map(GRID_SIZE * 2 - 1)
+    # 5. Generate diagonal matrix and color map
+    diagonal_matrix = create_diagonal_matrix(grid_size)
+    color_list = generate_color_map(grid_size * 2 - 1, color_map_name)
 
-    # 4. Draw main elements (grid and color bar)
-    draw_grid(ax_grid, diagonal_matrix, color_list, GRID_SIZE)
-    draw_color_bar(ax_colorbar, color_list, GRID_SIZE * 2 - 1)
+    # 6. Draw main elements (grid and color bar)
+    draw_grid(ax_grid, diagonal_matrix, color_list, grid_size)
+    draw_color_bar(ax_colorbar, color_list, grid_size * 2 - 1)
 
-    # 5. Add number labels and annotations
-    add_number_labels(ax_labels, GRID_SIZE, position='top')
-    add_number_labels(ax_labels, GRID_SIZE, position='bottom')
-    add_arrow_annotation(ax_labels, GRID_SIZE, target_col=12.5)
+    # 7. Add number labels and annotations
+    add_number_labels(ax_labels, grid_size, position='top')
+    add_number_labels(ax_labels, grid_size, position='bottom')
+    add_arrow_annotation(ax_labels, grid_size, target_col=12.5)
 
-    # 6. Set title and save output files
-    if CHINESE_FONT_PATH:
+    # 8. Set title and save output files
+    if chinese_font_path:
         # Use font property to specify font
-        font_prop = fm.FontProperties(fname=CHINESE_FONT_PATH, size=14)
+        font_prop = fm.FontProperties(fname=chinese_font_path, size=14)
         fig.suptitle(
             'Diagonal Color Distribution',
             fontproperties=font_prop, y=0.98
@@ -310,26 +315,22 @@ def main() -> None:
     else:
         fig.suptitle(
             'Diagonal Color Distribution Schematic', fontsize=14,
-                     y=0.98)
+            y=0.98)
 
     # Save files (use lower DPI to save memory)
-    out_dir = CFG['paths']['output_dir']
     output_path_pdf = str(pathlib.Path(out_dir) / 'diagonal_grid_fixed.pdf')
     plt.savefig(
-        output_path_pdf, dpi=OUTPUT_DPI, bbox_inches='tight',
+        output_path_pdf, dpi=output_dpi, bbox_inches='tight',
         format='pdf', facecolor='white', edgecolor='none'
     )
     print(f'PDF figure saved to {output_path_pdf}')
 
     output_path_eps = str(pathlib.Path(out_dir) / 'diagonal_grid_fixed.eps')
     plt.savefig(
-        output_path_eps, dpi=OUTPUT_DPI, bbox_inches='tight',
+        output_path_eps, dpi=output_dpi, bbox_inches='tight',
         format='eps', facecolor='white', edgecolor='none'
     )
     print(f'EPS figure saved to {output_path_eps}')
-
-    # # Show figure
-    # plt.show()
 
     # Clean up memory
     plt.close(fig)

@@ -61,7 +61,7 @@ def load_experiment_preds(data_dir: str) -> typing.Tuple[np.ndarray, ...]:
     """
     preds = list()
     for i in range(5):
-        path = str(pathlib.Path(data_dir) / f'vis_gjz_pdfm_tle{i}_cjzxy.npy')
+        path = str(pathlib.Path(data_dir) / f'vis_gjz_pdfm_tle{i}_mlyr.npy')
         pred = np.load(path)
         pred = np.reshape(pred, (-1, 24, 502))
         pred[pred >= 30000] = 30000
@@ -92,16 +92,13 @@ def print_overall_metrics(
     acc = VisAcc(vis_ob, pred)
     print(f'[Overall Metrics] {name}')
     print(f'  R    = {acc.get_r():.4f}')
-    print(f'  MAE  = {acc.get_mae():.4f} m')
-    print(f'  RMSE = {acc.get_rmse():.4f} m')
+    print(f'  MAE  = {acc.get_mae():.1f} m')
+    print(f'  RMSE = {acc.get_rmse():.1f} m')
     print(f'  MRE  = {acc.get_mre():.4f}')
-    print(f'  TS_GE  = {_fmt_arr(acc.get_ts_ge())}')
-    print(f'  ETS_GE = {_fmt_arr(acc.get_ets_ge())}')
-    print(f'  HSS_GE = {_fmt_arr(acc.get_hss_ge())}')
-    print(f'  TSS_GE = {_fmt_arr(acc.get_tss_ge())}')
-    print(f'  FAR_GE = {_fmt_arr(acc.get_far_ge())}')
-    print(f'  MAR_GE = {_fmt_arr(acc.get_mar_ge())}')
-    print(f'  POD_GE = {_fmt_arr(acc.get_pod_ge())}')
+    print(f'  TS_ge  = {_fmt_arr(acc.get_ts_ge())}')
+    print(f'  FAR_ge = {_fmt_arr(acc.get_far_ge())}')
+    print(f'  MAR_ge = {_fmt_arr(acc.get_mar_ge())}')
+    print(f'  POD_ge = {_fmt_arr(acc.get_pod_ge())}')
 
 
 def calc_and_save_station_metrics(
@@ -128,16 +125,16 @@ def calc_and_save_station_metrics(
 
     # 2. Init metrics containers for all stations
     metrics: typing.Dict[str, typing.Dict[str, list]] = {
-        'corr': {'sta': [], 'CMA-SH-WARR': [], 'PDFM-TLE': []},
-        'mae': {'sta': [], 'CMA-SH-WARR': [], 'PDFM-TLE': []},
-        'rmse': {'sta': [], 'CMA-SH-WARR': [], 'PDFM-TLE': []},
-        'mre': {'sta': [], 'CMA-SH-WARR': [], 'PDFM-TLE': []},
-        'ts1': {'sta': [], 'CMA-SH-WARR': [], 'PDFM-TLE': []},
-        'ts2': {'sta': [], 'CMA-SH-WARR': [], 'PDFM-TLE': []},
-        'ts3': {'sta': [], 'CMA-SH-WARR': [], 'PDFM-TLE': []},
-        'ts4': {'sta': [], 'CMA-SH-WARR': [], 'PDFM-TLE': []},
-        'ts5': {'sta': [], 'CMA-SH-WARR': [], 'PDFM-TLE': []},
-        'ts6': {'sta': [], 'CMA-SH-WARR': [], 'PDFM-TLE': []},
+        'corr': {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()},
+        'mae': {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()},
+        'rmse': {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()},
+        'mre': {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()},
+        'ts1': {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()},
+        'ts2': {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()},
+        'ts3': {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()},
+        'ts4': {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()},
+        'ts5': {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()},
+        'ts6': {'sta': list(), 'CMA-SH-WARR': list(), 'PDFM-TLE': list()},
     }
 
     # 3. Loop through each station and calc metrics
@@ -185,3 +182,38 @@ def calc_and_save_station_metrics(
         new_path = str(csv_dir / f'vis_sta_ts{i}+.csv')
         if os.path.exists(old_path):
             os.replace(old_path, new_path)
+
+
+def load_station_metrics(output_dir: str) -> typing.Dict[str, pd.DataFrame]:
+    """
+    Load pre-calculated station-level metrics from CSV files.
+
+    Args:
+        output_dir (str): Output directory containing 'csv' subfolder.
+
+    Returns:
+        dict: Dictionary with metric names as keys and DataFrames as values.
+              Keys: 'corr', 'mae', 'rmse', 'mre', 'ts1+'~'ts6+'.
+
+    Raises:
+        FileNotFoundError: If required CSV files do not exist.
+    """
+    csv_dir = pathlib.Path(output_dir) / 'csv'
+    metrics = {}
+    metric_names = ['corr', 'mae', 'rmse', 'mre']
+    
+    # 1. Load basic metrics
+    for key in metric_names:
+        file_path = csv_dir / f'vis_sta_{key}.csv'
+        if not file_path.exists():
+            raise FileNotFoundError(f'Station metrics file not found: {file_path}')
+        metrics[key] = pd.read_csv(str(file_path), low_memory=False)
+    
+    # 2. Load TS metrics (with '+' suffix)
+    for i in range(1, 7):
+        file_path = csv_dir / f'vis_sta_ts{i}+.csv'
+        if not file_path.exists():
+            raise FileNotFoundError(f'Station metrics file not found: {file_path}')
+        metrics[f'ts{i}+'] = pd.read_csv(str(file_path), low_memory=False)
+    
+    return metrics

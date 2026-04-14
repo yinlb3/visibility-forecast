@@ -9,14 +9,19 @@ paths:
   output_dir: './figures'
   cache_dir: './figures/csv'
 
-# Font configuration (system paths, platform-specific)
+# Font configuration (platform-specific paths)
+# Override in local config if your system uses different paths
 fonts:
   chinese:
-    - '<FONT_PATH_1>'
-    - '<FONT_PATH_2>'
-    - '<FONT_PATH_3>'
-    - '<FONT_PATH_4>'
-    - '<FONT_PATH_5>'
+    # Windows default paths
+    - 'C:\\Windows\\Fonts\\msyh.ttc'
+    - 'C:\\Windows\\Fonts\\simhei.ttf'
+    - 'C:\\Windows\\Fonts\\simsun.ttc'
+    - 'C:\\Windows\\Fonts\\msyhbd.ttc'
+    - 'C:\\Windows\\Fonts\\simkai.ttf'
+    # Linux alternative paths (commented, use in local config)
+    # - '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc'
+    # - '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc'
 
 # Stage control flags
 stages:
@@ -37,6 +42,10 @@ plot:
   fig_height: 14
   color_map: 'rainbow'
   dpi: 800
+  # Output formats: list of supported formats (png, pdf, jpg, svg, etc.)
+  # Each figure will be saved in all specified formats
+  # If a format fails, it will be skipped with error logged
+  output_formats: ['png', 'pdf']
 
 # Regional configuration
 regions:
@@ -56,14 +65,20 @@ regions:
     - '山东省'
     - '山西省'
     - '浙江省'
-  cjzxy_provinces:
-    - 'Hubei'
-    - 'Hunan'
-    - 'Jiangxi'
-    - 'Anhui'
-    - 'Jiangsu'
-    - 'Zhejiang'
-    - 'Shanghai'
+  mlyr_provinces:
+    - '湖北省'
+    - '湖南省'
+    - '江西省'
+    - '安徽省'
+    - '江苏省'
+    - '浙江省'
+    - '上海市'
+
+# Visibility grade thresholds (meters)
+# Grade 0: >=10000m (good), Grade 1: 2000-10000m, ..., Grade 6: <50m (dense fog)
+# Based on China Meteorological Administration visibility grade standards
+visibility:
+  grade_thresholds: [10000., 2000., 1000., 500., 200., 50.]
 
 # Placeholder for future credentials (currently unused)
 credentials: {}

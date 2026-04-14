@@ -86,6 +86,54 @@ def calc_weather_type_metrics(
     return qem, cem
 
 
+def save_weather_type_metrics(
+    qem: np.ndarray,
+    cem: np.ndarray,
+    output_dir: str
+) -> None:
+    """
+    Save weather type metrics (qem, cem) to NPY files.
+
+    Args:
+        qem (np.ndarray): Quantitative evaluation metrics array.
+        cem (np.ndarray): Categorical/Grade evaluation metrics array.
+        output_dir (str): Output directory path.
+    """
+    csv_dir = pathlib.Path(output_dir) / 'csv'
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    np.save(str(csv_dir / 'qem.npy'), qem)
+    np.save(str(csv_dir / 'cem.npy'), cem)
+    print(f'[Weather Type] Saved qem and cem to {csv_dir}')
+
+
+def load_weather_type_metrics(output_dir: str) -> typing.Tuple[np.ndarray, np.ndarray]:
+    """
+    Load weather type metrics (qem, cem) from NPY files.
+
+    Args:
+        output_dir (str): Output directory containing 'csv' subfolder.
+
+    Returns:
+        tuple: (qem, cem) arrays.
+
+    Raises:
+        FileNotFoundError: If NPY files do not exist.
+    """
+    csv_dir = pathlib.Path(output_dir) / 'csv'
+    qem_path = csv_dir / 'qem.npy'
+    cem_path = csv_dir / 'cem.npy'
+    
+    if not qem_path.exists():
+        raise FileNotFoundError(f'Weather type metrics not found: {qem_path}')
+    if not cem_path.exists():
+        raise FileNotFoundError(f'Weather type metrics not found: {cem_path}')
+    
+    qem = np.load(str(qem_path))
+    cem = np.load(str(cem_path))
+    print(f'[Weather Type] Loaded qem and cem from {csv_dir}')
+    return qem, cem
+
+
 def plot_vis_cdf(
     vis_ob: np.ndarray,
     cma_sh_warr: np.ndarray,

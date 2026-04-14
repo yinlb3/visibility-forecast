@@ -38,12 +38,12 @@ def load_2024_preds(data_dir: str) -> tuple:
     Returns:
         tuple: (pred_pdfm2, pred_tle2).
     """
-    path = pathlib.Path(data_dir) / 'vis_gjz_pdfm2_cjzxy_2024.npy'
+    path = pathlib.Path(data_dir) / 'vis_gjz_pdfm2_mlyr_2024.npy'
     pred_pdfm2 = np.load(str(path))
     pred_pdfm2 = np.reshape(pred_pdfm2, shape=(-1, 24, 502))
     pred_pdfm2[pred_pdfm2 >= 30000] = 30000
 
-    path = pathlib.Path(data_dir) / 'vis_gjz_tle2_cjzxy_2024.npy'
+    path = pathlib.Path(data_dir) / 'vis_gjz_tle2_mlyr_2024.npy'
     pred_tle2 = np.load(str(path))
     pred_tle2 = np.reshape(pred_tle2, shape=(-1, 24, 502))
     pred_tle2[pred_tle2 >= 30000] = 30000
@@ -75,7 +75,7 @@ def print_2024_overall_metrics(
     mae = acc.get_mae()
     rmse = acc.get_rmse()
     mre = acc.get_mre()
-    print(f'  R={r:.4f}, MAE={mae:.4f}, RMSE={rmse:.4f}, MRE={mre:.4f}')
+    print(f'  R={r:.4f}, MAE={mae:.1f} m, RMSE={rmse:.1f} m, MRE={mre:.4f}')
     ts_ge_str = _fmt_arr(acc.get_ts_ge())
     far_ge_str = _fmt_arr(acc.get_far_ge())
     mar_ge_str = _fmt_arr(acc.get_mar_ge())
@@ -87,11 +87,11 @@ def print_2024_overall_metrics(
     mae = acc.get_mae()
     rmse = acc.get_rmse()
     mre = acc.get_mre()
-    print(f'  R={r:.4f}, MAE={mae:.4f}, RMSE={rmse:.4f}, MRE={mre:.4f}')
+    print(f'  R={r:.4f}, MAE={mae:.1f} m, RMSE={rmse:.1f} m, MRE={mre:.4f}')
     ts_ge_str = _fmt_arr(acc.get_ts_ge())
     far_ge_str = _fmt_arr(acc.get_far_ge())
     mar_ge_str = _fmt_arr(acc.get_mar_ge())
-    print(f'  TS_GE={ts_ge_str}, FAR_GE={far_ge_str}, MAR_GE={mar_ge_str}')
+    print(f'  TS_ge={ts_ge_str}, FAR_ge={far_ge_str}, MAR_ge={mar_ge_str}')
 
 
 def load_2024_eval_data(data_dir: str, idx_mlyr: np.ndarray) -> tuple:
@@ -111,7 +111,7 @@ def load_2024_eval_data(data_dir: str, idx_mlyr: np.ndarray) -> tuple:
     )
     cma_sh_warr[cma_sh_warr >= 30000] = 30000
 
-    path = pathlib.Path(data_dir) / 'vis_gjz_pdfm2_cjzxy_2024.npy'
+    path = pathlib.Path(data_dir) / 'vis_gjz_pdfm2_mlyr_2024.npy'
     pred_pdfm2 = np.load(str(path))
     pred_pdfm2 = np.reshape(pred_pdfm2, shape=(-1, 24, 502))
     pred_pdfm2[pred_pdfm2 >= 30000] = 30000
