@@ -24,28 +24,176 @@ fonts:
     # - '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc'
 
 # Stage control flags
+# Each flag corresponds to exactly one subsection in draw.py
 stages:
-  data_prep: true
-  stats_calc: true
-  obs_viz: true
-  forecast_prep: true
-  type_eval: true
-  dist_analysis: true
-  temporal: true
-  spatiotemporal: true
-  case_study: true
+  data_prep: true        # Part 1: configuration and data loading
+  stats_calc: true       # 2.1: distribution feature calculation
+  obs_viz_2_2: true      # 2.2: event type proportion plots
+  obs_viz_2_3: true      # 2.3: temporal distribution plots
+  obs_viz_2_4: true      # 2.4: spatial distribution plots
+  forecast_prep: true    # 3.1: forecast overall & station metrics
+  type_eval: true        # 3.1: weather-type metrics calculation
+  temporal: true         # 3.1: temporal & visibility-type metrics calculation
+  spatiotemporal: true   # 3.2: init/lead time evaluation plots
+  ablation_plot: true    # 3.3: ablation experiment plots
+  case_study: true       # 3.4: 2024 operational case study
 
 # Plot configuration
 plot:
-  grid_size: 24
-  fig_width: 12
-  fig_height: 14
-  color_map: 'rainbow'
-  dpi: 800
-  # Output formats: list of supported formats (png, pdf, jpg, svg, etc.)
-  # Each figure will be saved in all specified formats
-  # If a format fails, it will be skipped with error logged
-  output_formats: ['png', 'pdf']
+  # Global output setting
+  output_formats: ['png', 'pdf', 'jpg', 'svg']
+
+  # -------------------- Observation plots (src/p2_2_event_type.py, src/p2_3_temporal.py, src/p2_4_spatial.py) --------------------
+
+  # Pie charts: pie_1 ~ pie_6 (weather type proportion by visibility grade)
+  obs_pies:
+    figsize: [4, 4]
+    dpi: 800
+
+  # Violin and box plots for vis < 500m events
+  obs_violin_box:
+    violin_figsize: [5, 5]
+    violin_color: 'skyblue'
+    box_figsize: [5, 5]
+    box_color: 'black'
+    box_width: 0.1
+    dpi: 800
+
+  # Monthly probability stacked bars (color + B&W)
+  monthly_bars:
+    figsize: [10, 4]
+    dpi: 800
+    bar_width: 0.4
+    color_precip: [0.122, 0.467, 0.706]
+    color_fog: [1.0, 0.498, 0.055]
+    color_haze: [0.173, 0.627, 0.173]
+    xlim: [0, 13]
+    ylim: [0, 1.0]
+    yticks: [0, 0.2, 0.4, 0.6, 0.8, 1.0]
+
+  # Hourly probability stacked bars (color + B&W)
+  hourly_bars:
+    figsize: [10, 4]
+    dpi: 800
+    bar_width: 0.4
+    color_precip: [0.122, 0.467, 0.706]
+    color_fog: [1.0, 0.498, 0.055]
+    color_haze: [0.173, 0.627, 0.173]
+    xlim: [-1, 24]
+    ylim: [0, 1.0]
+    yticks: [0, 0.2, 0.4, 0.6, 0.8, 1.0]
+
+  # Monthly visibility violins by weather type
+  monthly_violins:
+    figsize: [10, 4]
+    dpi: 800
+    color: 'skyblue'
+
+  # Hourly visibility violins by weather type
+  hourly_violins:
+    figsize: [10, 4]
+    dpi: 800
+    color: 'skyblue'
+
+  # Station-level low visibility frequency spatial maps
+  sta_frequency_maps:
+    point_size: 20
+    map_extend: [108, 123, 24, 36]
+    lve_cmap: 'ts'
+    lve_vmin: 0
+    lve_vmax: 0.9
+    lve_clevs: [0, 0.09, 0.18, 0.27, 0.36, 0.45, 0.54, 0.63, 0.72, 0.81, 0.9]
+    lvpe_cmap: 'ts'
+    lvpe_vmin: 0
+    lvpe_vmax: 0.2
+    lvpe_clevs: [0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2]
+    lvfe_cmap: 'ts'
+    lvfe_vmin: 0
+    lvfe_vmax: 40
+    lvfe_clevs: [0, 0.04, 0.08, 0.12, 0.16, 0.2, 0.24, 0.28, 0.32, 0.36, 0.4]
+
+  # Station-level mean visibility spatial maps
+  sta_mean_maps:
+    point_size: 20
+    map_extend: [108, 123, 24, 36]
+    cmap: 'vis'
+    vmin: 0
+    vmax: 30
+    clevs: [0, 1, 2, 4, 7, 10, 15, 20, 25, 30]
+
+  # -------------------- Spatiotemporal plots (src/p3_3_init_lead.py) --------------------
+
+  # Init time-lead time TS4+ heatmaps
+  hour_access_heatmaps:
+    cmap: 'Reds'
+    linewidths: 0.3
+    ts4_vmin: 0
+    ts4_vmax: 0.4
+    improvement_vmin: 0
+    improvement_vmax: 150
+    dpi: 800
+
+  # TS4+ comparison bars for lead/forecast time
+  ts_comparison_bars:
+    figsize: [10, 4]
+    dpi: 800
+    bar_width: 0.4
+    color_cma: 'blue'
+    color_pdfm: 'red'
+    color_improvement: 'black'
+    vt_xlim: [0, 25]
+    fhour_xlim: [-1, 24]
+    primary_ylim: [0, 0.4]
+    primary_yticks: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4]
+    twin_ylim: [0, 150]
+    twin_yticks: [0, 30, 60, 90, 120, 150]
+
+  # Station-level TS4+ spatial maps
+  sta_ts4_maps:
+    point_size: 20
+    map_extend: [108, 123, 24, 36]
+    cmap: 'ts'
+    vmin: 0
+    vmax: 0.7
+    clevs: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+    dpi: 800
+
+  # MRE and improvement violin/box plots
+  mre_violins:
+    mre_figsize: [5, 6]
+    mre_palette: ['blue', 'red']
+    improvement_figsize: [5, 6]
+    improvement_color: 'skyblue'
+    dpi: 800
+
+  # -------------------- Forecast type / CDF plots (src/p3_4_ablation.py) --------------------
+
+  # Visibility CDF curve
+  vis_cdf:
+    figsize: [5, 5]
+    dpi: 800
+    color_ob: 'black'
+    color_cma: 'blue'
+    color_pdfm: 'red'
+    xlim: [-1, 31]
+    xticks: [0, 10, 20, 30]
+    ylim: [0, 1]
+    yticks: [0, 0.2, 0.4, 0.6, 0.8, 1]
+
+  # Weather-type metric comparison bars (B&W style)
+  weather_type_eval_bw:
+    figsize: [10, 4]
+    dpi: 800
+    bar_width: 0.2
+    color_precip: 'black'
+    color_fog: 'white'
+    color_haze: 'white'
+    edgecolor: 'black'
+    hatch: '///'
+    xlim: [0, 7]
+    ylim: [0, 1]
+
+  # (forecast_dist plots removed)
 
 # Regional configuration
 regions:

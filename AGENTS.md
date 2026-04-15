@@ -29,9 +29,19 @@ You are an AI programming assistant for this meteorological data analysis projec
 - **Domain Library**: meteva (domestic meteorological verification toolkit)
 
 **File Structure**:
-- `src/` - Extracted common modules (9 modules split from `draw.py`, 1 stage = 1 file)
+- `src/` - Pipeline step modules (no intermediate wrappers)
+- `src/p1_config_data.py` - Config + obs/forecast loading helpers
+- `src/p2_1_dist_feature.py` - Distribution stats calc (month/hour/station)
+- `src/p2_2_event_type.py` - Event type plots (pies, violin/box)
+- `src/p2_3_temporal.py` - Temporal plots (monthly/hourly bars + violins)
+- `src/p2_4_spatial.py` - Spatial plots (station frequency/mean maps)
+- `src/p3_1_eval_calc.py` - Forecast eval calc (overall, station, weather-type, temporal)
+- `src/p3_2_init_lead.py` - Init/lead time plots (heatmaps, bars, maps, violins)
+- `src/p3_3_ablation.py` - Ablation plots (weather-type BW bars, CDF)
+- `src/p3_4_case_study.py` - 2024 case study analysis
+- `src/utils.py`, `src/vis_acc.py` - Shared utilities and verification class
 - `figures/` - Output directory for images, CSV, NPY files
-- `draw.py` - Main orchestrator (pipeline entry only)
+- `draw.py` - Main orchestrator (flat pipeline, calls step modules directly)
 - `access.py` - Forecast verification and PDF matching correction
 - `tl.py` - Temporal lead experiment analysis
 - `ots.py` - Optimal threshold selection
@@ -104,17 +114,12 @@ Refer to `user-preferences` skill B.4.
 | Task | Description | Completion Date |
 |------|-------------|-----------------|
 | Project Setup & Documentation | Initialize git repository, configure .gitignore, set up dual-platform sync (Gitee/GitHub), add code comments/docstrings, and translate all documentation to English | 2026-04-05 |
-| draw.py Refactoring | Split `draw.py` into 9 `src/` modules by stage (1 stage = 1 file); extract shared utilities; standardize console output and file structure | 2026-04-07 |
+| draw.py Refactoring | Flatten `draw.py` into 3 Parts with direct `src/pX_Y` module calls; remove old intermediate wrappers; extract shared utilities; standardize console output, file structure, and naming conventions (indices, masks, confusion matrix, metrics, case study vars, output labels); add `docs/ABBREVIATIONS.md` | 2026-04-15 |
 
 ### In Progress
 | Task | Description | Notes |
 |------|-------------|-------|
 | Code Refactoring | Continue eliminating duplicate code in `access.py`, `huanghua.py`, `ots.py`, `tl.py`, `vis_grade.py`, `vis2411.py` | — |
-
-### Completed
-| Task | Description | Completion Date |
-|------|-------------|-----------------|
-| A10 Code Style Check | Standardize naming: indices (`idx_east_china`, `idx_mlyr`, `case_idx`), masks (`mask_lv4plus_*`), confusion matrix (`get_conf_mat/_norm`), metrics (`get_*_grade` for by-grade, `get_*_ge` for >=grade), case study vars (`ts_ge4_cma_all` format), output labels (TS_GE, FAR_GE, etc.), add `docs/ABBREVIATIONS.md` | 2026-04-07 |
 
 ### Todo
 | Task | Description | Priority |
@@ -124,4 +129,4 @@ Refer to `user-preferences` skill B.4.
 
 ---
 
-**Last Updated**: 2026-04-07
+**Last Updated**: 2026-04-15

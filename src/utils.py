@@ -20,7 +20,7 @@ import yaml
 def save_figure(
     fig: figure.Figure,
     base_path: pathlib.Path,
-    cfg: typing.Dict[str, typing.Any],
+    cfg: typing.Dict,
     **save_kwargs
 ) -> None:
     """
@@ -40,10 +40,8 @@ def save_figure(
         [save_figure] Saved: figures/chart.png
         [save_figure] Saved: figures/chart.pdf
     """
-    # Get formats from config, default to png only
-    formats = cfg.get('plot', {}).get('output_formats', ['png'])
-    if not formats:
-        formats = ['png']
+    # Get formats from config
+    formats = cfg['plot']['output_formats']
 
     # Ensure base_path is Path object
     base = pathlib.Path(base_path)
@@ -55,7 +53,6 @@ def save_figure(
 
         try:
             fig.savefig(str(filepath), format=fmt_clean, **save_kwargs)
-            print(f'[save_figure] Saved: {filepath}')
         except Exception as e:
             print(f'[save_figure] Error saving {fmt_clean}: {e}')
             continue
@@ -101,9 +98,9 @@ def format_time(second: float, is_abbreviation: bool = False) -> str:
 
 
 def _deep_merge(
-    base: typing.Dict[str, typing.Any],
-    override: typing.Dict[str, typing.Any]
-) -> typing.Dict[str, typing.Any]:
+    base: typing.Dict,
+    override: typing.Dict
+) -> typing.Dict:
     """
     Recursively merge two dictionaries.
 
@@ -117,7 +114,7 @@ def _deep_merge(
     Returns:
         Merged configuration dict.
     """
-    result: typing.Dict[str, typing.Any] = base.copy()
+    result: typing.Dict = base.copy()
     for key, value in override.items():
         if (
             key in result
@@ -130,7 +127,7 @@ def _deep_merge(
     return result
 
 
-def _load_yaml(path: pathlib.Path) -> typing.Dict[str, typing.Any]:
+def _load_yaml(path: pathlib.Path) -> typing.Dict:
     """
     Load YAML file if exists.
 
@@ -146,7 +143,7 @@ def _load_yaml(path: pathlib.Path) -> typing.Dict[str, typing.Any]:
     return {}
 
 
-def load_config() -> typing.Dict[str, typing.Any]:
+def load_config() -> typing.Dict:
     """
     Load configuration with platform-specific local override.
 
@@ -180,7 +177,7 @@ def load_config() -> typing.Dict[str, typing.Any]:
     return base_config
 
 
-def _validate_config(cfg: typing.Dict[str, typing.Any]) -> None:
+def _validate_config(cfg: typing.Dict) -> None:
     """
     Validate required configuration keys exist.
 
@@ -215,8 +212,8 @@ def _validate_config(cfg: typing.Dict[str, typing.Any]) -> None:
 
 
 # Load and validate configuration
-_CFG: typing.Dict[str, typing.Any] = load_config()
+_CFG: typing.Dict = load_config()
 _validate_config(_CFG)
 
 # Global config instance (validated)
-CFG: typing.Dict[str, typing.Any] = _CFG
+CFG: typing.Dict = _CFG

@@ -1,13 +1,15 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-2024 independent case study analysis module (Stage 9).
+Part 3.5: Operational application case study evaluation result output module.
 
-Founded in 2026-04-04
-Modified in 2026-04-04
+Founded in 2026-04-14
+Modified in 2026-04-14
 @author: yinlb
 """
 
 import pathlib
+import typing
 
 import arrow
 import numpy as np
@@ -17,27 +19,24 @@ from src import vis_acc
 VisAcc = vis_acc.VisAcc
 
 
+def _fmt_arr(arr: np.ndarray) -> str:
+    """Format numpy array with 4 decimal places for display."""
+    return np.array2string(
+        np.array(arr), precision=4, separator=' ', suppress_small=True
+    )
+
+
 def load_2024_obs(data_dir: str, idx_mlyr: np.ndarray) -> np.ndarray:
     """Load 2024 observation data for case study."""
-    # 1. Load raw obs data and reshape to (time, lead, station)
     vis_ob = np.load(str(pathlib.Path(data_dir) / 'vis1183_ob_2024.npy'))
     vis_ob = np.reshape(vis_ob[:, 1:, idx_mlyr], shape=(-1, 24, 502))
-    # 2. Apply QC: mark missing values and cap at 30000m
     vis_ob[vis_ob >= 999990] = np.nan
     vis_ob[vis_ob >= 30000] = 30000
     return vis_ob
 
 
-def load_2024_preds(data_dir: str) -> tuple:
-    """
-    Load 2024 PDFM/TLE prediction data for overall metrics.
-
-    Args:
-        data_dir (str): Data root directory.
-
-    Returns:
-        tuple: (pred_pdfm2, pred_tle2).
-    """
+def load_2024_preds(data_dir: str) -> typing.Tuple[np.ndarray, np.ndarray]:
+    """Load 2024 PDFM/TLE prediction data for overall metrics."""
     path = pathlib.Path(data_dir) / 'vis_gjz_pdfm2_mlyr_2024.npy'
     pred_pdfm2 = np.load(str(path))
     pred_pdfm2 = np.reshape(pred_pdfm2, shape=(-1, 24, 502))
@@ -51,64 +50,33 @@ def load_2024_preds(data_dir: str) -> tuple:
     return pred_pdfm2, pred_tle2
 
 
-def _fmt_arr(arr: np.ndarray) -> str:
-    """Format numpy array with 4 decimal places for display."""
-    return np.array2string(
-        np.array(arr), precision=4, separator=' ', suppress_small=True
-    )
-
-
 def print_2024_overall_metrics(
     vis_ob: np.ndarray, pred_pdfm2: np.ndarray, pred_tle2: np.ndarray
 ) -> None:
-    """
-    Print overall verification metrics for PDFM and TLE.
-
-    Args:
-        vis_ob (np.ndarray): Observation array.
-        pred_pdfm2 (np.ndarray): PDFM prediction array.
-        pred_tle2 (np.ndarray): TLE prediction array.
-    """
+    """Print overall verification metrics for PDFM and TLE."""
     acc = VisAcc(vis_ob, pred_pdfm2)
     print('[2024 Overall Metrics] PDFM')
-    r = acc.get_r()
-    mae = acc.get_mae()
-    rmse = acc.get_rmse()
-    mre = acc.get_mre()
-    print(f'  R={r:.4f}, MAE={mae:.1f} m, RMSE={rmse:.1f} m, MRE={mre:.4f}')
-    ts_ge_str = _fmt_arr(acc.get_ts_ge())
-    far_ge_str = _fmt_arr(acc.get_far_ge())
-    mar_ge_str = _fmt_arr(acc.get_mar_ge())
-    print(f'  TS_GE={ts_ge_str}, FAR_GE={far_ge_str}, MAR_GE={mar_ge_str}')
+    print(f'  R={acc.get_r():.4f}, MAE={acc.get_mae():.1f} m, '
+          f'RMSE={acc.get_rmse():.1f} m, MRE={acc.get_mre():.4f}')
+    print(f'  TS_GE={_fmt_arr(acc.get_ts_ge())}, '
+          f'FAR_GE={_fmt_arr(acc.get_far_ge())}, '
+          f'MAR_GE={_fmt_arr(acc.get_mar_ge())}')
 
     acc = VisAcc(vis_ob, pred_tle2)
     print('[2024 Overall Metrics] TLE')
-    r = acc.get_r()
-    mae = acc.get_mae()
-    rmse = acc.get_rmse()
-    mre = acc.get_mre()
-    print(f'  R={r:.4f}, MAE={mae:.1f} m, RMSE={rmse:.1f} m, MRE={mre:.4f}')
-    ts_ge_str = _fmt_arr(acc.get_ts_ge())
-    far_ge_str = _fmt_arr(acc.get_far_ge())
-    mar_ge_str = _fmt_arr(acc.get_mar_ge())
-    print(f'  TS_ge={ts_ge_str}, FAR_ge={far_ge_str}, MAR_ge={mar_ge_str}')
+    print(f'  R={acc.get_r():.4f}, MAE={acc.get_mae():.1f} m, '
+          f'RMSE={acc.get_rmse():.1f} m, MRE={acc.get_mre():.4f}')
+    print(f'  TS_ge={_fmt_arr(acc.get_ts_ge())}, '
+          f'FAR_ge={_fmt_arr(acc.get_far_ge())}, '
+          f'MAR_ge={_fmt_arr(acc.get_mar_ge())}')
 
 
-def load_2024_eval_data(data_dir: str, idx_mlyr: np.ndarray) -> tuple:
-    """
-    Load 2024 obs and forecast data for case evaluation.
-
-    Args:
-        data_dir (str): Data root directory.
-        idx_mlyr (np.ndarray): Index for MLYR (Middle-Lower Yangtze River).
-
-    Returns:
-        tuple: (cma_sh_warr, pred_pdfm2).
-    """
+def load_2024_eval_data(
+    data_dir: str, idx_mlyr: np.ndarray
+) -> typing.Tuple[np.ndarray, np.ndarray]:
+    """Load 2024 obs and forecast data for case evaluation."""
     cma_sh_warr = np.load(str(pathlib.Path(data_dir) / 'vis_gjz_2024.npy'))
-    cma_sh_warr = np.reshape(
-        cma_sh_warr[:, 1:, idx_mlyr], shape=(-1, 24, 502)
-    )
+    cma_sh_warr = np.reshape(cma_sh_warr[:, 1:, idx_mlyr], shape=(-1, 24, 502))
     cma_sh_warr[cma_sh_warr >= 30000] = 30000
 
     path = pathlib.Path(data_dir) / 'vis_gjz_pdfm2_mlyr_2024.npy'
@@ -121,11 +89,8 @@ def load_2024_eval_data(data_dir: str, idx_mlyr: np.ndarray) -> tuple:
 
 def align_forecast_times(
     vis_ob: np.ndarray, cma_sh_warr: np.ndarray, pred_pdfm2: np.ndarray
-) -> tuple:
-    """
-    Apply time offset to 24 forecast init times to align with obs.
-    Each array may have a different first dimension (e.g. 365 vs 366 days).
-    """
+) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Apply time offset to 24 forecast init times to align with obs."""
     vis_ob_ = np.zeros_like(vis_ob) + np.nan
     pred_pdfm2_ = np.zeros_like(pred_pdfm2) + np.nan
     cma_sh_warr_ = np.zeros_like(cma_sh_warr) + np.nan
@@ -147,15 +112,7 @@ def analyze_case_studies(
     cma_sh_warr_: np.ndarray,
     pred_pdfm2_: np.ndarray
 ) -> None:
-    """
-    Analyze 18 case studies and calc TS4+ for all phases and merged.
-
-    Args:
-        vis_ob_ (np.ndarray): Observation array with aligned time.
-        cma_sh_warr_ (np.ndarray): CMA-SH-WARR forecast with aligned time.
-        pred_pdfm2_ (np.ndarray): PDFM prediction with aligned time.
-    """
-    # 1. Define 18 case study periods [start, end, peak]
+    """Analyze 18 case studies and calc TS4+ for all phases and merged."""
     date_list = [
         ['2024-01-02', '2024-01-13', '2024-01-03'],
         ['2024-01-29', '2024-02-01', '2024-01-30'],
@@ -176,11 +133,8 @@ def analyze_case_studies(
         ['2024-11-10', '2024-11-12', '2024-11-10'],
         ['2024-12-04', '2024-12-07', '2024-12-05'],
     ]
-    # 2. Init index array for merging cases
-    # case_idx: Index for merging case study periods (合并案例研究时段索引)
     case_idx = np.zeros(shape=(8784, 4), dtype=np.bool_)
 
-    # 3. Process each case: calc TS4+ for all phases
     for idx, d in enumerate(date_list, 1):
         base = arrow.get('2024')
         i = round((arrow.get(d[0]) - base).total_seconds() / 3600)
@@ -188,7 +142,6 @@ def analyze_case_studies(
         k = round((arrow.get(d[2]) - base).total_seconds() / 3600)
         ob_all = vis_ob_[i: j + 24, :, :]
         fcst_all = cma_sh_warr_[i: j + 24, :, :]
-        # ts_ge4: TS grade 4+ (index 3, 4级及以上Threat Score)
         ts_ge4_cma_all = VisAcc(ob_all, fcst_all).get_ts_ge()[3]
         ob_s = vis_ob_[i: i + 24, :, :]
         fcst_s = cma_sh_warr_[i: i + 24, :, :]
@@ -211,20 +164,17 @@ def analyze_case_studies(
         p_ob_p = vis_ob_[k: k + 24, :, :]
         p_fcst_p = pred_pdfm2_[k: k + 24, :, :]
         ts_ge4_pdfm_peak = VisAcc(p_ob_p, p_fcst_p).get_ts_ge()[3]
-        # 4. Print case results and update merge indices
         case_str = f'Case {idx:02d} [{d[0]}~{d[1]}, pk={d[2]}] '
         cma_str = f'CMA=[a:{ts_ge4_cma_all:.4f}, s:{ts_ge4_cma_start:.4f}, '
         cma_str += f'e:{ts_ge4_cma_end:.4f}, p:{ts_ge4_cma_peak:.4f}]  '
         pdfm_str = f'PDFM=[a:{ts_ge4_pdfm_all:.4f},s:{ts_ge4_pdfm_start:.4f},'
         pdfm_str += f'e:{ts_ge4_pdfm_end:.4f}, p:{ts_ge4_pdfm_peak:.4f}]'
         print(case_str + cma_str + pdfm_str)
-        case_idx[i: j + 24, 0] = True  # All period
-        case_idx[i: i + 24, 1] = True  # Start phase
-        case_idx[j: j + 24, 2] = True  # End phase
-        case_idx[k: k + 24, 3] = True  # Peak phase
+        case_idx[i: j + 24, 0] = True
+        case_idx[i: i + 24, 1] = True
+        case_idx[j: j + 24, 2] = True
+        case_idx[k: k + 24, 3] = True
 
-    # 5. Calc merged metrics across all cases
-    # _m_: merged across all cases (合并所有案例)
     ob0, fcst0 = vis_ob_[case_idx[:, 0], :, :], cma_sh_warr_[case_idx[:, 0], :, :]
     ts_ge4_cma_m_all = VisAcc(ob0, fcst0).get_ts_ge()[3]
     ob1, fcst1 = vis_ob_[case_idx[:, 1], :, :], cma_sh_warr_[case_idx[:, 1], :, :]

@@ -39,8 +39,7 @@ Before running, please confirm:
 | Task | Description | Completion Date |
 |------|-------------|-----------------|
 | Project Setup & Documentation | Initialize git repository, configure .gitignore, set up dual-platform sync (Gitee/GitHub), add code comments/docstrings, and translate all documentation to English | 2026-04-02 ~ 2026-04-05 |
-| draw.py Refactoring | Split `draw.py` into 9 `src/` modules by stage (1 stage = 1 file); extract shared utilities; standardize console output and file structure | 2026-04-06 |
-| A10 Code Style Check | Standardize naming: region indices (`idx_east_china`, `idx_mlyr`), masks (`mask_lv4plus_*`), confusion matrix (`get_conf_mat/_norm`), metrics (`get_*_grade` for by-grade, `get_*_ge` for >=grade), case study vars (`ts_ge4_cma_all` format), output labels (TS_GE, FAR_GE, etc.), add `docs/ABBREVIATIONS.md` | 2026-04-07 |
+| draw.py Refactoring | Flatten `draw.py` into 3 Parts with direct `src/pX_Y` module calls; remove old intermediate wrappers; extract shared utilities; standardize console output, file structure, and naming conventions (indices, masks, confusion matrix, metrics, case study vars, output labels); add `docs/ABBREVIATIONS.md` | 2026-04-15 |
 
 ### In Progress
 | Task | Description | Notes |

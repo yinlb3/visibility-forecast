@@ -71,14 +71,12 @@ class VisAcc:
         for i in range(self._n_grades):
             self._pr_grade[self._pr < self._thres[i]] = i + 1
 
-        # Build (n_grades+1)^2 confusion matrix
-        shape = (self._n_grades + 1, self._n_grades + 1)
-        # _conf_mat: Confusion matrix (混淆矩阵): shape (n_grades+1, n_grades+1)
-        self._conf_mat = np.zeros(shape, dtype=np.int_)
-        for i in range(self._n_grades + 1):
-            for j in range(self._n_grades + 1):
-                mask = (self._ob_grade == i) & (self._pr_grade == j)
-                self._conf_mat[i, j] = np.sum(mask)
+        # Build (n_grades+1)^2 confusion matrix using vectorized bincount
+        n_classes = self._n_grades + 1
+        valid = (self._ob_grade >= 0) & (self._pr_grade >= 0)
+        idx = self._ob_grade[valid] * n_classes + self._pr_grade[valid]
+        counts = np.bincount(idx, minlength=n_classes * n_classes)
+        self._conf_mat = counts.reshape(n_classes, n_classes).astype(np.int_)
 
         # Total valid samples
         self._n = np.sum(self._conf_mat)
