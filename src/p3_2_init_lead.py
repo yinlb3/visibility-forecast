@@ -4,7 +4,7 @@
 Part 3.3: Different init/lead time evaluation result plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-04-14
+Modified in 2026-04-15
 @author: yinlb
 """
 
@@ -72,8 +72,13 @@ def plot_hour_access_heatmaps(
     improvement_vmax = plot_cfg['improvement_vmax']
     dpi = plot_cfg['dpi']
 
+    # 1. Plot CMA-SH-WARR TS4+ heatmap
+    # hour_access[0, :, :, 7]: scheme=0 (CMA),
+    # init-hour, lead-hour, grade=7 (TS4+)
     sns.heatmap(
-        hour_access[0, :, :, 7], cmap=cmap, vmin=ts4_vmin, vmax=ts4_vmax, linewidths=linewidths
+        hour_access[0, :, :, 7],
+        cmap=cmap, vmin=ts4_vmin, vmax=ts4_vmax,
+        linewidths=linewidths
     )
     plt.xticks(np.arange(24) + 0.5, [str(x) for x in range(1, 25)])
     yticks = [f'{x:02d}:00' for x in range(24)]
@@ -94,8 +99,13 @@ def plot_hour_access_heatmaps(
     prefix = '[plot_hour_access_heatmaps]'
     print(f'{prefix} CMA-SH-WARR TS4+ range: {ts_min:.4f} ~ {ts_max:.4f}')
 
+    # 2. Plot PDFM-TLE TS4+ heatmap
+    # hour_access[1, :, :, 7]: scheme=1 (PDFM),
+    # same dims as above
     sns.heatmap(
-        hour_access[1, :, :, 7], cmap=cmap, vmin=ts4_vmin, vmax=ts4_vmax, linewidths=linewidths
+        hour_access[1, :, :, 7],
+        cmap=cmap, vmin=ts4_vmin, vmax=ts4_vmax,
+        linewidths=linewidths
     )
     plt.xticks(np.arange(24) + 0.5, [str(x + 1) for x in range(24)])
     yticks = [f'{x:02d}:00' for x in range(24)]
@@ -115,10 +125,17 @@ def plot_hour_access_heatmaps(
     ts_max = np.max(hour_access[1, :, :, 7])
     print(f'{prefix} PDFM-TLE TS4+ range: {ts_min:.4f} ~ {ts_max:.4f}')
 
+    # 3. Plot TS improvement rate heatmap and locate max
+    # Improvement = (PDFM - CMA) / CMA * 100,
+    # guard against div-zero handled by vmin/vmax
     ts_before = hour_access[0, :, :, 7]
     ts_after = hour_access[1, :, :, 7]
     ts_improvement = (ts_after - ts_before) / ts_before * 100
-    sns.heatmap(ts_improvement, cmap=cmap, vmin=improvement_vmin, vmax=improvement_vmax, linewidths=linewidths)
+    sns.heatmap(
+        ts_improvement,
+        cmap=cmap, vmin=improvement_vmin, vmax=improvement_vmax,
+        linewidths=linewidths
+    )
     plt.xticks(np.arange(24) + 0.5, [str(x + 1) for x in range(24)])
     yticks = [f'{x:02d}:00' for x in range(24)]
     plt.yticks(np.arange(24) + 0.5, yticks, rotation=0)
@@ -175,6 +192,8 @@ def plot_ts_comparison_bars(
     ts_max_val = np.max(df_vt_ts4.loc[:, 'PDFM-TLE'])
     print(f'[plot_ts_comparison_bars] VT PDFM-TLE max: {ts_max_val:.4f}')
 
+    # 1. Plot lead-time (VT) TS4+ comparison bars
+    # Twin-axis: left bars for TS values, right line for improvement rate
     fig, ax1 = plt.subplots(figsize=figsize)
     ax1.bar(
         x=df_vt_ts4.loc[:, 'vt'] - bar_width / 2,
@@ -191,6 +210,7 @@ def plot_ts_comparison_bars(
     ax1.set_ylim(tuple(primary_ylim))
     ax1.set_yticks(tuple(primary_yticks))
     ax1.set_ylabel('TS')
+    # Add secondary y-axis for improvement rate (percentage)
     ax2 = ax1.twinx()
     ax2.plot(
         df_vt_ts4.loc[:, 'vt'], ts_improvement, '-o',
@@ -222,6 +242,7 @@ def plot_ts_comparison_bars(
     ts_max_val = np.max(df_fhour_ts4.loc[:, 'PDFM-TLE'])
     print(f'[plot_ts_comparison_bars] FHour PDFM-TLE max: {ts_max_val:.4f}')
 
+    # 2. Plot forecast-time (FHour) TS4+ comparison bars
     fig, ax1 = plt.subplots(figsize=figsize)
     ax1.bar(
         x=df_fhour_ts4.loc[:, 'fhour'] - bar_width / 2,
@@ -268,6 +289,7 @@ def plot_sta_ts4_maps(
     """Plot station-level TS4+ and improvement rate spatial maps."""
     plot_cfg = cfg['plot']['sta_ts4_maps']
     prefix = '[plot_sta_ts4_maps]'
+    # 1. Calc correlation between spatial coords and TS4+
     ts_min = np.min(df_sta.loc[:, 'CMA-SH-WARR'])
     ts_max = np.max(df_sta.loc[:, 'CMA-SH-WARR'])
     print(f'{prefix} CMA-SH-WARR TS4+ range: {ts_min:.4f} ~ {ts_max:.4f}')
@@ -292,6 +314,9 @@ def plot_sta_ts4_maps(
     print(f'{prefix} Corr(alti, CMA-SH-WARR): {r_alti_cma:.4f}')
     print(f'{prefix} Corr(alti, PDFM-TLE): {r_alti_pdfm:.4f}')
 
+    # 2. Build colormap and plot spatial distribution maps
+    # Nested def_cmap_clevs: first get cmap object from range,
+    # then attach discrete levels
     cmap_name = plot_cfg['cmap']
     cmap_obj = getattr(meb.cmaps, cmap_name)
     vmin = plot_cfg['vmin']
@@ -301,13 +326,15 @@ def plot_sta_ts4_maps(
         meb.def_cmap_clevs(cmap_obj, vmin=vmin, vmax=vmax)[0], clevs=clevs
     )
 
-    sta0 = sta.loc[:, ('level', 'time', 'dtime', 'id', 'lat', 'lon', 'data0')].copy()
+    sta_cols = ('level', 'time', 'dtime', 'id', 'lat', 'lon', 'data0')
+    sta0 = sta.loc[:, sta_cols].copy()
     sta0.loc[:, 'data0'] = df_sta.loc[:, 'CMA-SH-WARR']
     _save_scatter_sta(
-        sta0, str(pathlib.Path(output_dir) / 'sta_ts4+_nwp'), cmap, clevs, cfg
+        sta0, str(pathlib.Path(output_dir) / 'sta_ts4+_nwp'),
+        cmap, clevs, cfg
     )
 
-    sta0 = sta.loc[:, ('level', 'time', 'dtime', 'id', 'lat', 'lon', 'data0')].copy()
+    sta0 = sta.loc[:, sta_cols].copy()
     sta0.loc[:, 'data0'] = df_sta.loc[:, 'PDFM-TLE']
     _save_scatter_sta(
         sta0, str(pathlib.Path(output_dir) / 'sta_ts4+'), cmap, clevs, cfg
@@ -322,6 +349,8 @@ def plot_mre_violins(
 ) -> None:
     """Plot MRE and improvement rate violin/box plots."""
     plot_cfg = cfg['plot']['mre_violins']
+    # 1. Plot MRE violin comparison (CMA vs PDFM)
+    # Guard against zero-division when MRE before is zero
     mre_before = np.array(df_sta.loc[:, 'CMA-SH-WARR'])
     mre_after = np.array(df_sta.loc[:, 'PDFM-TLE'])
     with np.errstate(divide='ignore', invalid='ignore'):
@@ -337,7 +366,10 @@ def plot_mre_violins(
 
     plt.figure(figsize=mre_figsize)
     sns.violinplot(
-        data={'CMA-SH-WARR': df_sta.loc[:, 'CMA-SH-WARR'], 'PDFM-TLE': df_sta.loc[:, 'PDFM-TLE']},
+        data={
+            'CMA-SH-WARR': df_sta.loc[:, 'CMA-SH-WARR'],
+            'PDFM-TLE': df_sta.loc[:, 'PDFM-TLE']
+        },
         palette=mre_palette
     )
     plt.ylabel('MRE')
@@ -356,6 +388,7 @@ def plot_mre_violins(
     print(f'{prefix} MRE median (CMA-SH-WARR, PDFM-TLE): {median_str}')
     print(f'{prefix} MRE median improvement: {median_improve:.4f}')
 
+    # 2. Plot MRE improvement rate violin
     plt.figure(figsize=improvement_figsize)
     sns.violinplot(data={'PDFM-TLE': mre_improvement}, color=improvement_color)
     plt.ylabel('MRE改善率')

@@ -23,12 +23,16 @@ def build_month_stats(
     thres: typing.Tuple[float, ...]
 ) -> dict:
     """Calc monthly freq of low visibility by grade."""
-    a = np.copy(vis_grade)
-    a[pre == 0] = -1
-    b = np.copy(vis_grade)
-    b[(pre > 0) | (rhu < 80)] = -1
-    c = np.copy(vis_grade)
-    c[(pre < 0) | (rhu >= 80)] = -1
+    # Create weather-type masks:
+    # mask_pre = precip events (pre > 0)
+    # mask_fog = fog (pre==0 & rhu>=80)
+    # mask_haze = haze (pre==0 & rhu<80)
+    mask_pre = np.copy(vis_grade)
+    mask_pre[pre == 0] = -1
+    mask_fog = np.copy(vis_grade)
+    mask_fog[(pre > 0) | (rhu < 80)] = -1
+    mask_haze = np.copy(vis_grade)
+    mask_haze[(pre < 0) | (rhu >= 80)] = -1
 
     df_month = {'month': list()}
     for i in range(len(thres)):
@@ -37,14 +41,15 @@ def build_month_stats(
         df_month[str(i + 1) + 'fog'] = list()
         df_month[str(i + 1) + 'haze'] = list()
 
+    # Calculate frequency per month and grade for overall and each weather type
     for j in range(12):
         df_month['month'].append(j + 1)
         mask = month_ind == j + 1
         valid = np.sum(vis_grade[mask, :] >= 0)
         vg = vis_grade[mask, :]
-        a_m = a[mask, :]
-        b_m = b[mask, :]
-        c_m = c[mask, :]
+        a_m = mask_pre[mask, :]
+        b_m = mask_fog[mask, :]
+        c_m = mask_haze[mask, :]
         for i in range(len(thres)):
             grade = i + 1
             df_month[str(grade)].append(np.sum(vg >= grade) / valid)
@@ -61,12 +66,13 @@ def build_hour_stats(
     thres: typing.Tuple[float, ...]
 ) -> dict:
     """Calc hourly frequency of low visibility by grade."""
-    a = np.copy(vis_grade)
-    a[pre == 0] = -1
-    b = np.copy(vis_grade)
-    b[(pre > 0) | (rhu < 80)] = -1
-    c = np.copy(vis_grade)
-    c[(pre < 0) | (rhu >= 80)] = -1
+    # Same weather-type masks as build_month_stats
+    mask_pre = np.copy(vis_grade)
+    mask_pre[pre == 0] = -1
+    mask_fog = np.copy(vis_grade)
+    mask_fog[(pre > 0) | (rhu < 80)] = -1
+    mask_haze = np.copy(vis_grade)
+    mask_haze[(pre < 0) | (rhu >= 80)] = -1
 
     df_hour = {'hour': list()}
     for i in range(len(thres)):
@@ -75,13 +81,14 @@ def build_hour_stats(
         df_hour[str(i + 1) + 'fog'] = list()
         df_hour[str(i + 1) + 'haze'] = list()
 
+    # Calculate frequency per hour (using stride 24) and grade
     for j in range(24):
         df_hour['hour'].append(j)
         valid = np.sum(vis_grade[j::24, :] >= 0)
         vg_h = vis_grade[j::24, :]
-        a_h = a[j::24, :]
-        b_h = b[j::24, :]
-        c_h = c[j::24, :]
+        a_h = mask_pre[j::24, :]
+        b_h = mask_fog[j::24, :]
+        c_h = mask_haze[j::24, :]
         for i in range(len(thres)):
             grade = i + 1
             df_hour[str(grade)].append(np.sum(vg_h >= grade) / valid)
@@ -101,12 +108,13 @@ def build_sta_stats(
 ) -> dict:
     """Calc station-wise freq and mean visibility."""
     n_sta = len(sta)
-    a = np.copy(vis_grade)
-    a[pre == 0] = -1
-    b = np.copy(vis_grade)
-    b[(pre > 0) | (rhu < 80)] = -1
-    c = np.copy(vis_grade)
-    c[(pre < 0) | (rhu >= 80)] = -1
+    # Weather-type masks: precip, fog, haze
+    mask_pre = np.copy(vis_grade)
+    mask_pre[pre == 0] = -1
+    mask_fog = np.copy(vis_grade)
+    mask_fog[(pre > 0) | (rhu < 80)] = -1
+    mask_haze = np.copy(vis_grade)
+    mask_haze[(pre < 0) | (rhu >= 80)] = -1
 
     valid_all = np.sum(vis_grade >= 0, axis=0)
 
@@ -122,6 +130,8 @@ def build_sta_stats(
         'lvhe': list()
     }
 
+    # Compute mean visibility for low-vis events by weather type per station
+    # lvpe = low visibility precip event mean, lvfe = fog, lvhe = haze
     for j in range(n_sta):
         df_sta['lvpe'].append(np.nanmean(vis[:, j][pre[:, j] > 0]))
         index_e = (pre[:, j] == 0) & (rhu[:, j] >= 80)
@@ -132,9 +142,9 @@ def build_sta_stats(
     for i in range(len(thres)):
         grade = str(i + 1)
         df_sta[grade] = np.sum(vis_grade >= i + 1, axis=0) / valid_all
-        df_sta[grade + 'pre'] = np.sum(a >= i + 1, axis=0) / valid_all
-        df_sta[grade + 'fog'] = np.sum(b >= i + 1, axis=0) / valid_all
-        df_sta[grade + 'haze'] = np.sum(c >= i + 1, axis=0) / valid_all
+        df_sta[grade + 'pre'] = np.sum(mask_pre >= i + 1, axis=0) / valid_all
+        df_sta[grade + 'fog'] = np.sum(mask_fog >= i + 1, axis=0) / valid_all
+        df_sta[grade + 'haze'] = np.sum(mask_haze >= i + 1, axis=0) / valid_all
 
     return df_sta
 

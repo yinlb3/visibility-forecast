@@ -6,7 +6,7 @@ Display color distribution along diagonal
 Fixed Chinese font and memory issues
 
 Founded in 2026-04-04
-Modified in 2026-04-08
+Modified in 2026-04-15
 @author: yinlb
 """
 
@@ -22,7 +22,7 @@ from matplotlib import pyplot as plt
 from src import utils
 
 
-def setup_chinese_font(fonts_cfg: typing.Dict) -> typing.Optional[str]:
+def _setup_chinese_font(fonts_cfg: typing.Dict) -> typing.Optional[str]:
     """
     Configure Chinese font support.
 
@@ -57,7 +57,7 @@ def setup_chinese_font(fonts_cfg: typing.Dict) -> typing.Optional[str]:
     return None
 
 
-def set_matplotlib_params(chinese_font_path: typing.Optional[str]) -> None:
+def _set_matplotlib_params(chinese_font_path: typing.Optional[str]) -> None:
     """
     Set matplotlib parameters.
 
@@ -81,7 +81,7 @@ def set_matplotlib_params(chinese_font_path: typing.Optional[str]) -> None:
 # ==================== Core Functions ====================
 
 
-def create_diagonal_matrix(size: int) -> np.ndarray:
+def _create_diagonal_matrix(size: int) -> np.ndarray:
     """
     Create diagonal index matrix.
 
@@ -104,7 +104,9 @@ def create_diagonal_matrix(size: int) -> np.ndarray:
     return diagonal_idx
 
 
-def generate_color_map(num_colors: int, color_map_name: str):
+def _generate_color_map(
+    num_colors: int, color_map_name: str
+) -> typing.List[typing.Tuple[float, ...]]:
     """
     Generate color list of specified count.
 
@@ -118,13 +120,14 @@ def generate_color_map(num_colors: int, color_map_name: str):
     Returns:
         colors: Color list
     """
+    # Uniformly sample colors from the specified colormap
     base_cmap = plt.get_cmap(color_map_name)
     colors = [base_cmap(i / max(1, num_colors - 1)) for i in range(num_colors)]
 
     return colors
 
 
-def draw_grid(ax, matrix, colors, size):
+def _draw_grid(ax, matrix: np.ndarray, colors: typing.List, size: int) -> None:
     """
     Draw colored grid.
 
@@ -137,7 +140,7 @@ def draw_grid(ax, matrix, colors, size):
         colors: Color list
         size: Grid size
     """
-    # Batch draw to reduce memory
+    # Batch draw cells to reduce memory usage (8 rows per batch)
     batch_size = 8  # Draw 8 rows per batch
 
     for start_row in range(0, size, batch_size):
@@ -146,7 +149,7 @@ def draw_grid(ax, matrix, colors, size):
         for i in range(start_row, end_row):
             for j in range(size):
                 color_idx = matrix[i, j] % len(colors)
-                # Note: Matrix row index opposite to y-axis
+                # Note: Matrix row index opposite to y-axis (flip vertically)
                 rect = patches.Rectangle(
                     (j, size - 1 - i), 1, 1,
                     facecolor=colors[color_idx],
@@ -155,7 +158,7 @@ def draw_grid(ax, matrix, colors, size):
                 )
                 ax.add_patch(rect)
 
-        # Force garbage collection
+        # Force garbage collection after each batch
         import gc
         gc.collect()
 
@@ -166,7 +169,7 @@ def draw_grid(ax, matrix, colors, size):
     ax.axis('off')
 
 
-def draw_color_bar(ax, colors, size):
+def _draw_color_bar(ax, colors: typing.List, size: int) -> None:
     """
     Draw bottom color bar.
 
@@ -178,9 +181,9 @@ def draw_color_bar(ax, colors, size):
         colors: Color list
         size: Grid size
     """
+    # Draw color bar with same colors as grid (one-to-one mapping)
     num_colors = min(len(colors), size)  # Limit color count
 
-    # Batch draw color bar
     for i in range(num_colors):
         rect = patches.Rectangle(
             (i, 0), 1, 1,
@@ -197,7 +200,7 @@ def draw_color_bar(ax, colors, size):
     ax.axis('off')
 
 
-def add_number_labels(ax, size, position='top'):
+def _add_number_labels(ax, size: int, position: str = 'top') -> None:
     """
     Add number labels.
 
@@ -230,7 +233,7 @@ def add_number_labels(ax, size, position='top'):
         )
 
 
-def add_arrow_annotation(ax, size, target_col):
+def _add_arrow_annotation(ax, size: int, target_col: float) -> None:
     """
     Add arrow annotation.
 
@@ -282,8 +285,8 @@ def main() -> None:
     out_dir = cfg['paths']['output_dir']
 
     # 3. Setup Chinese font and matplotlib parameters
-    chinese_font_path = setup_chinese_font(cfg['fonts'])
-    set_matplotlib_params(chinese_font_path)
+    chinese_font_path = _setup_chinese_font(cfg['fonts'])
+    _set_matplotlib_params(chinese_font_path)
 
     # 4. Create figure and define subplot areas
     fig = plt.figure(figsize=(fig_width, fig_height))
@@ -292,17 +295,17 @@ def main() -> None:
     ax_labels = fig.add_axes([0.1, 0.15, 0.8, 0.75])    # Label overlay area
 
     # 5. Generate diagonal matrix and color map
-    diagonal_matrix = create_diagonal_matrix(grid_size)
-    color_list = generate_color_map(grid_size * 2 - 1, color_map_name)
+    diagonal_matrix = _create_diagonal_matrix(grid_size)
+    color_list = _generate_color_map(grid_size * 2 - 1, color_map_name)
 
     # 6. Draw main elements (grid and color bar)
-    draw_grid(ax_grid, diagonal_matrix, color_list, grid_size)
-    draw_color_bar(ax_colorbar, color_list, grid_size * 2 - 1)
+    _draw_grid(ax_grid, diagonal_matrix, color_list, grid_size)
+    _draw_color_bar(ax_colorbar, color_list, grid_size * 2 - 1)
 
     # 7. Add number labels and annotations
-    add_number_labels(ax_labels, grid_size, position='top')
-    add_number_labels(ax_labels, grid_size, position='bottom')
-    add_arrow_annotation(ax_labels, grid_size, target_col=12.5)
+    _add_number_labels(ax_labels, grid_size, position='top')
+    _add_number_labels(ax_labels, grid_size, position='bottom')
+    _add_arrow_annotation(ax_labels, grid_size, target_col=12.5)
 
     # 8. Set title and save output files
     if chinese_font_path:
@@ -336,7 +339,7 @@ def main() -> None:
     plt.close(fig)
 
 
-def format_time(second: float, is_abbreviation: bool = False) -> str:
+def _format_time(second: float, is_abbreviation: bool = False) -> str:
     """
     Format seconds to human-readable time string.
 
@@ -377,5 +380,5 @@ if __name__ == '__main__':
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
-    elapsed_str = format_time(total_elapsed)
+    elapsed_str = _format_time(total_elapsed)
     print(f'Program schematic.py finished, total time: {elapsed_str}')

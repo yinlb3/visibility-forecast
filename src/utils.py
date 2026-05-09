@@ -2,7 +2,7 @@
 """General utility functions.
 
 Founded in 2026-04-04
-Modified in 2026-04-07
+Modified in 2026-04-15
 @author: yinlb
 """
 
@@ -10,8 +10,8 @@ import platform
 import pathlib
 import typing
 
-from matplotlib import figure
 import yaml
+from matplotlib import figure
 
 
 # ==================== Figure Save Utility ====================
@@ -36,7 +36,9 @@ def save_figure(
         **save_kwargs: Additional kwargs passed to fig.savefig().
 
     Example:
-        >>> save_figure(fig, Path('figures/chart'), cfg, dpi=300, bbox_inches='tight')
+        >>> save_figure(
+        ...     fig, Path('figures/chart'), cfg, dpi=300, bbox_inches='tight'
+        ... )
         [save_figure] Saved: figures/chart.png
         [save_figure] Saved: figures/chart.pdf
     """
@@ -114,6 +116,7 @@ def _deep_merge(
     Returns:
         Merged configuration dict.
     """
+    # Recursively merge: override takes precedence, nested dicts merged deeply
     result: typing.Dict = base.copy()
     for key, value in override.items():
         if (
@@ -198,6 +201,7 @@ def _validate_config(cfg: typing.Dict) -> None:
         'regions.mlyr_provinces',
     ]
 
+    # Traverse dotted key paths (e.g., 'paths.data_dir') and verify existence
     for key_path in required_keys:
         parts = key_path.split('.')
         current = cfg
@@ -211,7 +215,7 @@ def _validate_config(cfg: typing.Dict) -> None:
             current = current[part]
 
 
-# Load and validate configuration
+# Load and validate configuration at module import time
 _CFG: typing.Dict = load_config()
 _validate_config(_CFG)
 

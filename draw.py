@@ -56,6 +56,7 @@ def main() -> None:
     print('=' * 50)
     part_start = arrow.now()
 
+    # Load merged configuration (base + local override)
     cfg = utils.load_config()
     stages = cfg['stages']
 
@@ -66,6 +67,7 @@ def main() -> None:
     data_dir = cfg['paths']['data_dir']
     thres = tuple(cfg['visibility']['grade_thresholds'])
 
+    # Either run full data prep or load from cached stage 1 results
     if stages['data_prep']:
         sta, idx_east_china = p1.read_sta(
             sta_path=str(pathlib.Path(data_dir) / 'sta2411.csv'),
@@ -93,6 +95,7 @@ def main() -> None:
         )
         os.makedirs(output_dir, exist_ok=True)
 
+    # Load forecast datasets: CMA-SH-WARR + 5 PDFM-TLE experiment schemes
     print('[Data Prep] Loading forecast data...')
     vis_ob, cma_sh_warr = p1.load_forecast_data(
         data_dir=data_dir, idx_mlyr=idx_mlyr

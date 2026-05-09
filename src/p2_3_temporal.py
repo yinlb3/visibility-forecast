@@ -4,7 +4,7 @@
 Part 2.3: Temporal distribution feature plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-04-14
+Modified in 2026-04-15
 @author: yinlb
 """
 
@@ -36,13 +36,31 @@ def _plot_stack_bar(
 ) -> None:
     """Helper: Plot color or B&W stacked bars."""
     if color:
-        ax.bar(x=x, height=pre, width=bar_width, color=color_precip, label='Precip')
-        ax.bar(x=x, height=fog, bottom=pre, width=bar_width, color=color_fog, label='Fog')
-        ax.bar(x=x, height=haze, bottom=pre + fog, width=bar_width, color=color_haze, label='Haze')
+        ax.bar(
+            x=x, height=pre, width=bar_width,
+            color=color_precip, label='Precip'
+        )
+        ax.bar(
+            x=x, height=fog, bottom=pre, width=bar_width,
+            color=color_fog, label='Fog'
+        )
+        ax.bar(
+            x=x, height=haze, bottom=pre + fog, width=bar_width,
+            color=color_haze, label='Haze'
+        )
     else:
-        ax.bar(x=x, height=pre, width=bar_width, color='black', edgecolor=edgecolor, label='Precip')
-        ax.bar(x=x, height=fog, bottom=pre, width=bar_width, color='white', edgecolor=edgecolor, hatch=hatch, label='Fog')
-        ax.bar(x=x, height=haze, bottom=pre + fog, width=bar_width, color='white', edgecolor=edgecolor, label='Haze')
+        ax.bar(
+            x=x, height=pre, width=bar_width,
+            color='black', edgecolor=edgecolor, label='Precip'
+        )
+        ax.bar(
+            x=x, height=fog, bottom=pre, width=bar_width,
+            color='white', edgecolor=edgecolor, hatch=hatch, label='Fog'
+        )
+        ax.bar(
+            x=x, height=haze, bottom=pre + fog, width=bar_width,
+            color='white', edgecolor=edgecolor, label='Haze'
+        )
 
 
 def plot_monthly_bars(
@@ -62,6 +80,8 @@ def plot_monthly_bars(
     ylim = plot_cfg['ylim']
     yticks = plot_cfg['yticks']
 
+    # 1. Plot monthly stacked probability bars (color)
+    # Stack order: precip (bottom) -> fog -> haze (top)
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     _plot_stack_bar(
         ax, np.linspace(start=1, stop=12, num=12),
@@ -84,6 +104,7 @@ def plot_monthly_bars(
     del fig, ax
     gc.collect()
 
+    # 2. Plot monthly stacked probability bars (B&W)
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     _plot_stack_bar(
         ax, np.linspace(start=1, stop=12, num=12),
@@ -105,7 +126,12 @@ def plot_monthly_bars(
     del fig, ax
     gc.collect()
 
-    lve = np.array(df_month.loc[:, '1haze'] + df_month.loc[:, '1pre'] + df_month.loc[:, '1fog'])
+    # 3. Calc low visibility event (LVE) monthly stats
+    lve = np.array(
+        df_month.loc[:, '1haze']
+        + df_month.loc[:, '1pre']
+        + df_month.loc[:, '1fog']
+    )
     prefix = '[plot_monthly_bars]'
     max_month, max_val = np.argmax(lve) + 1, np.max(lve)
     min_month, min_val = np.argmin(lve) + 1, np.min(lve)
@@ -126,6 +152,8 @@ def plot_monthly_violins(
     figsize = plot_cfg['figsize']
     dpi = plot_cfg['dpi']
     color = plot_cfg['color']
+    # 1. Plot monthly visibility violin by weather type
+    # Filters: all low-vis, precip, fog (high RH), haze (low RH)
     conditions = [
         (vis < 10000, 'boxplot_ob_month'),
         ((vis < 10000) & (pre > 0), 'boxplot_ob_month_pre'),
@@ -134,12 +162,12 @@ def plot_monthly_violins(
     ]
     for cond, fname in conditions:
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
-        d = dict()
+        df = dict()
         for i in range(12):
             vis_ob = vis[month_ind == i + 1, :]
             idx = cond[month_ind == i + 1, :]
-            d[f'{i + 1}'] = vis_ob[idx] / 1000
-        sns.violinplot(data=d, color=color)
+            df[f'{i + 1}'] = vis_ob[idx] / 1000
+        sns.violinplot(data=df, color=color)
         ax.set_xlabel('月份')
         ax.set_ylabel('能见度(km)')
         base_path = pathlib.Path(output_dir) / fname
@@ -169,6 +197,7 @@ def plot_hourly_bars(
     ylim = plot_cfg['ylim']
     yticks = plot_cfg['yticks']
 
+    # 1. Plot hourly stacked probability bars (color)
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     _plot_stack_bar(
         ax, np.linspace(start=0, stop=23, num=24),
@@ -191,6 +220,7 @@ def plot_hourly_bars(
     del fig, ax
     gc.collect()
 
+    # 2. Plot hourly stacked probability bars (B&W)
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     _plot_stack_bar(
         ax, np.linspace(start=0, stop=23, num=24),
@@ -212,7 +242,12 @@ def plot_hourly_bars(
     del fig, ax
     gc.collect()
 
-    lve = np.array(df_hour.loc[:, '1haze'] + df_hour.loc[:, '1pre'] + df_hour.loc[:, '1fog'])
+    # 3. Calc LVE hourly stats
+    lve = np.array(
+        df_hour.loc[:, '1haze']
+        + df_hour.loc[:, '1pre']
+        + df_hour.loc[:, '1fog']
+    )
     prefix = '[plot_hourly_bars]'
     print(f'{prefix} LVE max hour: h={np.argmax(lve)}, value={np.max(lve):.4f}')
     print(f'{prefix} LVE min hour: h={np.argmin(lve)}, value={np.min(lve):.4f}')
@@ -236,20 +271,22 @@ def plot_hourly_violins(
         ((vis < 10000) & (pre == 0) & (rhu >= 80), 'boxplot_ob_hour_fog'),
         ((vis < 10000) & (pre == 0) & (rhu < 80), 'boxplot_ob_hour_haze')
     ]
+    # 1. Plot hourly visibility violin by weather type
     for cond, fname in conditions:
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
-        d = dict()
+        df = dict()
         if fname == 'boxplot_ob_hour':
             for i in range(24):
+                # i::24 slices same hour across all days
                 idx = cond[i::24, :]
                 vis_ob = vis[i::24, :]
-                d[f'{i}:00'] = vis_ob[idx] / 1000
+                df[f'{i}:00'] = vis_ob[idx] / 1000
         else:
             for i in range(24):
-                vis_ob = vis[i::24, :]
                 idx = cond[i::24, :]
-                d[f'{i}:00'] = vis_ob[idx] / 1000
-        sns.violinplot(data=d, color=color)
+                vis_ob = vis[i::24, :]
+                df[f'{i}:00'] = vis_ob[idx] / 1000
+        sns.violinplot(data=df, color=color)
         ax.set_xlabel('小时(UTC)')
         ax.set_ylabel('能见度(km)')
         base_path = pathlib.Path(output_dir) / fname

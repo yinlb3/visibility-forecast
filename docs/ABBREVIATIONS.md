@@ -1,39 +1,39 @@
-# Abbreviations (项目缩写规范)
+# Abbreviations
 
-## Region (区域)
-| 缩写 | 全称 | 说明 |
-|:----:|------|------|
-| MLYR | Middle-Lower Yangtze River | 长江中下游区域 |
-| - | East China | 中国东部（使用全称，无缩写）|
+## Region
+| Abbreviation | Full Name | Description |
+|:------------:|-----------|-------------|
+| MLYR | Middle-Lower Yangtze River | Middle-Lower Yangtze River region |
+| - | East China | East China (use full name, no abbreviation) |
 
-## Data & Metrics (数据与指标)
-| 缩写 | 全称 | 说明 |
-|:----:|------|------|
-| val | Validation | 验证集/验证时段 |
-| qem | Quantitative Evaluation Metrics | 定量指标：R, MAE, RMSE, MRE |
-| cem | Categorical/Grade Evaluation Metrics | 等级指标：TS, FAR, MAR, POD |
-| vt | Valid Time / Lead Time | 预报时效（小时）|
-| shour | Start Hour | 起报时次（UTC）|
-| fhour | Forecast Hour | 预报时间（UTC）|
-| wt | Weather Type | 天气类型：1=precip, 2=fog, 3=haze |
-| LVE | Low Visibility Event | 低能见度事件（雾+降水+霾频率之和）|
-| LVPE | Low Visibility Precipitation Event | 降水型低能见度事件 |
-| LVFE | Low Visibility Fog Event | 雾型低能见度事件 |
-| LVHE | Low Visibility Haze Event | 霾型低能见度事件 |
+## Data & Metrics
+| Abbreviation | Full Name | Description |
+|:------------:|-----------|-------------|
+| val | Validation | Validation set / validation period |
+| qem | Quantitative Evaluation Metrics | Quantitative metrics: R, MAE, RMSE, MRE |
+| cem | Categorical/Grade Evaluation Metrics | Categorical metrics: TS, FAR, MAR, POD |
+| vt | Valid Time / Lead Time | Forecast lead time (hours) |
+| shour | Start Hour | Initialization hour (UTC) |
+| fhour | Forecast Hour | Forecast hour (UTC) |
+| wt | Weather Type | Weather type: 1=precip, 2=fog, 3=haze |
+| LVE | Low Visibility Event | Low visibility event (sum of fog+precip+haze frequencies) |
+| LVPE | Low Visibility Precipitation Event | Precipitation-type low visibility event |
+| LVFE | Low Visibility Fog Event | Fog-type low visibility event |
+| LVHE | Low Visibility Haze Event | Haze-type low visibility event |
 
-## Models & Experiments (模型与试验)
-| 缩写 | 全称 | 说明 |
-|:----:|------|------|
-| CMA-SH-WARR | China meteorological administration-Shanghai WRF ADAS rapid refresh system | 中国气象局上海快速更新同化预报系统 |
-| PDFM | probability density function matching | 概率密度匹配 |
-| TLE | time-lagged ensemble | 时间滞后集合 |
+## Models & Experiments
+| Abbreviation | Full Name | Description |
+|:------------:|-----------|-------------|
+| CMA-SH-WARR | China Meteorological Administration-Shanghai WRF ADAS rapid refresh system | China Meteorological Administration Shanghai WRF ADAS rapid refresh system |
+| PDFM | probability density function matching | Probability density function matching |
+| TLE | time-lagged ensemble | Time-lagged ensemble |
 
-## Region Index (区域索引)
-| 缩写 | 全称 | 说明 |
-|:----:|------|------|
-| idx_mlyr | index for Middle-Lower Yangtze River | 长江中下游区域索引 |
+## Region Index
+| Abbreviation | Full Name | Description |
+|:------------:|-----------|-------------|
+| idx_mlyr | index for Middle-Lower Yangtze River | Middle-Lower Yangtze River region index |
 
-## Notes (说明)
-- 代码中首次出现缩写时应添加行内注释（格式：`# xxx: 全称 和 具体说明`）
-- MLYR 遵循国际地理命名惯例
-- East China 使用全称以避免与 ECMWF（ec）混淆
+## Notes
+- Add inline comment on first occurrence of abbreviation in code (format: `# xxx: full name and specific description`)
+- MLYR follows international geographic naming conventions
+- East China uses full name to avoid confusion with ECMWF (ec)

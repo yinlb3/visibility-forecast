@@ -6,7 +6,7 @@ description: Meteorological visibility data analysis and visualization toolkit
 # vis Agent Guide
 
 > **Reference**: See `user-preferences` skill for:
-> - Coding standards (A1-A9)
+> - Coding standards (A1-A11)
 > - Git workflow (B4)
 > - This document only records project-specific information.
 
@@ -115,6 +115,8 @@ Refer to `user-preferences` skill B.4.
 |------|-------------|-----------------|
 | Project Setup & Documentation | Initialize git repository, configure .gitignore, set up dual-platform sync (Gitee/GitHub), add code comments/docstrings, and translate all documentation to English | 2026-04-05 |
 | draw.py Refactoring | Flatten `draw.py` into 3 Parts with direct `src/pX_Y` module calls; remove old intermediate wrappers; extract shared utilities; standardize console output, file structure, and naming conventions (indices, masks, confusion matrix, metrics, case study vars, output labels); add `docs/ABBREVIATIONS.md` | 2026-04-15 |
+| Evaluation Calculation Parallelization | Parallelize station-level and init-hour block metrics calculation in `src/p3_1_eval_calc.py` using `joblib.Parallel(n_jobs=-1)`, reducing runtime to approximately 1/3 of original | 2026-04-15 |
+| Code Style Compliance | Systematically check and fix all code style items | 2026-05-09 |
 
 ### In Progress
 | Task | Description | Notes |

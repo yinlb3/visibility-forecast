@@ -4,7 +4,7 @@
 Part 3.5: Operational application case study evaluation result output module.
 
 Founded in 2026-04-14
-Modified in 2026-04-14
+Modified in 2026-04-15
 @author: yinlb
 """
 
@@ -30,6 +30,7 @@ def load_2024_obs(data_dir: str, idx_mlyr: np.ndarray) -> np.ndarray:
     """Load 2024 observation data for case study."""
     vis_ob = np.load(str(pathlib.Path(data_dir) / 'vis1183_ob_2024.npy'))
     vis_ob = np.reshape(vis_ob[:, 1:, idx_mlyr], shape=(-1, 24, 502))
+    # Data cleaning: mark missing values as NaN, cap visibility at 30000m
     vis_ob[vis_ob >= 999990] = np.nan
     vis_ob[vis_ob >= 30000] = 30000
     return vis_ob
@@ -40,6 +41,7 @@ def load_2024_preds(data_dir: str) -> typing.Tuple[np.ndarray, np.ndarray]:
     path = pathlib.Path(data_dir) / 'vis_gjz_pdfm2_mlyr_2024.npy'
     pred_pdfm2 = np.load(str(path))
     pred_pdfm2 = np.reshape(pred_pdfm2, shape=(-1, 24, 502))
+    # Cap forecast visibility at 30000m to match obs range
     pred_pdfm2[pred_pdfm2 >= 30000] = 30000
 
     path = pathlib.Path(data_dir) / 'vis_gjz_tle2_mlyr_2024.npy'
@@ -54,6 +56,7 @@ def print_2024_overall_metrics(
     vis_ob: np.ndarray, pred_pdfm2: np.ndarray, pred_tle2: np.ndarray
 ) -> None:
     """Print overall verification metrics for PDFM and TLE."""
+    # 1. Print PDFM overall metrics
     acc = VisAcc(vis_ob, pred_pdfm2)
     print('[2024 Overall Metrics] PDFM')
     print(f'  R={acc.get_r():.4f}, MAE={acc.get_mae():.1f} m, '
@@ -62,6 +65,7 @@ def print_2024_overall_metrics(
           f'FAR_GE={_fmt_arr(acc.get_far_ge())}, '
           f'MAR_GE={_fmt_arr(acc.get_mar_ge())}')
 
+    # 2. Print TLE overall metrics
     acc = VisAcc(vis_ob, pred_tle2)
     print('[2024 Overall Metrics] TLE')
     print(f'  R={acc.get_r():.4f}, MAE={acc.get_mae():.1f} m, '
@@ -91,6 +95,7 @@ def align_forecast_times(
     vis_ob: np.ndarray, cma_sh_warr: np.ndarray, pred_pdfm2: np.ndarray
 ) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Apply time offset to 24 forecast init times to align with obs."""
+    # Apply time offset to align 24 forecast init times with obs timestamps
     vis_ob_ = np.zeros_like(vis_ob) + np.nan
     pred_pdfm2_ = np.zeros_like(pred_pdfm2) + np.nan
     cma_sh_warr_ = np.zeros_like(cma_sh_warr) + np.nan
@@ -133,13 +138,15 @@ def analyze_case_studies(
         ['2024-11-10', '2024-11-12', '2024-11-10'],
         ['2024-12-04', '2024-12-07', '2024-12-05'],
     ]
+    # 1. Define 18 case studies with start, end, and peak dates
     case_idx = np.zeros(shape=(8784, 4), dtype=np.bool_)
 
-    for idx, d in enumerate(date_list, 1):
+    for idx, dt in enumerate(date_list, 1):
         base = arrow.get('2024')
         i = round((arrow.get(d[0]) - base).total_seconds() / 3600)
         j = round((arrow.get(d[1]) - base).total_seconds() / 3600)
         k = round((arrow.get(d[2]) - base).total_seconds() / 3600)
+        # 2. Extract four phases: all period, start, end, and peak
         ob_all = vis_ob_[i: j + 24, :, :]
         fcst_all = cma_sh_warr_[i: j + 24, :, :]
         ts_ge4_cma_all = VisAcc(ob_all, fcst_all).get_ts_ge()[3]
@@ -175,21 +182,26 @@ def analyze_case_studies(
         case_idx[j: j + 24, 2] = True
         case_idx[k: k + 24, 3] = True
 
-    ob0, fcst0 = vis_ob_[case_idx[:, 0], :, :], cma_sh_warr_[case_idx[:, 0], :, :]
+    # 3. Calc merged statistics across all cases by phase
+    idx0 = case_idx[:, 0]
+    ob0, fcst0 = vis_ob_[idx0, :, :], cma_sh_warr_[idx0, :, :]
     ts_ge4_cma_m_all = VisAcc(ob0, fcst0).get_ts_ge()[3]
-    ob1, fcst1 = vis_ob_[case_idx[:, 1], :, :], cma_sh_warr_[case_idx[:, 1], :, :]
+    idx1 = case_idx[:, 1]
+    ob1, fcst1 = vis_ob_[idx1, :, :], cma_sh_warr_[idx1, :, :]
     ts_ge4_cma_m_start = VisAcc(ob1, fcst1).get_ts_ge()[3]
-    ob2, fcst2 = vis_ob_[case_idx[:, 2], :, :], cma_sh_warr_[case_idx[:, 2], :, :]
+    idx2 = case_idx[:, 2]
+    ob2, fcst2 = vis_ob_[idx2, :, :], cma_sh_warr_[idx2, :, :]
     ts_ge4_cma_m_end = VisAcc(ob2, fcst2).get_ts_ge()[3]
-    ob3, fcst3 = vis_ob_[case_idx[:, 3], :, :], cma_sh_warr_[case_idx[:, 3], :, :]
+    idx3 = case_idx[:, 3]
+    ob3, fcst3 = vis_ob_[idx3, :, :], cma_sh_warr_[idx3, :, :]
     ts_ge4_cma_m_peak = VisAcc(ob3, fcst3).get_ts_ge()[3]
-    p_ob0, p_fcst0 = vis_ob_[case_idx[:, 0], :, :], pred_pdfm2_[case_idx[:, 0], :, :]
+    p_ob0, p_fcst0 = vis_ob_[idx0, :, :], pred_pdfm2_[idx0, :, :]
     ts_ge4_pdfm_m_all = VisAcc(p_ob0, p_fcst0).get_ts_ge()[3]
-    p_ob1, p_fcst1 = vis_ob_[case_idx[:, 1], :, :], pred_pdfm2_[case_idx[:, 1], :, :]
+    p_ob1, p_fcst1 = vis_ob_[idx1, :, :], pred_pdfm2_[idx1, :, :]
     ts_ge4_pdfm_m_start = VisAcc(p_ob1, p_fcst1).get_ts_ge()[3]
-    p_ob2, p_fcst2 = vis_ob_[case_idx[:, 2], :, :], pred_pdfm2_[case_idx[:, 2], :, :]
+    p_ob2, p_fcst2 = vis_ob_[idx2, :, :], pred_pdfm2_[idx2, :, :]
     ts_ge4_pdfm_m_end = VisAcc(p_ob2, p_fcst2).get_ts_ge()[3]
-    p_ob3, p_fcst3 = vis_ob_[case_idx[:, 3], :, :], pred_pdfm2_[case_idx[:, 3], :, :]
+    p_ob3, p_fcst3 = vis_ob_[idx3, :, :], pred_pdfm2_[idx3, :, :]
     ts_ge4_pdfm_m_peak = VisAcc(p_ob3, p_fcst3).get_ts_ge()[3]
     merged_str = f'Merged cases  '
     cma_s = f'a:{ts_ge4_cma_m_all:.4f}, s:{ts_ge4_cma_m_start:.4f}, '

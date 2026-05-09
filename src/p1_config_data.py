@@ -48,9 +48,10 @@ def _load_stage1_cache(cache_dir: str):
 
 def read_sta(sta_path: str, provinces: tuple) -> tuple:
     """Read station info and filter by province."""
-    sta = pd.read_csv(filepath_or_buffer=sta_path, low_memory=False, encoding='utf-8')
+    sta = pd.read_csv(sta_path, low_memory=False, encoding='utf-8')
     sta = sta.sort_values(by=['id'])
     sta.reset_index(drop=True, inplace=True)
+    # Build OR-chain boolean mask for target provinces
     idx_east_china = None
     for province in provinces:
         if idx_east_china is None:
@@ -64,13 +65,19 @@ def read_sta(sta_path: str, provinces: tuple) -> tuple:
 
 def load_obs(data_dir: str, idx_east_china: np.ndarray) -> tuple:
     """Load vis/precip/RH obs data and apply QC."""
-    vis = np.load(str(pathlib.Path(data_dir) / 'vis20-23.npy'))[:, idx_east_china]
+    # Visibility: replace missing values, cap at 30000m
+    vis_path = str(pathlib.Path(data_dir) / 'vis20-23.npy')
+    vis = np.load(vis_path)[:, idx_east_china]
     vis[vis >= 999990] = np.nan
     vis[vis >= 30000] = 30000
-    pre = np.load(str(pathlib.Path(data_dir) / 'pre20-23.npy'))[:, idx_east_china]
+    # Precipitation: filter extreme values
+    pre_path = str(pathlib.Path(data_dir) / 'pre20-23.npy')
+    pre = np.load(pre_path)[:, idx_east_china]
     pre[pre >= 200] = np.nan
     pre[pre >= 30000] = 30000
-    rhu = np.load(str(pathlib.Path(data_dir) / 'rhu20-23.npy'))[:, idx_east_china]
+    # Relative humidity: clamp to [0, 100]
+    rhu_path = str(pathlib.Path(data_dir) / 'rhu20-23.npy')
+    rhu = np.load(rhu_path)[:, idx_east_china]
     rhu[rhu >= 999990] = np.nan
     rhu[rhu > 100] = 100
     rhu[rhu < 0] = 0
@@ -83,6 +90,7 @@ def filter_region(
 ) -> tuple:
     """Secondary filter stations by target provinces."""
     n_sta = len(sta)
+    # Mark stations belonging to target region provinces
     idx_mlyr = np.zeros(n_sta, dtype=np.bool_)
     for i in range(n_sta):
         if sta.loc[i, 'province'] in region_provinces:
@@ -90,6 +98,7 @@ def filter_region(
     sta = sta.loc[idx_mlyr].copy()
     sta = sta.reset_index(drop=True)
     sta = sta.astype({'data0': float})
+    # Subset obs arrays to region stations
     vis = vis[:, idx_mlyr]
     pre = pre[:, idx_mlyr]
     rhu = rhu[:, idx_mlyr]
@@ -100,8 +109,9 @@ def grade_visibility(vis: np.ndarray) -> np.ndarray:
     """Grade visibility into six levels."""
     vis_grade = np.zeros_like(vis, dtype=np.int_) - 1
     vis_grade[~np.isnan(vis)] = 0
-    for i, t in enumerate(THRES):
-        vis_grade[vis < t] = i + 1
+    # Assign higher grade for lower visibility (worse conditions)
+    for i, thr in enumerate(THRES):
+        vis_grade[vis < thr] = i + 1
     return vis_grade
 
 
@@ -111,14 +121,18 @@ def build_month_index(start_year: int, n_hours: int) -> np.ndarray:
     return dates.month.to_numpy()
 
 
-def load_forecast_data(data_dir: str, idx_mlyr: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray]:
+def load_forecast_data(
+    data_dir: str, idx_mlyr: np.ndarray
+) -> typing.Tuple[np.ndarray, np.ndarray]:
     """Load last 365 days obs and CMA-SH-WARR forecast data."""
+    # Load obs: slice last 365 days, reshape to (days, 24h, stations)
     path = str(pathlib.Path(data_dir) / 'vis1183_ob.npy')
     vis_ob = np.load(path)[-365:, :, 1:, idx_mlyr]
     vis_ob = np.reshape(vis_ob, (-1, 24, 502))
     vis_ob[vis_ob >= 999990] = np.nan
     vis_ob[vis_ob >= 30000] = 30000
 
+    # Load CMA-SH-WARR forecast with same reshaping
     pr_path = str(pathlib.Path(data_dir) / 'vis1183_pr.npy')
     cma_sh_warr = np.load(pr_path)[-365:, :, 1:, idx_mlyr]
     cma_sh_warr = np.reshape(cma_sh_warr, (-1, 24, 502))
@@ -129,6 +143,7 @@ def load_forecast_data(data_dir: str, idx_mlyr: np.ndarray) -> typing.Tuple[np.n
 def load_experiment_preds(data_dir: str) -> typing.Tuple[np.ndarray, ...]:
     """Load 5 PDFM-TLE experiment forecast datasets."""
     preds = list()
+    # Iterate over 5 experiment configurations (TLE0 to TLE4)
     for i in range(5):
         path = str(pathlib.Path(data_dir) / f'vis_gjz_pdfm_tle{i}_mlyr.npy')
         pred = np.load(path)

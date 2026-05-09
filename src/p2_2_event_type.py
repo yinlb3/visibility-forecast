@@ -4,7 +4,7 @@
 Part 2.2: Event type proportion output and plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-04-14
+Modified in 2026-04-15
 @author: yinlb
 """
 
@@ -32,12 +32,13 @@ def plot_obs_pies(
     plot_cfg = cfg['plot']['obs_pies']
     figsize = plot_cfg['figsize']
     dpi = plot_cfg['dpi']
+    # For each grade, count precip/fog/haze events and plot pie
     for i in range(len(thres)):
         index = (vis_grade == i + 1) & ~np.isnan(pre) & ~np.isnan(rhu)
-        a = np.sum((pre > 0) & index)
-        b = np.sum((pre == 0) & (rhu >= 80) & index)
-        c = np.sum((pre == 0) & (rhu < 80) & index)
-        abc = np.array([a, b, c])
+        cnt_pre = np.sum((pre > 0) & index)
+        cnt_fog = np.sum((pre == 0) & (rhu >= 80) & index)
+        cnt_haze = np.sum((pre == 0) & (rhu < 80) & index)
+        abc = np.array([cnt_pre, cnt_fog, cnt_haze])
         pct = abc / np.sum(abc) * 100
         prefix = '[plot_obs_pies]'
         pct_str = f'[{pct[0]:.2f}, {pct[1]:.2f}, {pct[2]:.2f}]'
@@ -65,6 +66,7 @@ def plot_obs_violin_box(
     import seaborn as sns
 
     plot_cfg = cfg['plot']['obs_violin_box']
+    # Build 4-category masks for visibility < 500m events
     mask_lv4plus = vis < 500
     mask_lv4plus_pre = (vis < 500) & (pre > 0)
     mask_lv4plus_fog = (vis < 500) & (pre == 0) & (rhu >= 80)

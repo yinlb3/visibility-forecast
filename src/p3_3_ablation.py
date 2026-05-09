@@ -4,7 +4,7 @@
 Part 3.4: Ablation experiment result output module.
 
 Founded in 2026-04-14
-Modified in 2026-04-14
+Modified in 2026-04-15
 @author: yinlb
 """
 
@@ -31,6 +31,7 @@ def plot_vis_cdf(
     vis_values = np.arange(-1, 30001, 1, dtype=np.float32)
     cdf = np.zeros((3, vis_values.size), dtype=np.float32)
 
+    # Filter to valid triple-matched samples
     mask_ob = ~np.isnan(vis_ob)
     mask_nwp = ~np.isnan(cma_sh_warr)
     mask_pr = ~np.isnan(pred_pdfm_tle0)
@@ -39,6 +40,7 @@ def plot_vis_cdf(
     nwp = cma_sh_warr[index]
     pr = pred_pdfm_tle0[index]
 
+    # Build CDF for each dataset: sort → searchsorted → normalize
     ob_sorted = np.sort(ob)
     nwp_sorted = np.sort(nwp)
     pr_sorted = np.sort(pr)
@@ -56,7 +58,10 @@ def plot_vis_cdf(
     color_cma = plot_cfg['color_cma']
     color_pdfm = plot_cfg['color_pdfm']
     ax.plot(vis_values / 1000, cdf[0, :], '-', c=color_ob, label='实况')
-    ax.plot(vis_values / 1000, cdf[1, :], '-', c=color_cma, label='CMA-SH3-WARR')
+    ax.plot(
+        vis_values / 1000, cdf[1, :],
+        '-', c=color_cma, label='CMA-SH3-WARR'
+    )
     ax.plot(vis_values / 1000, cdf[2, :], '-', c=color_pdfm, label='PDFM-TLE')
     xlim = plot_cfg['xlim']
     xticks = plot_cfg['xticks']
@@ -99,6 +104,7 @@ def plot_weather_type_eval_bw(
     color_haze = plot_cfg['color_haze']
     edgecolor = plot_cfg['edgecolor']
     hatch = plot_cfg['hatch']
+    # Plot grouped bars with offset x-positions for 3 weather types
     bars1 = ax.bar(
         x=x_pos - 0.2, height=qem[:, 0] / max_y, width=bar_width,
         color=color_precip, edgecolor=edgecolor, label='降水类'
@@ -111,6 +117,7 @@ def plot_weather_type_eval_bw(
         x=x_pos + 0.2, height=qem[:, 2] / max_y, width=bar_width,
         color=color_haze, edgecolor=edgecolor, label='霾类'
     )
+    # Add value labels on top of each bar
     for bars in [bars1, bars2, bars3]:
         for bar in bars:
             height = bar.get_height()
@@ -132,7 +139,10 @@ def plot_weather_type_eval_bw(
     ax.set_ylim(tuple(ylim))
     ax.set_yticks(
         ticks=np.linspace(start=0, stop=1, num=6),
-        labels=[f'{val * max_y:g}{unit}' for val in np.linspace(start=0, stop=1, num=6)]
+        labels=[
+            f'{val * max_y:g}{unit}'
+            for val in np.linspace(start=0, stop=1, num=6)
+        ]
     )
     ax.legend()
     utils.save_figure(

@@ -3,7 +3,7 @@
 Visibility forecast verification metrics calculation module.
 
 Founded in 2024-04-18
-Modified in 2026-04-08
+Modified in 2026-04-15
 @author: yinlb
 """
 
@@ -163,6 +163,9 @@ class VisAcc:
         """
         Calc Normalized ME.
 
+        Normalizes by the obs range (max - min) to make metric comparable
+        across different visibility regimes.
+
         Returns:
             float: Normalized mean error value.
         """
@@ -180,6 +183,8 @@ class VisAcc:
         """
         Calc Normalized MAE.
 
+        Normalizes by the obs range (max - min) for cross-regime comparability.
+
         Returns:
             float: Normalized mean absolute error value.
         """
@@ -196,6 +201,8 @@ class VisAcc:
     def get_nrmse(self) -> float:
         """
         Calc Normalized RMSE.
+
+        Normalizes by the obs range (max - min) for cross-regime comparability.
 
         Returns:
             float: Normalized root mean square error value.
@@ -221,14 +228,17 @@ class VisAcc:
         ob = self._ob[index]
         pr = self._pr[index]
         if np.sum(index) > 2:
-            r = float(stats.pearsonr(ob, pr)[0])
+            corr = float(stats.pearsonr(ob, pr)[0])
         else:
-            r = np.nan
-        return r
+            corr = np.nan
+        return corr
 
     def get_me_grade(self) -> np.ndarray:
         """
         Calc ME by obs grade, return array of length n_grades+1.
+
+        Iterates over each observed grade (0 to n_grades) and computes
+        the mean error for samples where obs grade equals that grade.
 
         Returns:
             np.ndarray: ME array by obs grade.
@@ -247,6 +257,8 @@ class VisAcc:
         """
         Calc MAE by obs grade, return array of length n_grades+1.
 
+        Same per-grade filtering pattern as get_me_grade.
+
         Returns:
             np.ndarray: MAE array by obs grade.
         """
@@ -264,6 +276,8 @@ class VisAcc:
         """
         Calc RMSE by obs grade, return array of length n_grades+1.
 
+        Same per-grade filtering pattern as get_me_grade.
+
         Returns:
             np.ndarray: RMSE array by obs grade.
         """
@@ -280,6 +294,9 @@ class VisAcc:
     def get_mre_grade(self) -> np.ndarray:
         """
         Calc MRE by obs grade, return array of length n_grades+1.
+
+        Same per-grade filtering pattern as get_me_grade,
+        with additional denominator guard (ob + pr > 1e-6).
 
         Returns:
             np.ndarray: MRE array by obs grade.
@@ -302,10 +319,13 @@ class VisAcc:
         """
         Calc Pearson R by obs grade, return array of length n_grades+1.
 
+        Same per-grade filtering pattern as get_me_grade.
+        Requires at least 3 samples for pearsonr.
+
         Returns:
             np.ndarray: R array by obs grade.
         """
-        r = np.zeros(self._n_grades + 1, dtype=np.float32) + np.nan
+        corr_arr = np.zeros(self._n_grades + 1, dtype=np.float32) + np.nan
         for i in range(self._n_grades + 1):
             index = (
                 (~np.isnan(self._ob))
@@ -335,7 +355,7 @@ class VisAcc:
         Returns:
             np.ndarray: Normalized confusion matrix array (row sum = 1).
         """
-        # conf_mat_norm: Normalized confusion matrix (归一化混淆矩阵)
+        # conf_mat_norm: Normalized confusion matrix
         conf_mat_norm = np.zeros_like(self._conf_mat, dtype=np.float32) + np.nan
         for i in range(self._n_grades + 1):
             row_sum = np.sum(self._conf_mat[i, :])
@@ -375,10 +395,10 @@ class VisAcc:
         if self._n == 0:
             return np.nan
         # Calculate marginal frequencies (row and column sums)
-        a = np.sum(self._conf_mat, axis=1).astype(np.float32)
-        b = np.sum(self._conf_mat, axis=0).astype(np.float32)
+        row_sum = np.sum(self._conf_mat, axis=1).astype(np.float32)
+        col_sum = np.sum(self._conf_mat, axis=0).astype(np.float32)
         # Expected agreement by chance (Pe)
-        pe = np.sum(a * b) / self._n / self._n
+        pe = np.sum(row_sum * col_sum) / self._n / self._n
         # Guard against degenerate case (all forecasts same)
         if abs(1 - pe) < 1e-6:
             return np.nan
@@ -437,8 +457,8 @@ class VisAcc:
             nb = np.sum(self._conf_mat[:i + 1, i + 1:])
             nc = np.sum(self._conf_mat[i + 1:, :i + 1])
             nd = np.sum(self._conf_mat[:i + 1, :i + 1])
-            r = (na + nb) / (na + nb + nc + nd) * (na + nc)
-            denom = na + nb + nc - r
+            exp_agree = (na + nb) / (na + nb + nc + nd) * (na + nc)
+            denom = na + nb + nc - exp_agree
             ets[i] = (na - r) / denom if na + nb + nc != 0 else np.nan
         return ets
 
