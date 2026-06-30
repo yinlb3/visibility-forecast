@@ -3,7 +3,7 @@
 Visibility forecast verification metrics calculation module.
 
 Founded in 2024-04-18
-Modified in 2026-04-15
+Modified in 2026-05-09
 @author: yinlb
 """
 

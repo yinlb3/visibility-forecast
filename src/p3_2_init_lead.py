@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Part 3.3: Different init/lead time evaluation result plotting module.
+Part 3.2: Different init/lead time evaluation result plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-04-15
+Modified in 2026-06-30
 @author: yinlb
 """
 
@@ -150,6 +150,8 @@ def plot_hour_access_heatmaps(
     plt.cla()
     plt.close('all')
     gc.collect()
+    # np.where may return multiple equal-maximum cells; report the first one
+    # as a representative location for the largest improvement.
     loc = np.where(ts_improvement == np.max(ts_improvement))
     ts_min = np.min(ts_improvement)
     ts_max = np.max(ts_improvement)

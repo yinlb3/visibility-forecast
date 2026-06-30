@@ -1,6 +1,10 @@
 # Vis Project Configuration
 # Base configuration with placeholders for privacy-sensitive values
 # Copy to config.local.windows.yaml or config.local.linux.yaml and fill in real paths
+#
+# Founded in 2026-04-05
+# Modified in 2026-06-30
+# @author: yinlb
 
 paths:
   # External data directory - MUST be overridden in local config (absolute path)
@@ -26,17 +30,16 @@ fonts:
 # Stage control flags
 # Each flag corresponds to exactly one subsection in draw.py
 stages:
-  data_prep: true        # Part 1: configuration and data loading
-  stats_calc: true       # 2.1: distribution feature calculation
-  obs_viz_2_2: true      # 2.2: event type proportion plots
-  obs_viz_2_3: true      # 2.3: temporal distribution plots
-  obs_viz_2_4: true      # 2.4: spatial distribution plots
-  forecast_prep: true    # 3.1: forecast overall & station metrics
-  type_eval: true        # 3.1: weather-type metrics calculation
-  temporal: true         # 3.1: temporal & visibility-type metrics calculation
-  spatiotemporal: true   # 3.2: init/lead time evaluation plots
-  ablation_plot: true    # 3.3: ablation experiment plots
-  case_study: true       # 3.4: 2024 operational case study
+  stage_1_data_prep: true       # Part 1: configuration and data loading
+  stage_2_1_dist_feature: true  # 2.1: distribution feature calculation
+  stage_2_2_event_type: true    # 2.2: event type proportion plots
+  stage_2_3_temporal: true      # 2.3: temporal distribution plots
+  stage_2_4_spatial: true       # 2.4: spatial distribution plots
+  stage_3_1_eval_calc: true     # 3.1: forecast evaluation calculation
+  stage_3_2_init_lead: true     # 3.2: init/lead time evaluation plots
+  stage_3_3_wt_ts4: true        # 3.3: weather type TS4 output
+  stage_3_4_ablation: true      # 3.4: ablation experiment plots
+  stage_3_5_case_study: true    # 3.5: 2024 operational case study
 
 # Plot configuration
 plot:

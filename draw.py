@@ -7,7 +7,7 @@ Main entry module for visibility data visualization. Responsibilities:
 3. Draw statistical charts for papers (bars, box, violin, pie, heatmap).
 
 Founded in 2024-04-18
-Modified in 2026-04-15
+Modified in 2026-06-30
 @author: yinlb
 """
 
@@ -26,8 +26,9 @@ from src import (
     p2_4_spatial as p24,
     p3_1_eval_calc as p31,
     p3_2_init_lead as p32,
-    p3_3_ablation as p33,
-    p3_4_case_study as p34,
+    p3_3_wt_ts4 as p33,
+    p3_4_ablation as p34,
+    p3_5_case_study as p35,
     utils,
 )
 
@@ -68,7 +69,7 @@ def main() -> None:
     thres = tuple(cfg['visibility']['grade_thresholds'])
 
     # Either run full data prep or load from cached stage 1 results
-    if stages['data_prep']:
+    if stages['stage_1_data_prep']:
         sta, idx_east_china = p1.read_sta(
             sta_path=str(pathlib.Path(data_dir) / 'sta2411.csv'),
             provinces=provinces
@@ -118,7 +119,7 @@ def main() -> None:
     # 2.1 Distribution feature calculation
     print('2.1 Distribution feature calculation')
     sec_start = arrow.now()
-    if stages['stats_calc']:
+    if stages['stage_2_1_dist_feature']:
         df_month = pd.DataFrame(p21.build_month_stats(
             vis_grade=vis_grade, pre=pre, rhu=rhu,
             month_ind=month_ind, thres=thres
@@ -155,7 +156,7 @@ def main() -> None:
     # 2.2 Event type proportion output and plotting
     print('2.2 Event type proportion output and plotting')
     sec_start = arrow.now()
-    if stages['obs_viz_2_2']:
+    if stages['stage_2_2_event_type']:
         p22.plot_obs_pies(
             vis_grade=vis_grade, pre=pre, rhu=rhu, thres=thres,
             output_dir=output_dir, cfg=cfg
@@ -169,7 +170,7 @@ def main() -> None:
     # 2.3 Temporal distribution feature plotting
     print('2.3 Temporal distribution feature plotting')
     sec_start = arrow.now()
-    if stages['obs_viz_2_3']:
+    if stages['stage_2_3_temporal']:
         p23.plot_monthly_bars(
             df_month=df_month, output_dir=output_dir, cfg=cfg
         )
@@ -189,7 +190,7 @@ def main() -> None:
     # 2.4 Spatial distribution feature plotting
     print('2.4 Spatial distribution feature plotting')
     sec_start = arrow.now()
-    if stages['obs_viz_2_4']:
+    if stages['stage_2_4_spatial']:
         p24.plot_sta_frequency_maps(
             sta=sta, df_sta=df_sta, output_dir=output_dir, cfg=cfg
         )
@@ -216,7 +217,7 @@ def main() -> None:
     overall_strs = list()
     type_str = ''
 
-    if stages['forecast_prep']:
+    if stages['stage_3_1_eval_calc']:
         overall_strs.append(
             p31.format_overall_metrics(vis_ob, cma_sh_warr, 'CMA-SH-WARR')
         )
@@ -227,10 +228,7 @@ def main() -> None:
         station_metrics = p31.calc_and_save_station_metrics(
             vis_ob, cma_sh_warr, pred_tle[2], output_dir=output_dir
         )
-    else:
-        station_metrics = p31.load_station_metrics(output_dir=output_dir)
 
-    if stages['type_eval']:
         val_wt = p31.load_weather_type(
             data_dir=data_dir, idx_mlyr=idx_mlyr
         )
@@ -240,11 +238,7 @@ def main() -> None:
             val_wt=val_wt
         )
         p31.save_weather_type_metrics(qem, cem, output_dir)
-    elif stages['ablation_plot']:
-        print('[Cache] Loading weather type metrics from cache...')
-        qem, cem = p31.load_weather_type_metrics(output_dir)
 
-    if stages['temporal']:
         hour_access, df_vt_ts4, df_fhour_ts4 = p31.calc_temporal_metrics(
             vis_ob=vis_ob,
             cma_sh_warr=cma_sh_warr,
@@ -263,7 +257,10 @@ def main() -> None:
         )
         p31.save_type_results(type_dfs, output_dir=output_dir)
     else:
-        print('[Cache] Loading temporal metrics from cache...')
+        print('[Cache] Loading 3.1 evaluation metrics from cache...')
+        station_metrics = p31.load_station_metrics(output_dir=output_dir)
+        if stages['stage_3_3_wt_ts4'] or stages['stage_3_4_ablation']:
+            qem, cem = p31.load_weather_type_metrics(output_dir)
         hour_access = p31.load_temporal_metrics(output_dir)
         csv_dir = pathlib.Path(output_dir) / 'csv'
         df_vt_ts4 = pd.read_csv(
@@ -283,7 +280,7 @@ def main() -> None:
     # 3.2 Different init/lead time evaluation result plotting
     print('3.2 Different init/lead time evaluation result plotting')
     sec_start = arrow.now()
-    if stages['spatiotemporal']:
+    if stages['stage_3_2_init_lead']:
         p32.plot_hour_access_heatmaps(
             hour_access, output_dir=output_dir, cfg=cfg
         )
@@ -301,55 +298,67 @@ def main() -> None:
     _log_section('3.2', sec_start)
     print()
 
-    # 3.3 Ablation experiment result output
-    print('3.3 Ablation experiment result output')
+    # 3.3 Weather type evaluation
+    print('3.3 Weather type evaluation')
     sec_start = arrow.now()
-    if stages['ablation_plot']:
-        p33.plot_weather_type_eval_bw(
+    if stages['stage_3_3_wt_ts4']:
+        wt_ts4_str = p33.format_wt_ts4_impr(
+            qem=qem, vis_ob=vis_ob, cma_sh_warr=cma_sh_warr,
+            pred_pdfm_tle2=pred_pdfm_tle2
+        )
+        print(wt_ts4_str)
+    _log_section('3.3', sec_start)
+    print()
+
+    # 3.4 Ablation experiment result output
+    print('3.4 Ablation experiment result output')
+    sec_start = arrow.now()
+    if stages['stage_3_4_ablation']:
+        p34.plot_weather_type_eval_bw(
             qem=qem[0, ...], filename='wt_cc_bw',
             max_y=0.4, output_dir=output_dir, cfg=cfg
         )
-        p33.plot_weather_type_eval_bw(
+        p34.plot_weather_type_eval_bw(
             qem=qem[1, ...], filename='wt_mae_bw',
             max_y=10000, output_dir=output_dir, cfg=cfg, unit='m'
         )
-        p33.plot_weather_type_eval_bw(
+        p34.plot_weather_type_eval_bw(
             qem=qem[2, ...], filename='wt_rmse_bw',
             max_y=12000, output_dir=output_dir, cfg=cfg, unit='m'
         )
-        p33.plot_weather_type_eval_bw(
+        p34.plot_weather_type_eval_bw(
             qem=qem[3, ...], filename='wt_mre_bw',
             max_y=0.6, output_dir=output_dir, cfg=cfg
         )
-        p33.plot_vis_cdf(
+        p34.plot_vis_cdf(
             vis_ob=vis_ob, cma_sh_warr=cma_sh_warr,
             pred_pdfm_tle0=pred_pdfm_tle0,
             output_dir=output_dir, cfg=cfg
         )
-    _log_section('3.3', sec_start)
+    _log_section('3.4', sec_start)
     print()
 
-    # 3.4 Operational application case study evaluation result output
-    print('3.4 Operational application case study evaluation result output')
+    # 3.5 Operational application case study evaluation result output
+    print('3.5 Operational application case study evaluation result output')
     sec_start = arrow.now()
-    if stages['case_study']:
-        vis_ob_2024 = p34.load_2024_obs(
+    if stages['stage_3_5_case_study']:
+        vis_ob_2024 = p35.load_2024_obs(
             data_dir=data_dir, idx_mlyr=idx_mlyr
         )
-        pred_pdfm2, pred_tle2 = p34.load_2024_preds(
+        pred_pdfm2, pred_tle2 = p35.load_2024_preds(
             data_dir=data_dir
         )
-        cma_sh_warr_2024, pred_pdfm2_2024 = p34.load_2024_eval_data(
+        cma_sh_warr_2024, pred_pdfm2_2024 = p35.load_2024_eval_data(
             data_dir=data_dir, idx_mlyr=idx_mlyr
         )
-        p34.print_2024_overall_metrics(
+        p35.print_2024_overall_metrics(
             vis_ob_2024, pred_pdfm2, pred_tle2
         )
-        vis_ob_, cma_sh_warr_, pred_pdfm2_ = p34.align_forecast_times(
+        vis_ob_, cma_sh_warr_, pred_pdfm2_ = p35.align_forecast_times(
             vis_ob_2024, cma_sh_warr_2024, pred_pdfm2_2024
         )
-        p34.analyze_case_studies(vis_ob_, cma_sh_warr_, pred_pdfm2_)
-    _log_section('3.4', sec_start)
+        p35.analyze_case_studies(vis_ob_, cma_sh_warr_, pred_pdfm2_)
+    _log_section('3.5', sec_start)
     print()
 
     _log_section('Part 3', part_start)

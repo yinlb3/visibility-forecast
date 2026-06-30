@@ -4,7 +4,7 @@
 Part 2.3: Temporal distribution feature plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-04-15
+Modified in 2026-06-30
 @author: yinlb
 """
 
@@ -81,7 +81,8 @@ def plot_monthly_bars(
     yticks = plot_cfg['yticks']
 
     # 1. Plot monthly stacked probability bars (color)
-    # Stack order: precip (bottom) -> fog -> haze (top)
+    # Columns '1pre'/'1fog'/'1haze' store grade-1+ (vis < 10000m) frequencies
+    # for precip/fog/haze events. Stack order: precip (bottom) -> fog -> haze.
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     _plot_stack_bar(
         ax, np.linspace(start=1, stop=12, num=12),
@@ -127,6 +128,9 @@ def plot_monthly_bars(
     gc.collect()
 
     # 3. Calc low visibility event (LVE) monthly stats
+    # LVE frequency is the union of precip, fog and haze grade-1+ events.
+    # The three categories are mutually exclusive by weather-type rules, so
+    # the total probability is the direct sum of the three columns.
     lve = np.array(
         df_month.loc[:, '1haze']
         + df_month.loc[:, '1pre']
@@ -198,6 +202,8 @@ def plot_hourly_bars(
     yticks = plot_cfg['yticks']
 
     # 1. Plot hourly stacked probability bars (color)
+    # Columns '1pre'/'1fog'/'1haze' store grade-1+ (vis < 10000m) hourly
+    # frequencies for precip/fog/haze events.
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     _plot_stack_bar(
         ax, np.linspace(start=0, stop=23, num=24),
@@ -208,7 +214,8 @@ def plot_hourly_bars(
         color_precip=color_precip, color_fog=color_fog, color_haze=color_haze
     )
     ax.set_xlim(tuple(xlim))
-    ax.set_xticks(range(24), [f'{x:02d}:00' for x in range(24)])
+    ax.set_xticks(range(0, 24, 2))
+    ax.set_xticklabels([f'{x:02d}:00' for x in range(0, 24, 2)])
     ax.set_ylim(tuple(ylim))
     ax.set_yticks(tuple(yticks))
     ax.set_xlabel('时间 (UTC) ')
@@ -230,7 +237,8 @@ def plot_hourly_bars(
         color=False, bar_width=bar_width
     )
     ax.set_xlim(tuple(xlim))
-    ax.set_xticks(range(24), [f'{x:02d}:00' for x in range(24)])
+    ax.set_xticks(range(0, 24, 2))
+    ax.set_xticklabels([f'{x:02d}:00' for x in range(0, 24, 2)])
     ax.set_ylim(tuple(ylim))
     ax.set_yticks(tuple(yticks))
     ax.set_xlabel('时间 (UTC) ')
@@ -243,6 +251,8 @@ def plot_hourly_bars(
     gc.collect()
 
     # 3. Calc LVE hourly stats
+    # LVE is the sum of mutually-exclusive precip, fog and haze grade-1+
+    # frequencies at each hour.
     lve = np.array(
         df_hour.loc[:, '1haze']
         + df_hour.loc[:, '1pre']

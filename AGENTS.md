@@ -5,10 +5,8 @@ description: Meteorological visibility data analysis and visualization toolkit
 
 # vis Agent Guide
 
-> **Reference**: See `user-preferences` skill for:
-> - Coding standards (A1-A11)
-> - Git workflow (B4)
-> - This document only records project-specific information.
+> **Reference**: This guide records project-specific information only.
+> For general coding standards and Git workflow, follow the conventions described in this document.
 
 ## 1. Context
 
@@ -36,9 +34,10 @@ You are an AI programming assistant for this meteorological data analysis projec
 - `src/p2_3_temporal.py` - Temporal plots (monthly/hourly bars + violins)
 - `src/p2_4_spatial.py` - Spatial plots (station frequency/mean maps)
 - `src/p3_1_eval_calc.py` - Forecast eval calc (overall, station, weather-type, temporal)
-- `src/p3_2_init_lead.py` - Init/lead time plots (heatmaps, bars, maps, violins)
-- `src/p3_3_ablation.py` - Ablation plots (weather-type BW bars, CDF)
-- `src/p3_4_case_study.py` - 2024 case study analysis
+- `src/p3_2_init_lead.py` - Init/lead time plots (3.2: heatmaps, bars, maps, violins)
+- `src/p3_3_wt_ts4.py` - Weather type evaluation output (3.3)
+- `src/p3_4_ablation.py` - Ablation plots (3.4: weather-type BW bars, CDF)
+- `src/p3_5_case_study.py` - 2024 case study analysis (3.5)
 - `src/utils.py`, `src/vis_acc.py` - Shared utilities and verification class
 - `figures/` - Output directory for images, CSV, NPY files
 - `draw.py` - Main orchestrator (flat pipeline, calls step modules directly)
@@ -66,15 +65,13 @@ Before running, confirm:
 
 ## 3. Testing
 
-Refer to `user-preferences` skill Testing guidelines.
-
-No unit test framework (no `pytest`, `unittest`). Verification method: run scripts and check:
+This project has no unit test framework (no `pytest`, `unittest`). Verification method: run scripts and check:
 - Console output verification indicators
 - Images and CSV files generated in `figures/` directory meet expectations
 
 ## 4. Code Style
 
-Refer to `user-preferences` skill A.1-A.9.
+See the project-specific conventions below and the Boundaries section in this document.
 
 **Project-specific conventions**:
 1. **Pinyin Abbreviation Naming**: Variable naming mixes pinyin with English, e.g., `mlyr` (Middle-Lower Yangtze River)
@@ -84,7 +81,7 @@ Refer to `user-preferences` skill A.1-A.9.
 
 ## 5. Git Workflow
 
-Refer to `user-preferences` skill B.4.
+See the Git guidelines below and the additional notes in this document.
 
 **Additional notes**:
 - Dual-platform sync: Push to both Gitee and GitHub
@@ -131,4 +128,4 @@ Refer to `user-preferences` skill B.4.
 
 ---
 
-**Last Updated**: 2026-04-15
+**Last Updated**: 2026-06-30

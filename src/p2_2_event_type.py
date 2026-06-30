@@ -4,7 +4,7 @@
 Part 2.2: Event type proportion output and plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-04-15
+Modified in 2026-06-30
 @author: yinlb
 """
 
@@ -32,20 +32,23 @@ def plot_obs_pies(
     plot_cfg = cfg['plot']['obs_pies']
     figsize = plot_cfg['figsize']
     dpi = plot_cfg['dpi']
-    # For each grade, count precip/fog/haze events and plot pie
+    # For each grade, count precip/fog/haze events and plot pie.
+    # Weather type rules: pre>0 as precip; pre==0 & rhu>=80 as fog;
+    # pre==0 & rhu<80 as haze. The 80% threshold follows the operational
+    # criterion used in low-visibility event classification.
     for i in range(len(thres)):
         index = (vis_grade == i + 1) & ~np.isnan(pre) & ~np.isnan(rhu)
         cnt_pre = np.sum((pre > 0) & index)
         cnt_fog = np.sum((pre == 0) & (rhu >= 80) & index)
         cnt_haze = np.sum((pre == 0) & (rhu < 80) & index)
-        abc = np.array([cnt_pre, cnt_fog, cnt_haze])
-        pct = abc / np.sum(abc) * 100
+        type_counts = np.array([cnt_pre, cnt_fog, cnt_haze])
+        pct = type_counts / np.sum(type_counts) * 100
         prefix = '[plot_obs_pies]'
         pct_str = f'[{pct[0]:.2f}, {pct[1]:.2f}, {pct[2]:.2f}]'
         print(f'{prefix} Grade {i+1} type %: {pct_str}')
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
         labels = ('降水', '雾', '霾')
-        ax.pie(x=(a, b, c), labels=labels, autopct='%.2f%%', startangle=90)
+        ax.pie(x=type_counts, labels=labels, autopct='%.2f%%', startangle=90)
         base_path = pathlib.Path(output_dir) / f'pie_{i + 1}'
         utils.save_figure(fig, base_path, cfg, bbox_inches='tight', dpi=dpi)
         plt.close(fig)
@@ -66,7 +69,9 @@ def plot_obs_violin_box(
     import seaborn as sns
 
     plot_cfg = cfg['plot']['obs_violin_box']
-    # Build 4-category masks for visibility < 500m events
+    # Focus on vis < 500m (grade 4+) because these events have the largest
+    # forecast difficulty and operational impact among all low-vis categories.
+    # Build 4-category masks for visibility < 500m events.
     mask_lv4plus = vis < 500
     mask_lv4plus_pre = (vis < 500) & (pre > 0)
     mask_lv4plus_fog = (vis < 500) & (pre == 0) & (rhu >= 80)

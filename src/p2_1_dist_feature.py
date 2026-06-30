@@ -4,7 +4,7 @@
 Part 2.1: Distribution feature calculation module.
 
 Founded in 2026-04-14
-Modified in 2026-04-15
+Modified in 2026-05-09
 @author: yinlb
 """
 

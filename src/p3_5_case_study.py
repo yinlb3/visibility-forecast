@@ -4,12 +4,13 @@
 Part 3.5: Operational application case study evaluation result output module.
 
 Founded in 2026-04-14
-Modified in 2026-04-15
+Modified in 2026-06-30
 @author: yinlb
 """
 
 import pathlib
 import typing
+from collections import defaultdict
 
 import arrow
 import numpy as np
@@ -119,33 +120,38 @@ def analyze_case_studies(
 ) -> None:
     """Analyze 18 case studies and calc TS4+ for all phases and merged."""
     date_list = [
-        ['2024-01-02', '2024-01-13', '2024-01-03'],
-        ['2024-01-29', '2024-02-01', '2024-01-30'],
-        ['2024-02-08', '2024-02-11', '2024-02-10'],
-        ['2024-03-02', '2024-03-08', '2024-03-04'],
-        ['2024-03-11', '2024-03-18', '2024-03-14'],
-        ['2024-03-23', '2024-03-28', '2024-03-27'],
-        ['2024-03-31', '2024-04-02', '2024-04-01'],
-        ['2024-04-06', '2024-04-08', '2024-04-08'],
-        ['2024-04-11', '2024-04-29', '2024-04-14'],
-        ['2024-05-02', '2024-05-06', '2024-05-05'],
-        ['2024-06-09', '2024-06-12', '2024-06-10'],
-        ['2024-06-18', '2024-06-21', '2024-06-20'],
-        ['2024-06-24', '2024-07-01', '2024-06-27'],
-        ['2024-07-11', '2024-07-13', '2024-07-11'],
-        ['2024-10-14', '2024-10-18', '2024-10-14'],
-        ['2024-10-27', '2024-10-29', '2024-10-28'],
-        ['2024-11-10', '2024-11-12', '2024-11-10'],
-        ['2024-12-04', '2024-12-07', '2024-12-05'],
+        ['2024-01-02', '2024-01-13', '2024-01-03', 2],
+        ['2024-01-29', '2024-02-01', '2024-01-30', 3],
+        ['2024-02-08', '2024-02-11', '2024-02-10', 2],
+        ['2024-03-02', '2024-03-08', '2024-03-04', 2],
+        ['2024-03-11', '2024-03-18', '2024-03-14', 2],
+        ['2024-03-23', '2024-03-28', '2024-03-27', 1],
+        ['2024-03-31', '2024-04-02', '2024-04-01', 3],
+        ['2024-04-06', '2024-04-08', '2024-04-08', 1],
+        ['2024-04-11', '2024-04-29', '2024-04-14', 1],
+        ['2024-05-02', '2024-05-06', '2024-05-05', 3],
+        ['2024-06-24', '2024-07-01', '2024-06-27', 4],
+        ['2024-07-11', '2024-07-13', '2024-07-11', 1],
+        ['2024-10-14', '2024-10-18', '2024-10-14', 1],
+        ['2024-10-27', '2024-10-29', '2024-10-28', 1],
+        ['2024-11-10', '2024-11-12', '2024-11-10', 2],
+        ['2024-12-04', '2024-12-07', '2024-12-05', 2],
     ]
-    # 1. Define 18 case studies with start, end, and peak dates
+    # 1. Define 16 case studies with start, end, peak dates and category
+    # case_idx[:, 0~3] marks hours belonging to all/start/end/peak phases.
+    # cat_data collects phase arrays by (category, phase, variable) for later
+    # category-level aggregation.
     case_idx = np.zeros(shape=(8784, 4), dtype=np.bool_)
+    cat_data = defaultdict(list)
 
     for idx, dt in enumerate(date_list, 1):
+        cat = dt[3]
         base = arrow.get('2024')
-        i = round((arrow.get(d[0]) - base).total_seconds() / 3600)
-        j = round((arrow.get(d[1]) - base).total_seconds() / 3600)
-        k = round((arrow.get(d[2]) - base).total_seconds() / 3600)
+        # Convert dates to hour indices relative to 2024-01-01 00:00 UTC.
+        # Slice end uses j+24 to include the full end day (24 hours).
+        i = round((arrow.get(dt[0]) - base).total_seconds() / 3600)
+        j = round((arrow.get(dt[1]) - base).total_seconds() / 3600)
+        k = round((arrow.get(dt[2]) - base).total_seconds() / 3600)
         # 2. Extract four phases: all period, start, end, and peak
         ob_all = vis_ob_[i: j + 24, :, :]
         fcst_all = cma_sh_warr_[i: j + 24, :, :]
@@ -171,7 +177,7 @@ def analyze_case_studies(
         p_ob_p = vis_ob_[k: k + 24, :, :]
         p_fcst_p = pred_pdfm2_[k: k + 24, :, :]
         ts_ge4_pdfm_peak = VisAcc(p_ob_p, p_fcst_p).get_ts_ge()[3]
-        case_str = f'Case {idx:02d} [{d[0]}~{d[1]}, pk={d[2]}] '
+        case_str = f'Case {idx:02d} [{dt[0]}~{dt[1]}, pk={dt[2]}] '
         cma_str = f'CMA=[a:{ts_ge4_cma_all:.4f}, s:{ts_ge4_cma_start:.4f}, '
         cma_str += f'e:{ts_ge4_cma_end:.4f}, p:{ts_ge4_cma_peak:.4f}]  '
         pdfm_str = f'PDFM=[a:{ts_ge4_pdfm_all:.4f},s:{ts_ge4_pdfm_start:.4f},'
@@ -181,6 +187,18 @@ def analyze_case_studies(
         case_idx[i: i + 24, 1] = True
         case_idx[j: j + 24, 2] = True
         case_idx[k: k + 24, 3] = True
+        cat_data[(cat, 0, 'ob')].append(ob_all)
+        cat_data[(cat, 0, 'cma')].append(fcst_all)
+        cat_data[(cat, 0, 'pdfm')].append(p_fcst_all)
+        cat_data[(cat, 1, 'ob')].append(ob_s)
+        cat_data[(cat, 1, 'cma')].append(fcst_s)
+        cat_data[(cat, 1, 'pdfm')].append(p_fcst_s)
+        cat_data[(cat, 2, 'ob')].append(ob_e)
+        cat_data[(cat, 2, 'cma')].append(fcst_e)
+        cat_data[(cat, 2, 'pdfm')].append(p_fcst_e)
+        cat_data[(cat, 3, 'ob')].append(ob_p)
+        cat_data[(cat, 3, 'cma')].append(fcst_p)
+        cat_data[(cat, 3, 'pdfm')].append(p_fcst_p)
 
     # 3. Calc merged statistics across all cases by phase
     idx0 = case_idx[:, 0]
@@ -211,3 +229,43 @@ def analyze_case_studies(
     pdfm_s += f'e:{ts_ge4_pdfm_m_end:.4f}, p:{ts_ge4_pdfm_m_peak:.4f}'
     pdfm_str = f'PDFM=[{pdfm_s}]'
     print(merged_str + cma_str + pdfm_str)
+
+    # 4. Calc statistics by category
+    for cat in sorted({k[0] for k in cat_data.keys()}):
+        ob_all_cat = np.concatenate(cat_data[(cat, 0, 'ob')])
+        cma_all_cat = np.concatenate(cat_data[(cat, 0, 'cma')])
+        pdfm_all_cat = np.concatenate(cat_data[(cat, 0, 'pdfm')])
+        ts_cma_all = VisAcc(ob_all_cat, cma_all_cat).get_ts_ge()[3]
+        ts_pdfm_all = VisAcc(ob_all_cat, pdfm_all_cat).get_ts_ge()[3]
+        ob_s_cat = np.concatenate(cat_data[(cat, 1, 'ob')])
+        cma_s_cat = np.concatenate(cat_data[(cat, 1, 'cma')])
+        pdfm_s_cat = np.concatenate(cat_data[(cat, 1, 'pdfm')])
+        ts_cma_s = VisAcc(ob_s_cat, cma_s_cat).get_ts_ge()[3]
+        ts_pdfm_s = VisAcc(ob_s_cat, pdfm_s_cat).get_ts_ge()[3]
+        ob_e_cat = np.concatenate(cat_data[(cat, 2, 'ob')])
+        cma_e_cat = np.concatenate(cat_data[(cat, 2, 'cma')])
+        pdfm_e_cat = np.concatenate(cat_data[(cat, 2, 'pdfm')])
+        ts_cma_e = VisAcc(ob_e_cat, cma_e_cat).get_ts_ge()[3]
+        ts_pdfm_e = VisAcc(ob_e_cat, pdfm_e_cat).get_ts_ge()[3]
+        ob_p_cat = np.concatenate(cat_data[(cat, 3, 'ob')])
+        cma_p_cat = np.concatenate(cat_data[(cat, 3, 'cma')])
+        pdfm_p_cat = np.concatenate(cat_data[(cat, 3, 'pdfm')])
+        ts_cma_p = VisAcc(ob_p_cat, cma_p_cat).get_ts_ge()[3]
+        ts_pdfm_p = VisAcc(ob_p_cat, pdfm_p_cat).get_ts_ge()[3]
+        cat_str = f'Category {cat}  '
+        cma_s = f'a:{ts_cma_all:.4f}, s:{ts_cma_s:.4f}, '
+        cma_s += f'e:{ts_cma_e:.4f}, p:{ts_cma_p:.4f}'
+        cma_str = f'CMA=[{cma_s}]  '
+        pdfm_s = f'a:{ts_pdfm_all:.4f}, s:{ts_pdfm_s:.4f}, '
+        pdfm_s += f'e:{ts_pdfm_e:.4f}, p:{ts_pdfm_p:.4f}'
+        pdfm_str = f'PDFM=[{pdfm_s}]'
+        def _impr(t_pdfm, t_cma):
+            return ((t_pdfm - t_cma) / t_cma * 100
+                    if t_cma != 0 else np.nan)
+        impr_all = _impr(ts_pdfm_all, ts_cma_all)
+        impr_s = _impr(ts_pdfm_s, ts_cma_s)
+        impr_e = _impr(ts_pdfm_e, ts_cma_e)
+        impr_p = _impr(ts_pdfm_p, ts_cma_p)
+        impr_str = (f'Impr=[a:{impr_all:.2f}%, s:{impr_s:.2f}%, '
+                    f'e:{impr_e:.2f}%, p:{impr_p:.2f}%]')
+        print(cat_str + cma_str + pdfm_str + '  ' + impr_str)

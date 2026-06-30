@@ -4,7 +4,7 @@
 Part 3.1: Evaluation result calculation module.
 
 Founded in 2026-04-14
-Modified in 2026-04-15
+Modified in 2026-06-30
 @author: yinlb
 """
 
@@ -262,6 +262,7 @@ def calc_weather_type_metrics(
     """
     # qem shape: (4 metrics, n_pred schemes, 3 weather types)
     # cem shape: (6 grades, 4 metrics, n_pred schemes, 3 weather types)
+    # val_wt encodes weather type as 1=precip, 2=fog, 3=haze.
     n_pred = len(preds)
     qem = np.zeros((4, n_pred, 3), dtype=np.float32) + np.nan
     cem = np.zeros((6, 4, n_pred, 3), dtype=np.float32) + np.nan
@@ -484,6 +485,7 @@ def calc_temporal_metrics(
     vt_group = _create_group(('vt', 'CMA-SH-WARR', 'PDFM-TLE'))
     shour_group = _create_group(('shour', 'CMA-SH-WARR', 'PDFM-TLE'))
     fhour_group = _create_group(('fhour', 'CMA-SH-WARR', 'PDFM-TLE'))
+    # hour_access dims: (2 schemes, 24 init hours, 24 lead hours, 10 metrics)
     hour_access = np.zeros((2, 24, 24, 10), dtype=np.float32) + np.nan
 
     # Parallel calculation over 24 init-hour blocks
@@ -558,12 +560,12 @@ def calc_type_metrics(
     # Calculate metrics by visibility type (3 categories)
     dfs = _create_group(('type', 'CMA-SH-WARR', 'PDFM-TLE'))
     for i in range(3):
-        for k in d:
+        for k in dfs:
             dfs[k]['type'].append(i)
         acc_nwp = VisAcc(vis_ob[v_type == i], cma_sh_warr[v_type == i])
-        dfs = _append_metrics(acc_nwp, d, 'CMA-SH-WARR')
+        dfs = _append_metrics(acc_nwp, dfs, 'CMA-SH-WARR')
         acc = VisAcc(vis_ob[v_type == i], pred_pdfm_tle0[v_type == i])
-        dfs = _append_metrics(acc, d, 'PDFM-TLE')
+        dfs = _append_metrics(acc, dfs, 'PDFM-TLE')
 
     # Build formatted output string for console display
     lines = list()
@@ -596,7 +598,7 @@ def calc_type_metrics(
     ts_str = f'ts1={t1p}, ts2={t2p}, ts3={t3p}, ts4={t4p}, ts5={t5p}, ts6={t6p}'
     lines.append(f'  TS  = {ts_str}')
 
-    return {k: pd.DataFrame(dfs[k]) for k in d}, '\n'.join(lines)
+    return {k: pd.DataFrame(dfs[k]) for k in dfs}, '\n'.join(lines)
 
 
 def save_type_results(

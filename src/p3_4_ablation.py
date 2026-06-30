@@ -4,7 +4,7 @@
 Part 3.4: Ablation experiment result output module.
 
 Founded in 2026-04-14
-Modified in 2026-04-15
+Modified in 2026-06-30
 @author: yinlb
 """
 
@@ -28,10 +28,12 @@ def plot_vis_cdf(
 ) -> None:
     """Calc and plot visibility CDF."""
     plot_cfg = cfg['plot']['vis_cdf']
+    # Visibility range: -1 to 30000m with 1m step. Start from -1 so that
+    # the CDF value at 0m correctly counts all non-negative samples.
     vis_values = np.arange(-1, 30001, 1, dtype=np.float32)
     cdf = np.zeros((3, vis_values.size), dtype=np.float32)
 
-    # Filter to valid triple-matched samples
+    # Filter to valid triple-matched samples (obs, CMA and PDFM all present)
     mask_ob = ~np.isnan(vis_ob)
     mask_nwp = ~np.isnan(cma_sh_warr)
     mask_pr = ~np.isnan(pred_pdfm_tle0)
@@ -97,6 +99,9 @@ def plot_weather_type_eval_bw(
     figsize = plot_cfg['figsize']
     dpi = plot_cfg['dpi']
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+    # qem shape is (6 schemes, 3 weather types). Normalize by max_y so that
+    # different metrics (CC, MAE, RMSE, MRE) can share the same 0-1 y-axis;
+    # real values are restored via ytick labels and bar-top text.
     x_pos = np.linspace(start=1, stop=6, num=6)
     bar_width = plot_cfg['bar_width']
     color_precip = plot_cfg['color_precip']
@@ -104,7 +109,8 @@ def plot_weather_type_eval_bw(
     color_haze = plot_cfg['color_haze']
     edgecolor = plot_cfg['edgecolor']
     hatch = plot_cfg['hatch']
-    # Plot grouped bars with offset x-positions for 3 weather types
+    # Offset x positions by ±0.2 to place 3 weather-type bars side by side
+    # for each of the 6 forecast schemes.
     bars1 = ax.bar(
         x=x_pos - 0.2, height=qem[:, 0] / max_y, width=bar_width,
         color=color_precip, edgecolor=edgecolor, label='降水类'
