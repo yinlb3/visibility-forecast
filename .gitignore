@@ -9,6 +9,9 @@ config.local.yaml
 .vscode/
 *.swp
 
+# Kimi CLI session data
+.kimi/
+
 # Virtual environments
 venv/
 .env/
