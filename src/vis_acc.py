@@ -336,8 +336,8 @@ class VisAcc:
             pr = self._pr[index]
             # pearsonr needs at least 2 samples
             if len(ob) > 2:
-                r[i] = stats.pearsonr(ob, pr)[0]
-        return r
+                corr_arr[i] = stats.pearsonr(ob, pr)[0]
+        return corr_arr
 
     def get_conf_mat(self) -> np.ndarray:
         """
@@ -459,7 +459,7 @@ class VisAcc:
             nd = np.sum(self._conf_mat[:i + 1, :i + 1])
             exp_agree = (na + nb) / (na + nb + nc + nd) * (na + nc)
             denom = na + nb + nc - exp_agree
-            ets[i] = (na - r) / denom if na + nb + nc != 0 else np.nan
+            ets[i] = (na - exp_agree) / denom if na + nb + nc != 0 else np.nan
         return ets
 
     def get_hss_ge(self) -> np.ndarray:

@@ -44,6 +44,13 @@ You are an AI programming assistant for this meteorological data analysis projec
 - `access.py` - Forecast verification and PDF matching correction
 - `tl.py` - Temporal lead experiment analysis
 - `ots.py` - Optimal threshold selection
+- `preprocess.py` - Operational preprocessing entry (GRIB -> MICAPS4 + intermediates)
+- `inference.py` - Operational inference entry (nearest-station PDF correction)
+- `build_near_map.py` - One-time nearest-station map builder
+- `src/grib_forecast.py` - GRIB reading and station-to-grid interpolation
+- `src/near_map.py` - Nearest-station map build/load utilities
+- `src/model_registry.py` - Model registry for operational inference
+- `src/logger.py` - Print-based operational logger
 - `D:\data\vis\` - Input data directory (not under version control)
 
 ## 2. Commands
@@ -113,19 +120,21 @@ See the Git guidelines below and the additional notes in this document.
 | Project Setup & Documentation | Initialize git repository, configure .gitignore, set up dual-platform sync (Gitee/GitHub), add code comments/docstrings, and translate all documentation to English | 2026-04-05 |
 | draw.py Refactoring | Flatten `draw.py` into 3 Parts with direct `src/pX_Y` module calls; remove old intermediate wrappers; extract shared utilities; standardize console output, file structure, and naming conventions (indices, masks, confusion matrix, metrics, case study vars, output labels); add `docs/ABBREVIATIONS.md` | 2026-04-15 |
 | Evaluation Calculation Parallelization | Parallelize station-level and init-hour block metrics calculation in `src/p3_1_eval_calc.py` using `joblib.Parallel(n_jobs=-1)`, reducing runtime to approximately 1/3 of original | 2026-04-15 |
-| Code Style Compliance | Systematically check and fix all code style items | 2026-05-09 |
+| Code Style Compliance & Path Configuration | Systematically check and fix code style items, and migrate hard-coded paths to the configuration file | 2026-05-09 |
+| Code Refactoring | Refactor `access.py`, `tl.py`, `vis2411.py`, `ots.py`, `vis_grade.py`, `huanghua.py`; move reusable classes (`PDF`, `OTS`) into `src/pdf_model.py` and `src/ots_model.py`; replace hard-coded paths with `config.yaml`; standardize entry points and English comments | 2026-07-16 |
 
 ### In Progress
 | Task | Description | Notes |
 |------|-------------|-------|
-| Code Refactoring | Continue eliminating duplicate code in `access.py`, `huanghua.py`, `ots.py`, `tl.py`, `vis_grade.py`, `vis2411.py` | — |
+| Operational Inference Pipeline | Implement `preprocess.py` and `inference.py` for real-time and backfill operation, driven by 0/1/2 YYYYMMDDHH command-line arguments; add `src/logger.py`, `src/model_registry.py`, and `config/operational.yaml` | implementation complete, server testing pending |
 
 ### Todo
 | Task | Description | Priority |
 |------|-------------|----------|
-| Add Unit Tests | Add pytest tests for VisAcc class | P2 |
-| Path Configuration | Change hard-coded paths to configuration file | P2 |
+| Special Industry Risk Product Development | Develop visibility risk products for special industries such as transportation and aviation | P1 |
+| Preprocessing Parallelization | Research memory-aware dynamic parallelization for GRIB interpolation tasks (joblib / batch scheduling) to speed up multi-init-time preprocessing on servers | P2 |
+| Multi-model Data Application | Apply multi-model forecast data to visibility analysis and product services | P2 |
 
 ---
 
-**Last Updated**: 2026-06-30
+**Last Updated**: 2026-07-26

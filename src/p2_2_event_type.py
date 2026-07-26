@@ -29,7 +29,7 @@ def plot_obs_pies(
     """
     Plot weather type proportion pie charts by grade.
     """
-    plot_cfg = cfg['plot']['obs_pies']
+    plot_cfg = cfg['draw']['plot']['obs_pies']
     figsize = plot_cfg['figsize']
     dpi = plot_cfg['dpi']
     # For each grade, count precip/fog/haze events and plot pie.
@@ -68,7 +68,7 @@ def plot_obs_violin_box(
     """
     import seaborn as sns
 
-    plot_cfg = cfg['plot']['obs_violin_box']
+    plot_cfg = cfg['draw']['plot']['obs_violin_box']
     # Focus on vis < 500m (grade 4+) because these events have the largest
     # forecast difficulty and operational impact among all low-vis categories.
     # Build 4-category masks for visibility < 500m events.

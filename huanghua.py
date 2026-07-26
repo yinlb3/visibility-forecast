@@ -1,143 +1,194 @@
-#!user/bin.python3
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Founded in 2024-10-23
-Modified in 2024-10-23
+Modified in 2026-07-21
 @author: yinlb
 """
-import os
-import sys
-import typing
+import pathlib
 
 import arrow
 import numpy as np
 import pandas as pd
 
-
-def get_n_days(year: int, month: int) -> int:
-    n_days = 31
-    if month in (4, 6, 9, 11):
-        n_days = 30
-    elif month == 2:
-        if year % 400 == 0 or (year % 4 == 0 and year % 100 != 0):
-            n_days = 29
-        else:
-            n_days = 28
-    return n_days
+from src import utils
 
 
-def format_time(second: float, is_abbreviation: bool = False) -> str:
-    r"""Format time.
+# Load huanghua configuration at import time
+_HUANGHUA_CFG = utils.CFG['huanghua']
+_HUANGHUA_INPUT = _HUANGHUA_CFG['input_files']
+_HUANGHUA_OUTPUT = _HUANGHUA_CFG['output_files']
+_HUANGHUA_PARAMS = _HUANGHUA_CFG['params']
 
-    :param second: A float number representing the number of seconds.
-    :param is_abbreviation: Whether to use abbreviation (default: False).
-        The default value is False.
-    :return: Formatted time string, e.g., '43.5 seconds'.
-    :raise ValueError: The value of input parameter 'second' is wrong.
+_START_YEAR = int(_HUANGHUA_PARAMS['start_year'])
+_END_YEAR = int(_HUANGHUA_PARAMS['end_year'])
+_N_TOTAL_DAYS = int(_HUANGHUA_PARAMS['n_total_days'])
+_N_HOURS = int(_HUANGHUA_PARAMS['n_hours'])
+_N_VARIABLES = int(_HUANGHUA_PARAMS['n_variables'])
+_SHEET_NAMES = list(_HUANGHUA_PARAMS['sheet_names'])
+_CONTINUOUS_SHEETS = set(_HUANGHUA_PARAMS['continuous_sheets'])
+_FILENAME_TEMPLATES = list(_HUANGHUA_INPUT['filename_templates'])
+
+
+def _get_n_days(year: int, month: int) -> int:
+    """Return the number of days in a given year and month.
+
+    Args:
+        year: Year.
+        month: Month (1-12).
+
+    Returns:
+        Number of days in the month.
     """
-    if second < 0:
-        raise ValueError('The input parameter \'second\' cannot be negative.')
-    elif is_abbreviation:
-        if second <= 60:
-            time_str = str(second) + 's'
-        elif second <= 3600:
-            time_str = str(second / 60) + 'm'
-        else:
-            time_str = str(second / 3600) + 'h'
-    else:
-        if second <= 1:
-            time_str = str(second) + ' second'
-        elif second <= 60:
-            time_str = str(second) + ' seconds'
-        elif second <= 3600:
-            time_str = str(second / 60) + 'minutes'
-        else:
-            time_str = str(second / 3600) + 'hours'
+    if month in (4, 6, 9, 11):
+        return 30
+    if month == 2:
+        if year % 400 == 0 or (year % 4 == 0 and year % 100 != 0):
+            return 29
+        return 28
+    return 31
 
-    return time_str
+
+def _find_monthly_file(
+    base_dir: pathlib.Path,
+    year: int,
+    month: int,
+) -> pathlib.Path:
+    """Find the first existing monthly logbook Excel file.
+
+    Three filename patterns are tried in order.
+
+    Args:
+        base_dir: Base directory for logbook files.
+        year: Year.
+        month: Month.
+
+    Returns:
+        Path to an existing Excel file.
+
+    Raises:
+        FileNotFoundError: If none of the candidate files exist.
+    """
+    for template in _FILENAME_TEMPLATES:
+        candidate = base_dir / template.format(year=year, month=month)
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        f'No monthly logbook found for {year}-{month:02d} in {base_dir}'
+    )
+
+
+def _read_sheet(
+    file_path: pathlib.Path,
+    sheet_name: str,
+) -> pd.DataFrame:
+    """Read a sheet from the monthly logbook Excel file.
+
+    Args:
+        file_path: Path to the Excel file.
+        sheet_name: Name of the sheet to read.
+
+    Returns:
+        DataFrame of the sheet content.
+    """
+    return pd.read_excel(str(file_path), sheet_name=sheet_name)
+
+
+def _fill_three_blocks(
+    data: np.ndarray,
+    df: pd.DataFrame,
+    day_offset: int,
+    n_days: int,
+    variable_index: int,
+) -> None:
+    """Fill data from a sheet arranged in three day blocks.
+
+    Layout: days 1-10 at rows 2-11, days 11-20 at rows 14-23,
+    remaining days at rows 25 onward.
+
+    Args:
+        data: Output array shaped (n_total_days, n_hours, n_variables).
+        df: DataFrame read from the sheet.
+        day_offset: Starting day index in the output array.
+        n_days: Number of days in the month.
+        variable_index: Index of the variable in the output array.
+    """
+    end10 = min(10, n_days)
+    end20 = min(20, n_days)
+    data[day_offset:day_offset + end10, :, variable_index] = \
+        df.iloc[2:2 + end10, 1:1 + _N_HOURS].values
+    if end20 > 10:
+        data[day_offset + 10:day_offset + end20, :, variable_index] = \
+            df.iloc[14:14 + (end20 - 10), 1:1 + _N_HOURS].values
+    if n_days > 20:
+        start_row = 26
+        n_remaining = n_days - 20
+        data[day_offset + 20:day_offset + n_days, :, variable_index] = \
+            df.iloc[start_row:start_row + n_remaining, 1:1 + _N_HOURS].values
+
+
+def _fill_continuous(
+    data: np.ndarray,
+    df: pd.DataFrame,
+    day_offset: int,
+    n_days: int,
+    variable_index: int,
+) -> None:
+    """Fill data from a sheet with continuous daily rows.
+
+    Layout: all days at rows 2 onward.
+
+    Args:
+        data: Output array shaped (n_total_days, n_hours, n_variables).
+        df: DataFrame read from the sheet.
+        day_offset: Starting day index in the output array.
+        n_days: Number of days in the month.
+        variable_index: Index of the variable in the output array.
+    """
+    data[day_offset:day_offset + n_days, :, variable_index] = \
+        df.iloc[2:2 + n_days, 1:1 + _N_HOURS].values
+
+
+def _fill_month(
+    data: np.ndarray,
+    file_path: pathlib.Path,
+    day_offset: int,
+    n_days: int,
+) -> None:
+    """Fill one month of data for all variables.
+
+    Args:
+        data: Output array shaped (n_total_days, n_hours, n_variables).
+        file_path: Path to the monthly logbook Excel file.
+        day_offset: Starting day index in the output array.
+        n_days: Number of days in the month.
+    """
+    for variable_index, sheet_name in enumerate(_SHEET_NAMES):
+        df = _read_sheet(file_path, sheet_name)
+        if sheet_name in _CONTINUOUS_SHEETS:
+            _fill_continuous(data, df, day_offset, n_days, variable_index)
+        else:
+            _fill_three_blocks(data, df, day_offset, n_days, variable_index)
 
 
 def main() -> None:
-    data = np.zeros((4017, 24, 8), dtype=np.float32) + np.nan
-    n = 0
-    for year in range(2013, 2024):
+    """Read Huanghua airport monthly logbooks and build the meteogram array."""
+    data_dir = pathlib.Path(utils.CFG['paths']['data_dir'])
+    base_dir = data_dir / _HUANGHUA_INPUT['base_dir']
+
+    data = np.zeros((_N_TOTAL_DAYS, _N_HOURS, _N_VARIABLES), dtype=np.float32) + np.nan
+    day_offset = 0
+
+    for year in range(_START_YEAR, _END_YEAR):
         for month in range(1, 13):
-            n_days = get_n_days(year, month)
-            base = fr'D:\data\历年月总簿（2013-2023）\{year}年\{year}EXCEL'
-            filepath1 = rf'{base}\{year}-{month:02d}月总簿.xls'
-            filepath2 = rf'{base}\MZGHA{year}{month:02d}.xls'
-            filepath3 = rf'{base}\MZHGA{year}{month:02d}.xls'
-            if os.path.exists(filepath1):
-                df = pd.read_excel(filepath1, sheet_name='场面气压')
-            elif os.path.exists(filepath2):
-                df = pd.read_excel(filepath2, sheet_name='场面气压')
-            else:
-                df = pd.read_excel(filepath3, sheet_name='场面气压')
-            data[n: n + 10, :, 0] = df.iloc[2:12, 1:25]
-            data[n + 10: n + 20, :, 0] = df.iloc[14:24, 1:25]
-            r = slice(26, 26 + n_days - 20)
-            data[n + 20: n + n_days, :, 0] = df.iloc[r, 1:25]
-            if os.path.exists(filepath1):
-                df = pd.read_excel(filepath1, sheet_name='修正海平面气压')
-            elif os.path.exists(filepath2):
-                df = pd.read_excel(filepath2, sheet_name='修正海平面气压')
-            else:
-                df = pd.read_excel(filepath3, sheet_name='修正海平面气压')
-            data[n: n + 10, :, 1] = df.iloc[2:12, 1:25]
-            data[n + 10: n + 20, :, 1] = df.iloc[14:24, 1:25]
-            data[n + 20: n + n_days, :, 1] = df.iloc[r, 1:25]
-            if os.path.exists(filepath1):
-                df = pd.read_excel(filepath1, sheet_name='温度')
-            elif os.path.exists(filepath2):
-                df = pd.read_excel(filepath2, sheet_name='温度')
-            else:
-                df = pd.read_excel(filepath3, sheet_name='温度')
-            data[n: n + 10, :, 2] = df.iloc[2:12, 1:25]
-            data[n + 10: n + 20, :, 2] = df.iloc[14:24, 1:25]
-            data[n + 20: n + n_days, :, 2] = df.iloc[r, 1:25]
-            if os.path.exists(filepath1):
-                df = pd.read_excel(filepath1, sheet_name='相对湿度')
-            elif os.path.exists(filepath2):
-                df = pd.read_excel(filepath2, sheet_name='相对湿度')
-            else:
-                df = pd.read_excel(filepath3, sheet_name='相对湿度')
-            data[n: n + 10, :, 3] = df.iloc[2:12, 1:25]
-            data[n + 10: n + 20, :, 3] = df.iloc[14:24, 1:25]
-            data[n + 20: n + n_days, :, 3] = df.iloc[r, 1:25]
-            if os.path.exists(filepath1):
-                df = pd.read_excel(filepath1, sheet_name='露点温度')
-            elif os.path.exists(filepath2):
-                df = pd.read_excel(filepath2, sheet_name='露点温度')
-            else:
-                df = pd.read_excel(filepath3, sheet_name='露点温度')
-            data[n: n + n_days, :, 4] = df.iloc[2: 2 + n_days, 1:25]
-            if os.path.exists(filepath1):
-                df = pd.read_excel(filepath1, sheet_name='总云量')
-            elif os.path.exists(filepath2):
-                df = pd.read_excel(filepath2, sheet_name='总云量')
-            else:
-                df = pd.read_excel(filepath3, sheet_name='总云量')
-            data[n: n + 10, :, 5] = df.iloc[2:12, 1:25]
-            data[n + 10: n + 20, :, 5] = df.iloc[14:24, 1:25]
-            data[n + 20: n + n_days, :, 5] = df.iloc[r, 1:25]
-            if os.path.exists(filepath1):
-                df = pd.read_excel(filepath1, sheet_name='低云量')
-            elif os.path.exists(filepath2):
-                df = pd.read_excel(filepath2, sheet_name='低云量')
-            else:
-                df = pd.read_excel(filepath3, sheet_name='低云量')
-            data[n: n + 10, :, 6] = df.iloc[2:12, 1:25]
-            data[n + 10: n + 20, :, 6] = df.iloc[14:24, 1:25]
-            data[n + 20: n + n_days, :, 6] = df.iloc[r, 1:25]
-            if os.path.exists(filepath1):
-                df = pd.read_excel(filepath1, sheet_name='主导能见度')
-            elif os.path.exists(filepath2):
-                df = pd.read_excel(filepath2, sheet_name='主导能见度')
-            else:
-                df = pd.read_excel(filepath3, sheet_name='主导能见度')
-            data[n: n + n_days, :, 7] = df.iloc[2: 2 + n_days, 1:25]
-            n += n_days
-    np.save(r'D:\data\历年月总簿（2013-2023）\data.npy', data)
+            n_days = _get_n_days(year, month)
+            file_path = _find_monthly_file(base_dir, year, month)
+            _fill_month(data, file_path, day_offset, n_days)
+            day_offset += n_days
+            print(f'{year}-{month:02d}')
+
+    output_path = data_dir / _HUANGHUA_INPUT['base_dir'] / _HUANGHUA_OUTPUT['meteogram_npy']
+    np.save(str(output_path), data)
 
 
 if __name__ == '__main__':
@@ -147,5 +198,4 @@ if __name__ == '__main__':
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
-    elapsed_str = format_time(total_elapsed)
-    print(f'Program huanghua.py finished, total time: {elapsed_str}')
+    print(f'Program huanghua.py finished, total time: {utils.format_time(total_elapsed)}')

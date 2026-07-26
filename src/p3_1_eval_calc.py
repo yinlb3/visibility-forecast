@@ -4,11 +4,10 @@
 Part 3.1: Evaluation result calculation module.
 
 Founded in 2026-04-14
-Modified in 2026-06-30
+Modified in 2026-07-21
 @author: yinlb
 """
 
-import os
 import pathlib
 import typing
 
@@ -181,8 +180,9 @@ def calc_and_save_station_metrics(
     for i in range(1, 7):
         old_path = str(csv_dir / f'vis_sta_ts{i}.csv')
         new_path = str(csv_dir / f'vis_sta_ts{i}+.csv')
-        if os.path.exists(old_path):
-            os.replace(old_path, new_path)
+        old_p = pathlib.Path(old_path)
+        if old_p.exists():
+            old_p.replace(pathlib.Path(new_path))
     for i in range(1, 7):
         metrics[f'ts{i}+'] = metrics.pop(f'ts{i}')
     return {k: pd.DataFrame(val) for k, val in metrics.items()}

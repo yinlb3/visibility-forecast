@@ -27,7 +27,7 @@ def plot_vis_cdf(
     cfg: typing.Dict
 ) -> None:
     """Calc and plot visibility CDF."""
-    plot_cfg = cfg['plot']['vis_cdf']
+    plot_cfg = cfg['draw']['plot']['vis_cdf']
     # Visibility range: -1 to 30000m with 1m step. Start from -1 so that
     # the CDF value at 0m correctly counts all non-negative samples.
     vis_values = np.arange(-1, 30001, 1, dtype=np.float32)
@@ -94,7 +94,7 @@ def plot_weather_type_eval_bw(
     unit: str = ''
 ) -> None:
     """Plot weather-type metric comparison bars (B&W style)."""
-    plot_cfg = cfg['plot']['weather_type_eval_bw']
+    plot_cfg = cfg['draw']['plot']['weather_type_eval_bw']
     os.makedirs(name=output_dir, exist_ok=True)
     figsize = plot_cfg['figsize']
     dpi = plot_cfg['dpi']

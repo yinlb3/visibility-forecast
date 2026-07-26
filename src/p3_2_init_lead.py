@@ -32,7 +32,7 @@ def _save_scatter_sta(
     cfg: typing.Dict
 ) -> None:
     """Helper: save scatter_sta to configured formats."""
-    formats = cfg['plot']['output_formats']
+    formats = cfg['draw']['plot']['output_formats']
     for fmt in formats:
         fmt_clean = fmt.lstrip('.').lower()
         path = str(pathlib.Path(save_path).with_suffix(f'.{fmt_clean}'))
@@ -61,7 +61,7 @@ def plot_hour_access_heatmaps(
     cfg: typing.Dict
 ) -> None:
     """Plot init time-lead time 2D heatmap."""
-    plot_cfg = cfg['plot']['hour_access_heatmaps']
+    plot_cfg = cfg['draw']['plot']['hour_access_heatmaps']
     gc.collect()
 
     cmap = plot_cfg['cmap']
@@ -169,7 +169,7 @@ def plot_ts_comparison_bars(
     cfg: typing.Dict
 ) -> None:
     """Plot TS4+ comparison bars for lead time and forecast time."""
-    plot_cfg = cfg['plot']['ts_comparison_bars']
+    plot_cfg = cfg['draw']['plot']['ts_comparison_bars']
     figsize = plot_cfg['figsize']
     dpi = plot_cfg['dpi']
     bar_width = plot_cfg['bar_width']
@@ -289,7 +289,7 @@ def plot_sta_ts4_maps(
     cfg: typing.Dict
 ) -> None:
     """Plot station-level TS4+ and improvement rate spatial maps."""
-    plot_cfg = cfg['plot']['sta_ts4_maps']
+    plot_cfg = cfg['draw']['plot']['sta_ts4_maps']
     prefix = '[plot_sta_ts4_maps]'
     # 1. Calc correlation between spatial coords and TS4+
     ts_min = np.min(df_sta.loc[:, 'CMA-SH-WARR'])
@@ -350,7 +350,7 @@ def plot_mre_violins(
     cfg: typing.Dict
 ) -> None:
     """Plot MRE and improvement rate violin/box plots."""
-    plot_cfg = cfg['plot']['mre_violins']
+    plot_cfg = cfg['draw']['plot']['mre_violins']
     # 1. Plot MRE violin comparison (CMA vs PDFM)
     # Guard against zero-division when MRE before is zero
     mre_before = np.array(df_sta.loc[:, 'CMA-SH-WARR'])

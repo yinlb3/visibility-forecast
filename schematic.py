@@ -276,7 +276,7 @@ def main() -> None:
     cfg = utils.load_config()
 
     # 2. Extract commonly used configuration values
-    plot_cfg = cfg['plot']
+    plot_cfg = cfg['draw']['plot']
     grid_size = plot_cfg['grid_size']
     fig_width = plot_cfg['fig_width']
     fig_height = plot_cfg['fig_height']

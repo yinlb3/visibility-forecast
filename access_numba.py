@@ -12,9 +12,10 @@ import arrow
 import joblib
 import numpy as np
 import pandas as pd
+from numba import njit
 
 from src import p1_config_data as p1
-from src import pdf_model, utils, vis_acc
+from src import utils, vis_acc
 
 
 # Load access experiment configuration at import time
@@ -33,7 +34,71 @@ _RUN_SCHEME_2 = bool(_ACCESS_PARAMS['run_scheme_2'])
 _RUN_REGION = str(_ACCESS_PARAMS['run_region']).lower()
 
 
-PDF = pdf_model.PDF
+@njit
+def _pdf_predict_numba(
+    c: np.ndarray,
+    pr0: np.ndarray,
+    out: np.ndarray,
+) -> None:
+    """Numba-compiled PDF matching prediction."""
+    n = pr0.size
+    n_c = c.shape[0]
+    for i in range(n):
+        value = pr0[i]
+        if np.isnan(value):
+            continue
+        if value < c[0, 1]:
+            out[i] = c[0, 0]
+            continue
+        if value > c[-1, 1]:
+            out[i] = c[-1, 0]
+            continue
+        left = 0
+        right = n_c - 1
+        while right - left > 1:
+            mid = round((left + right) / 2)
+            if value <= c[mid, 1]:
+                right = mid
+            else:
+                left = mid
+        denom = c[right, 1] - c[left, 1]
+        if denom == 0.0:
+            out[i] = c[right, 0]
+        else:
+            k = (c[right, 0] - c[left, 0]) / denom
+            out[i] = c[left, 0] + k * (value - c[left, 1])
+
+
+class PDF:
+    """PDF matching model for visibility forecast correction."""
+
+    def __init__(self):
+        self.c = None
+
+    def fit(self, ob: np.ndarray, pr: np.ndarray):
+        """Fit PDF matching curve from obs and forecast samples."""
+        ob = ob[~np.isnan(ob)][::10000]
+        pr = pr[~np.isnan(pr)][::10000]
+        a = np.unique(ob)
+        a = np.sort(a)
+        self.c = np.zeros((len(a), 2), dtype=np.float32)
+        self.c[:, 0] = a
+        pr = np.sort(pr)
+        for i, a0 in enumerate(a):
+            p0 = np.mean(ob <= a0)
+            j = round(p0 * (len(pr) - 1))
+            self.c[i, 1] = pr[j]
+
+    def predict(self, pr0: np.ndarray) -> typing.Optional[np.ndarray]:
+        """Apply PDF matching correction to forecast array."""
+        if self.c is None:
+            return None
+        shape = pr0.shape
+        pr0 = pr0.flatten().astype(np.float32)
+        out = np.zeros_like(pr0) + np.nan
+        _pdf_predict_numba(self.c, pr0, out)
+        return out.reshape(shape)
+
 
 def _build_region_index(
     sta_path: pathlib.Path,

@@ -1,0 +1,164 @@
+# Operational inference configuration
+# Business-specific settings for real-time and backfill processing.
+# Place sensitive or environment-dependent paths in the corresponding
+# config.local.{windows,linux}.yaml file.
+#
+# Founded in 2026-07-16
+# Modified in 2026-07-26
+# @author: yinlb
+
+operational:
+  # Operational preprocessing settings
+  preprocess:
+    # Whether to load historical observations/stations for research workflows.
+    # Operational inference only needs GRIB forecasts, so default to false.
+    load_observations: false
+
+  # Input / output directory paths
+  paths:
+    # Directory for preprocessed intermediate data
+    intermediate_dir: './ops/intermediate'
+    # Directory for final inference products
+    product_dir: './ops/products'
+    # Local temp directory for copying read-only GRIB files before opening.
+    # Leave empty to read GRIB files directly from the source directory.
+    temp_dir: ''
+    # Directory for runtime logs
+    log_dir: './ops/logs'
+    # Directory for model registry metadata
+    model_registry_dir: '<MODEL_REGISTRY_DIR>'
+    # Directory for business display / hot-folder output (flat structure).
+    # Leave empty or null to disable copying.
+    display_dir: ''
+
+  # Runtime scheduling parameters
+  runtime:
+    # Operational initialization cycles to process (0-23 for hourly rolling)
+    init_hours: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+                 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+    # Maximum forecast lead time in hours
+    forecast_lead_hours: 72
+    # Step size for backfill mode in hours (1 for hourly rolling)
+    backfill_step_hours: 1
+    # Target region key, must match a region defined in config.yaml
+    region: 'mlyr'
+
+  # Model selection settings
+  model:
+    # Default model identifier used when no explicit model is requested
+    default_model_id: 'latest'
+    # Optional override for model registry directory
+    registry_dir: '<MODEL_REGISTRY_DIR>'
+
+  # Operational inference settings
+  inference:
+    # Station metadata CSV for mapping grid cells to nearest station
+    station_csv: '<STATION_CSV>'
+    # Precomputed nearest-station map file (auto-built when missing/stale)
+    nearest_map_file: './ops/intermediate/nearest_sta_idx.npz'
+    # Visibility cap applied to corrected output in meters
+    visibility_cap: 30000.0
+    # Corrected MICAPS4 product templates (filename '' disables m4 output)
+    corrected_m4_filename_template: '{init_time}_pdfm.{lead:03d}'
+    corrected_m4_title_template: '中国东部能见度预报订正-{init_time}.{lead:03d}'
+
+  # GRIB2 message indices (0-based) for pygrib access
+  grib_message_indices:
+    visibility: 2
+    latitude: 15
+    longitude: 16
+
+  # Forecast input configuration
+  forecast:
+    # Filename template for raw GRIB2 forecast files.
+    # Available placeholders: {init_time}, {init_date}, {init_year}, {lead}
+    filename_template: '{init_year}/{init_date}/Z_NAFP_C_BCSH_{init_time}0000_P_surface-warr-f{lead:02d}.BIN'
+    # Lead hours to process for each initialization time (f01-f24)
+    lead_hours: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+    # If true, skip missing GRIB files instead of raising an error.
+    skip_missing: false
+    # Raw forecast file root directory (year/date subdirectories are
+    # appended automatically via the filename template placeholders)
+    raw_data_dir: '<RAW_DATA_DIR>'
+
+  # Synthetic / mock data settings for testing and backfill.
+  # Disable both in real-time production runs.
+  synthetic:
+    # Synthetic sample data for missing/unreadable forecast files.
+    # If disabled, behavior depends on forecast.skip_missing (skip or raise).
+    fallback:
+      enabled: false
+      # Directory to pick random sample m4 files from.
+      # Empty string means: scan all existing files under ops/products/*/*
+      sample_dir: ''
+      # Gaussian noise parameters applied to the sample values
+      noise_mean: 1.0
+      noise_std: 0.01
+    # Fake filesystem timestamp for generated m4 files.
+    # When enabled, file timestamp = init_time + offset_hours + random seconds.
+    # When disabled, normal system timestamp is used.
+    fake_timestamp:
+      enabled: false
+      offset_hours: 12
+      random_seconds_min: 120   # 02:00
+      random_seconds_max: 480   # 08:00
+      first_half_weight: 0.8    # 02:00-04:00 weight; 04:00-08:00 is 0.2
+      noise_std: 0.01          # Gaussian noise std for product cloning
+
+  # Quality control parameters for operational preprocessing
+  qc:
+    # Values greater than or equal to this threshold are treated as missing
+    missing_value_threshold: 999990.0
+    # Visibility upper cap in meters
+    visibility_cap: 30000.0
+    # Precipitation upper cap in millimeters
+    precip_cap: 200.0
+    # Relative humidity valid range
+    rhu_min: 0.0
+    rhu_max: 100.0
+
+  # Interpolation settings for GRIB2 station-to-grid conversion
+  interpolation:
+    # Interpolation method: idw, idw_delta, cressman, linear
+    method: 'linear'
+    # Final product grid resolution in degrees
+    resolution: 0.03
+    # Fixed target lat-lon rectangle for the output product
+    target_extent:
+      lon_min: 107.50
+      lon_max: 128.50
+      lat_min: 20.40
+      lat_max: 40.50
+    # Number of nearest stations used for interpolation
+    near_num: 4
+    # Two-step interpolation switch (used for idw_delta / cressman)
+    two_step: false
+    # Effective radius in meters for IDW / IDW_DELTA
+    effect_radius_m: 20000
+    # Cressman scan radius list in meters (from large to small)
+    cressman_r_list: [50000, 25000, 10000, 5000]
+    # Buffer in degrees to shrink grid extent inside source data boundary
+    buffer_deg: 0.05
+
+  # Parallel processing settings
+  parallel:
+    # Number of worker processes for joblib.Parallel.
+    # Set to your server's core count (32) or -1 to use all available cores.
+    n_jobs: 32
+
+  # Output and logging settings
+  output:
+    # Product output formats
+    formats: ['npy', 'csv']
+    # MICAPS4 visibility forecast product filename template (plain, no prefix)
+    # Available placeholders: {init_time}, {lead}
+    m4_filename_template: '{init_time}.{lead:03d}'
+    # MICAPS4 filename prefix (can include Chinese characters)
+    # Used to strip legacy prefixes from old filenames.
+    m4_filename_prefix: '中国东部能见度预报-'
+    # MICAPS4 title written inside the m4 file (can include Chinese prefix)
+    # Available placeholders: {init_time}, {lead}
+    m4_title_template: '中国东部能见度预报-{init_time}.{lead:03d}'
+    # Log level: DEBUG, INFO, WARNING, ERROR
+    log_level: 'INFO'

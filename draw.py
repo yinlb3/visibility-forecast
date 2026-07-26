@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Main entry module for visibility data visualization. Responsibilities:
@@ -7,7 +7,7 @@ Main entry module for visibility data visualization. Responsibilities:
 3. Draw statistical charts for papers (bars, box, violin, pie, heatmap).
 
 Founded in 2024-04-18
-Modified in 2026-06-30
+Modified in 2026-07-21
 @author: yinlb
 """
 
@@ -59,10 +59,10 @@ def main() -> None:
 
     # Load merged configuration (base + local override)
     cfg = utils.load_config()
-    stages = cfg['stages']
+    stages = cfg['draw']['stages']
 
     print('Loading configuration...')
-    provinces = tuple(cfg['regions']['provinces'])
+    provinces = tuple(cfg['draw']['regions']['provinces'])
     output_dir = cfg['paths']['output_dir']
     cache_dir = cfg['paths']['cache_dir']
     data_dir = cfg['paths']['data_dir']
@@ -78,7 +78,7 @@ def main() -> None:
             data_dir=data_dir,
             idx_east_china=idx_east_china
         )
-        mlyr_provinces = tuple(cfg['regions']['mlyr_provinces'])
+        mlyr_provinces = tuple(cfg['draw']['regions']['mlyr_provinces'])
         sta, vis, pre, rhu, idx_mlyr = p1.filter_region(
             sta=sta, vis=vis, pre=pre, rhu=rhu,
             region_provinces=mlyr_provinces

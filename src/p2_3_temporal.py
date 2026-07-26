@@ -69,7 +69,7 @@ def plot_monthly_bars(
     cfg: typing.Dict
 ) -> None:
     """Plot monthly prob stacked bars (color and B&W)."""
-    plot_cfg = cfg['plot']['monthly_bars']
+    plot_cfg = cfg['draw']['plot']['monthly_bars']
     figsize = plot_cfg['figsize']
     dpi = plot_cfg['dpi']
     bar_width = plot_cfg['bar_width']
@@ -152,7 +152,7 @@ def plot_monthly_violins(
     cfg: typing.Dict
 ) -> None:
     """Plot monthly visibility violin by weather type."""
-    plot_cfg = cfg['plot']['monthly_violins']
+    plot_cfg = cfg['draw']['plot']['monthly_violins']
     figsize = plot_cfg['figsize']
     dpi = plot_cfg['dpi']
     color = plot_cfg['color']
@@ -190,7 +190,7 @@ def plot_hourly_bars(
     cfg: typing.Dict
 ) -> None:
     """Plot hourly prob stacked bars (color and B&W)."""
-    plot_cfg = cfg['plot']['hourly_bars']
+    plot_cfg = cfg['draw']['plot']['hourly_bars']
     figsize = plot_cfg['figsize']
     dpi = plot_cfg['dpi']
     bar_width = plot_cfg['bar_width']
@@ -271,7 +271,7 @@ def plot_hourly_violins(
     cfg: typing.Dict
 ) -> None:
     """Plot hourly visibility violin by weather type."""
-    plot_cfg = cfg['plot']['hourly_violins']
+    plot_cfg = cfg['draw']['plot']['hourly_violins']
     figsize = plot_cfg['figsize']
     dpi = plot_cfg['dpi']
     color = plot_cfg['color']

@@ -29,7 +29,7 @@ def _scatter_sta_pair(
     cfg: typing.Dict
 ) -> None:
     """Helper: Plot station scatter using configured formats."""
-    formats = cfg['plot']['output_formats']
+    formats = cfg['draw']['plot']['output_formats']
     for fmt in formats:
         fmt_clean = fmt.lstrip('.').lower()
         path = str(pathlib.Path(save_path).with_suffix(f'.{fmt_clean}'))
@@ -67,7 +67,7 @@ def plot_sta_frequency_maps(
     cfg: typing.Dict
 ) -> None:
     """Plot low visibility freq spatial map."""
-    plot_cfg = cfg['plot']['sta_frequency_maps']
+    plot_cfg = cfg['draw']['plot']['sta_frequency_maps']
     prefix = '[plot_sta_frequency_maps]'
     cols = ('level', 'time', 'dtime', 'id', 'lat', 'lon', 'data0')
 
@@ -134,7 +134,7 @@ def plot_sta_mean_maps(
     cfg: typing.Dict
 ) -> None:
     """Plot mean visibility spatial map."""
-    plot_cfg = cfg['plot']['sta_mean_maps']
+    plot_cfg = cfg['draw']['plot']['sta_mean_maps']
     cmap_name = plot_cfg['cmap']
     vmin = plot_cfg['vmin']
     vmax = plot_cfg['vmax']
