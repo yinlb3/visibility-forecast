@@ -29,7 +29,7 @@ python access.py
 python tl.py
 python ots.py
 
-# Operational pipeline (see docs/OPERATIONAL_INFERENCE_PIPELINE.md)
+# Operational pipeline
 python build_near_map.py
 python preprocess.py 2026071700
 python inference.py 2026071700

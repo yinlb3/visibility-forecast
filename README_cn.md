@@ -29,7 +29,7 @@ python access.py
 python tl.py
 python ots.py
 
-# 业务化流程（见 docs/OPERATIONAL_INFERENCE_PIPELINE.md）
+# 业务化流程
 python build_near_map.py
 python preprocess.py 2026071700
 python inference.py 2026071700

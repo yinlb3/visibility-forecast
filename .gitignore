@@ -37,6 +37,10 @@ __pycache__/
 figures/
 ops/
 
+# Temporary folders
+temp/
+tmp/
+
 # Backup files (keep local only)
 *.bak
 
@@ -45,3 +49,6 @@ _*.py
 _*.txt
 _*.csv
 _*.npy
+
+# Local-only documentation (not for upload)
+docs/OPERATIONAL_INFERENCE_PIPELINE.md

@@ -7,7 +7,7 @@ saves intermediate arrays, and writes MICAPS4 forecast products under
 the configured operational directories.
 
 Founded in 2026-07-16
-Modified in 2026-07-26
+Modified in 2026-07-28
 @author: yinlb
 """
 
@@ -298,6 +298,8 @@ def main(args: typing.Optional[typing.Tuple[str, ...]] = None) -> None:
             logger.error(f'Failed to write products for {init_time}: {exc}')
             failed += 1
     logger.info(f'Preprocessing summary: {success} succeeded, {failed} failed')
+    if failed > 0:
+        sys.exit(1)
 
 
 if __name__ == '__main__':
