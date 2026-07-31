@@ -7,7 +7,7 @@ from the registry, corrects each grid cell with the model of its nearest
 station, and writes corrected visibility products.
 
 Founded in 2026-07-16
-Modified in 2026-07-26
+Modified in 2026-07-28
 @author: yinlb
 """
 
@@ -327,16 +327,30 @@ def main(args: typing.Optional[typing.Tuple[str, ...]] = None) -> None:
 
     # 4. Fail fast when no model is available for the first init time
     if init_times:
-        first_model = reg.select_model_id(init_time=init_times[0])
+        try:
+            first_model = reg.select_model_id(init_time=init_times[0])
+            first_meta = reg.get_metadata(first_model)
+        except (RuntimeError, KeyError, ValueError) as exc:
+            logger.error(f'Model registry check failed: {exc}')
+            sys.exit(1)
         logger.info(f'Model for {init_times[0]}: {first_model}')
-        first_meta = reg.get_metadata(first_model)
         if 'station_ids' not in first_meta:
             logger.warning(
                 'Registry metadata has no station_ids, '
                 'falling back to filtered CSV order'
             )
 
-    # 5. Run inference for each init time
+    # 5. Fail fast when the nearest-station map is missing or stale
+    try:
+        grid = near_map.grid_spec_from_config(cfg)
+        near_map.load_near_map(
+            op_cfg['inference']['nearest_map_file'], grid, sta
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        logger.error(f'Nearest-station map check failed: {exc}')
+        sys.exit(1)
+
+    # 6. Run inference for each init time
     success = 0
     failed = 0
     for init_time in init_times:
@@ -349,7 +363,7 @@ def main(args: typing.Optional[typing.Tuple[str, ...]] = None) -> None:
             if len(init_times) == 1:
                 raise
 
-    # 6. Summarize and set exit code
+    # 7. Summarize and set exit code
     logger.info(f'Inference summary: {success} succeeded, {failed} failed')
     if failed > 0:
         sys.exit(1)

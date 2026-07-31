@@ -4,7 +4,7 @@
 # config.local.{windows,linux}.yaml file.
 #
 # Founded in 2026-07-16
-# Modified in 2026-07-26
+# Modified in 2026-07-28
 # @author: yinlb
 
 operational:
@@ -40,8 +40,9 @@ operational:
     forecast_lead_hours: 72
     # Step size for backfill mode in hours (1 for hourly rolling)
     backfill_step_hours: 1
-    # Target region key, must match a region defined in config.yaml
-    region: 'mlyr'
+    # Target region key: 'mlyr' selects the MLYR subset (502 stations),
+    # any other value selects the full East China set (1183 stations)
+    region: 'east_china'
 
   # Model selection settings
   model:
@@ -54,7 +55,8 @@ operational:
   inference:
     # Station metadata CSV for mapping grid cells to nearest station
     station_csv: '<STATION_CSV>'
-    # Precomputed nearest-station map file (auto-built when missing/stale)
+    # Precomputed nearest-station map file (built once by build_near_map.py;
+    # inference validates it at startup and errors when missing/stale)
     nearest_map_file: './ops/intermediate/nearest_sta_idx.npz'
     # Visibility cap applied to corrected output in meters
     visibility_cap: 30000.0
