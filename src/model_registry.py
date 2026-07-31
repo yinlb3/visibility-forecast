@@ -6,7 +6,7 @@ Model metadata is stored in model_registry.json; model files are loaded
 via type-specific loaders.
 
 Founded in 2026-07-16
-Modified in 2026-07-26
+Modified in 2026-07-31
 @author: yinlb
 """
 
@@ -16,7 +16,6 @@ import pathlib
 import typing
 
 import arrow
-import joblib
 
 from src import pdf_model
 
@@ -226,7 +225,7 @@ class ModelRegistry:
         Raises:
             TypeError: If the file contains neither PDF nor list[PDF].
         """
-        model = joblib.load(str(path))
+        model = pdf_model.load_pdf_file(path)
         if isinstance(model, pdf_model.PDF):
             return model
         if isinstance(model, list) and all(

@@ -52,3 +52,6 @@ _*.npy
 
 # Local-only documentation (not for upload)
 docs/OPERATIONAL_INFERENCE_PIPELINE.md
+
+# Model registry data (large binaries, keep local only)
+model/

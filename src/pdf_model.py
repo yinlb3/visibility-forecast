@@ -4,10 +4,11 @@
 PDF matching model for visibility forecast correction.
 
 Founded in 2024-03-24
-Modified in 2026-07-21
+Modified in 2026-07-31
 @author: yinlb
 """
 import pathlib
+import sys
 import typing
 
 import joblib
@@ -34,7 +35,7 @@ class PDF:
         Raises:
             TypeError: If the loaded object is not a PDF instance.
         """
-        model = joblib.load(str(path))
+        model = load_pdf_file(path)
         if not isinstance(model, cls):
             raise TypeError(
                 f'Expected {cls.__name__} instance, got {type(model).__name__}'
@@ -77,3 +78,23 @@ class PDF:
         valid = ~np.isnan(pr0)
         out[valid] = np.interp(pr0[valid], self.c[:, 1], self.c[:, 0])
         return out.reshape(shape)
+
+
+def load_pdf_file(
+    path: typing.Union[str, pathlib.Path]
+) -> typing.Union[PDF, typing.List[PDF]]:
+    """Load a joblib file with __main__.PDF pickle compatibility.
+
+    Model files saved before the PDF class moved into this module
+    reference __main__.PDF in their pickles; alias it so they load.
+
+    Args:
+        path: Path to the joblib-serialized file.
+
+    Returns:
+        The unpickled PDF or list[PDF] object.
+    """
+    main_mod = sys.modules.get('__main__')
+    if main_mod is not None and not hasattr(main_mod, 'PDF'):
+        main_mod.PDF = PDF
+    return joblib.load(str(path))
