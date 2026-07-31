@@ -1,0 +1,3 @@
+# Force LF line endings for shell scripts so they work on Linux servers
+# after being edited on Windows.
+*.sh text eol=lf

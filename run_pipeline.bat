@@ -2,16 +2,19 @@
 rem Operational pipeline wrapper: run preprocess.py then inference.py.
 rem Usage: run_pipeline.bat [YYYYMMDDHH [YYYYMMDDHH]]
 rem Founded in 2026-07-28
-rem Modified in 2026-07-28
+rem Modified in 2026-07-31
 rem @author: yinlb
 setlocal
+
+rem 0. Use the configured Python interpreter (absolute path to conda env)
+set "PYTHON=C:\ProgramData\miniconda3\envs\meteva\python.exe"
 
 rem 1. Switch to the script directory so relative config paths resolve
 cd /d "%~dp0"
 
 rem 2. Run preprocessing; stop the pipeline on failure
 echo [run_pipeline] preprocess.py started
-python preprocess.py %*
+"%PYTHON%" preprocess.py %*
 set pre_status=%errorlevel%
 if not "%pre_status%"=="0" (
     echo [run_pipeline] preprocess.py failed, exit code %pre_status%
@@ -20,7 +23,7 @@ if not "%pre_status%"=="0" (
 
 rem 3. Run inference and propagate its exit code
 echo [run_pipeline] inference.py started
-python inference.py %*
+"%PYTHON%" inference.py %*
 set inf_status=%errorlevel%
 if not "%inf_status%"=="0" (
     echo [run_pipeline] inference.py failed, exit code %inf_status%

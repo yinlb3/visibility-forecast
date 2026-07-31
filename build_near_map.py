@@ -7,11 +7,10 @@ configured nearest_map_file. Run manually whenever the grid spec or the
 station table changes.
 
 Usage:
-    python build_near_map.py              # grid spec from config
-    python build_near_map.py 2026071700   # grid spec from that meta.json
+    python build_near_map.py
 
 Founded in 2026-07-26
-Modified in 2026-07-26
+Modified in 2026-07-31
 @author: yinlb
 """
 

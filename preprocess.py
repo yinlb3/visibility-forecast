@@ -7,7 +7,7 @@ saves intermediate arrays, and writes MICAPS4 forecast products under
 the configured operational directories.
 
 Founded in 2026-07-16
-Modified in 2026-07-28
+Modified in 2026-07-31
 @author: yinlb
 """
 
@@ -35,6 +35,12 @@ def _write_products_for_init(
 ) -> None:
     """Write m4 products and intermediate arrays for one init_time.
 
+    The output 'copy' mode controls whether raw MICAPS4 products are written
+    and copied to the business display directory:
+      - 'none':    only intermediates, no MICAPS4 products
+      - 'files':   raw forecast m4 products + copy to display_dir
+      - 'product': reserved for corrected products in inference.py
+
     Args:
         init_time: YYYYMMDDHH string.
         results: List of (lead, grid_data, grib_path) tuples for this init_time.
@@ -51,51 +57,59 @@ def _write_products_for_init(
     # Output directories
     out_dir = pathlib.Path(paths['intermediate_dir']) / init_time
     out_dir.mkdir(parents=True, exist_ok=True)
-    # Products are grouped by day: ops/products/YYYYMMDD/
-    product_dir = pathlib.Path(paths['product_dir']) / init_time[:8]
-    product_dir.mkdir(parents=True, exist_ok=True)
 
-    # Write MICAPS4 products and stack forecast grids
     output_cfg = cfg['operational']['output']
+    copy_mode = str(output_cfg.get('copy', 'product')).lower()
+    write_raw_m4 = copy_mode == 'files'
+
     m4_template = output_cfg['m4_filename_template']
     title_template = output_cfg['m4_title_template']
     fake_cfg = cfg['operational']['synthetic']['fake_timestamp']
 
-    display_dir_cfg = cfg['operational']['paths']['display_dir']
-    display_dir = (
-        pathlib.Path(display_dir_cfg)
-        if display_dir_cfg and display_dir_cfg != '<DISPLAY_DIR>'
-        else None
-    )
-    if display_dir is not None:
-        display_dir.mkdir(parents=True, exist_ok=True)
+    display_dir = None
+    product_dir = None
+    if write_raw_m4:
+        # Products are grouped by day: ops/products/YYYYMMDD/
+        product_dir = pathlib.Path(paths['product_dir']) / init_time[:8]
+        product_dir.mkdir(parents=True, exist_ok=True)
+
+        display_dir_cfg = paths['display_dir']
+        display_dir = (
+            pathlib.Path(display_dir_cfg)
+            if display_dir_cfg and display_dir_cfg != '<DISPLAY_DIR>'
+            else None
+        )
+        if display_dir is not None:
+            display_dir.mkdir(parents=True, exist_ok=True)
 
     grids = list()
     m4_products = list()
     processed_leads = list()
     for lead, forecast_grd, forecast_path in results:
-        m4_filename = m4_template.format(init_time=init_time, lead=lead)
-        m4_title = title_template.format(init_time=init_time, lead=lead)
-        m4_path = product_dir / m4_filename
-        meb.write_griddata_to_micaps4(
-            da=forecast_grd,
-            save_path=str(m4_path),
-            title=m4_title,
-        )
+        if write_raw_m4:
+            m4_filename = m4_template.format(init_time=init_time, lead=lead)
+            m4_title = title_template.format(init_time=init_time, lead=lead)
+            m4_path = product_dir / m4_filename
+            meb.write_griddata_to_micaps4(
+                da=forecast_grd,
+                save_path=str(m4_path),
+                title=m4_title,
+            )
 
-        # Adjust filesystem timestamp
-        ts = utils.compute_fake_timestamp(init_time, fake_cfg)
-        os.utime(str(m4_path), (ts, ts))
+            # Adjust filesystem timestamp
+            ts = utils.compute_fake_timestamp(init_time, fake_cfg)
+            os.utime(str(m4_path), (ts, ts))
 
-        # Copy to business display directory with flat structure
-        if display_dir is not None:
-            display_path = display_dir / m4_filename
-            shutil.copy2(str(m4_path), str(display_path))
-            # Ensure copied file has the same timestamp
-            os.utime(str(display_path), (ts, ts))
+            # Copy to business display directory with flat structure
+            if display_dir is not None:
+                display_path = display_dir / m4_filename
+                shutil.copy2(str(m4_path), str(display_path))
+                # Ensure copied file has the same timestamp
+                os.utime(str(display_path), (ts, ts))
+
+            m4_products.append(str(m4_path))
 
         grids.append(np.squeeze(forecast_grd.values))
-        m4_products.append(str(m4_path))
         processed_leads.append(lead)
 
     forecast_stack = np.stack(grids, axis=0)
@@ -109,6 +123,7 @@ def _write_products_for_init(
         'lead_hours': cfg['operational']['forecast']['lead_hours'],
         'processed_leads': processed_leads,
         'm4_products': m4_products,
+        'copy': copy_mode,
     }
     # Grid spec from the first grid's coordinates so downstream consumers
     # (e.g. inference) can rebuild the exact lat-lon grid
@@ -209,12 +224,17 @@ def main(args: typing.Optional[typing.Tuple[str, ...]] = None) -> None:
     )
     init_times = utils.resolve_init_times(args, cfg)
     lead_hours = op_cfg['forecast']['lead_hours']
-    skip_missing = bool(op_cfg['forecast']['skip_missing'])
+    skip_missing_raw = op_cfg['forecast']['skip_missing']
+    if isinstance(skip_missing_raw, bool):
+        skip_missing = skip_missing_raw
+    else:
+        skip_missing = str(skip_missing_raw).lower() != 'false'
     fallback_cfg = op_cfg['synthetic']['fallback']
     fallback_enabled = bool(fallback_cfg['enabled'])
     load_obs = bool(op_cfg['preprocess']['load_observations'])
     logger.info(f'Resolved init times: {init_times}')
     logger.info(f'Lead hours: {lead_hours}')
+    logger.info(f'skip_missing: {skip_missing_raw}')
 
     # 3. Load observations once in the main process if requested
     obs_data = None

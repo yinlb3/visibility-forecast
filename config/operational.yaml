@@ -4,7 +4,7 @@
 # config.local.{windows,linux}.yaml file.
 #
 # Founded in 2026-07-16
-# Modified in 2026-07-28
+# Modified in 2026-07-31
 # @author: yinlb
 
 operational:
@@ -25,8 +25,8 @@ operational:
     temp_dir: ''
     # Directory for runtime logs
     log_dir: './ops/logs'
-    # Directory for model registry metadata
-    model_registry_dir: '<MODEL_REGISTRY_DIR>'
+    # Directory for model registry metadata and model artifacts
+    model_registry_dir: './model'
     # Directory for business display / hot-folder output (flat structure).
     # Leave empty or null to disable copying.
     display_dir: ''
@@ -48,21 +48,19 @@ operational:
   model:
     # Default model identifier used when no explicit model is requested
     default_model_id: 'latest'
-    # Optional override for model registry directory
-    registry_dir: '<MODEL_REGISTRY_DIR>'
+    # Optional model registry dir override.
+    # Defaults to paths.model_registry_dir when omitted.
+    registry_dir: './model'
 
   # Operational inference settings
   inference:
     # Station metadata CSV for mapping grid cells to nearest station
-    station_csv: '<STATION_CSV>'
+    station_csv: './model/sta2411.csv'
     # Precomputed nearest-station map file (built once by build_near_map.py;
     # inference validates it at startup and errors when missing/stale)
-    nearest_map_file: './ops/intermediate/nearest_sta_idx.npz'
+    nearest_map_file: './model/nearest_sta_idx.npz'
     # Visibility cap applied to corrected output in meters
     visibility_cap: 30000.0
-    # Corrected MICAPS4 product templates (filename '' disables m4 output)
-    corrected_m4_filename_template: '{init_time}_pdfm.{lead:03d}'
-    corrected_m4_title_template: '中国东部能见度预报订正-{init_time}.{lead:03d}'
 
   # GRIB2 message indices (0-based) for pygrib access
   grib_message_indices:
@@ -74,11 +72,13 @@ operational:
   forecast:
     # Filename template for raw GRIB2 forecast files.
     # Available placeholders: {init_time}, {init_date}, {init_year}, {lead}
-    filename_template: '{init_year}/{init_date}/Z_NAFP_C_BCSH_{init_time}0000_P_surface-warr-f{lead:02d}.BIN'
+    filename_template: >-
+      {init_year}/{init_date}/Z_NAFP_C_BCSH_{init_time}0000_P_surface-warr-f{lead:02d}.BIN
     # Lead hours to process for each initialization time (f01-f24)
     lead_hours: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
                  13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
     # If true, skip missing GRIB files instead of raising an error.
+    # If 'none', skip missing files but do not write MICAPS4 products.
     skip_missing: false
     # Raw forecast file root directory (year/date subdirectories are
     # appended automatically via the filename template placeholders)
@@ -156,11 +156,22 @@ operational:
     # MICAPS4 visibility forecast product filename template (plain, no prefix)
     # Available placeholders: {init_time}, {lead}
     m4_filename_template: '{init_time}.{lead:03d}'
+    # Product distribution mode:
+    #   'none'    - do not write any MICAPS4 products (only intermediates)
+    #   'files'   - write raw forecast MICAPS4 products and copy to display_dir
+    #   'product' - write corrected MICAPS4 products and copy to display_dir
+    copy: 'product'
     # MICAPS4 filename prefix (can include Chinese characters)
     # Used to strip legacy prefixes from old filenames.
     m4_filename_prefix: '中国东部能见度预报-'
     # MICAPS4 title written inside the m4 file (can include Chinese prefix)
     # Available placeholders: {init_time}, {lead}
     m4_title_template: '中国东部能见度预报-{init_time}.{lead:03d}'
+    # Corrected MICAPS4 product filename template.
+    # Kept identical to m4_filename_template by default so corrected products
+    # replace raw products in the business display directory.
+    corrected_m4_filename_template: '{init_time}.{lead:03d}'
+    # Corrected product title written inside the m4 file.
+    corrected_m4_title_template: '中国东部能见度预报订正-{init_time}.{lead:03d}'
     # Log level: DEBUG, INFO, WARNING, ERROR
     log_level: 'INFO'

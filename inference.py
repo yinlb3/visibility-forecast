@@ -7,7 +7,7 @@ from the registry, corrects each grid cell with the model of its nearest
 station, and writes corrected visibility products.
 
 Founded in 2026-07-16
-Modified in 2026-07-28
+Modified in 2026-07-31
 @author: yinlb
 """
 
@@ -152,6 +152,13 @@ def _write_corrected(
 ) -> None:
     """Write corrected npy/meta and per-lead MICAPS4 products.
 
+    Corrected arrays are saved next to the preprocessing intermediates so
+    product_dir only contains the final MICAPS4 files. The output 'copy' mode
+    controls whether corrected MICAPS4 products are written:
+      - 'none'    - no corrected MICAPS4 products
+      - 'files'   - reserved for raw products in preprocess.py
+      - 'product' - corrected m4 products + copy to display_dir
+
     Args:
         init_time: YYYYMMDDHH string.
         corrected: Corrected forecast array (n_lead, nlat, nlon).
@@ -162,9 +169,10 @@ def _write_corrected(
     """
     paths = cfg['operational']['paths']
     inf_cfg = cfg['operational']['inference']
+    out_cfg = cfg['operational']['output']
 
-    # 1. Save corrected arrays and metadata under product_dir/{init_time}/
-    out_dir = pathlib.Path(paths['product_dir']) / init_time
+    # 1. Save corrected arrays and metadata under intermediate_dir/{init_time}/
+    out_dir = pathlib.Path(paths['intermediate_dir']) / init_time
     out_dir.mkdir(parents=True, exist_ok=True)
     pred_grade = p1.grade_visibility(vis=corrected)
     np.save(str(out_dir / 'pred_vis.npy'), corrected.astype(np.float32))
@@ -181,12 +189,27 @@ def _write_corrected(
         json.dump(out_meta, f, indent=2)
     logger.info(f'Saved corrected arrays to {out_dir}')
 
-    # 2. Write corrected MICAPS4 products (empty template disables)
-    m4_template = inf_cfg['corrected_m4_filename_template']
+    # 2. Skip MICAPS4 products when the copy mode does not ask for corrected
+    # products. 'files' mode writes raw products in preprocess.py; 'none' writes
+    # no products at all.
+    copy_mode = str(out_cfg.get('copy', 'product')).lower()
+    if copy_mode != 'product':
+        logger.info(
+            f'copy={copy_mode} for {init_time}: '
+            f'not writing corrected MICAPS4 products'
+        )
+        return
+
+    # 3. Write corrected MICAPS4 products (empty template disables)
+    m4_template = out_cfg.get('corrected_m4_filename_template', '')
     if not m4_template:
         return
-    title_template = inf_cfg['corrected_m4_title_template']
+    title_template = out_cfg.get(
+        'corrected_m4_title_template',
+        'Corrected visibility {init_time}.{lead:03d}'
+    )
     fake_cfg = cfg['operational']['synthetic']['fake_timestamp']
+    write_and_copy = copy_mode == 'product'
 
     product_dir = pathlib.Path(paths['product_dir']) / init_time[:8]
     product_dir.mkdir(parents=True, exist_ok=True)
@@ -196,7 +219,7 @@ def _write_corrected(
         if display_dir_cfg and display_dir_cfg != '<DISPLAY_DIR>'
         else None
     )
-    if display_dir is not None:
+    if write_and_copy and display_dir is not None:
         display_dir.mkdir(parents=True, exist_ok=True)
 
     grid = meta['grid']
@@ -232,7 +255,7 @@ def _write_corrected(
         os.utime(str(m4_path), (ts, ts))
 
         # Copy to business display directory with flat structure
-        if display_dir is not None:
+        if write_and_copy and display_dir is not None:
             display_path = display_dir / m4_path.name
             shutil.copy2(str(m4_path), str(display_path))
             os.utime(str(display_path), (ts, ts))

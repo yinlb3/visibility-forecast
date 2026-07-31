@@ -59,7 +59,15 @@ You are an AI programming assistant for this meteorological data analysis projec
 # One-click execution
 python draw.py
 
+# Operational pipeline (preprocess + inference)
+bash run_pipeline.sh              # Linux: real-time or backfill
+run_pipeline.bat                  # Windows: real-time or backfill
+
 # Step-by-step (alternative scripts)
+python preprocess.py [YYYYMMDDHH] [YYYYMMDDHH]   # GRIB -> intermediates + m4
+python inference.py [YYYYMMDDHH] [YYYYMMDDHH]      # Correct intermediates -> m4
+python build_near_map.py                           # Build nearest-station map once
+python register_model.py <dat_path> <training_end> [model_id] [registry_dir]
 python access.py    # Forecast correction and verification
 python tl.py        # Temporal lead experiment analysis
 python ots.py       # Optimal threshold selection
@@ -69,6 +77,7 @@ Before running, confirm:
 1. `D:\data\vis\` contains required `.npy`, `.csv`, `.xls` files
 2. Chinese fonts installed (scripts look for `msyh.ttc`, `simhei.ttf`)
 3. Memory >= 16GB recommended (large numpy arrays)
+4. For operational pipeline: configure `config/operational.yaml` and platform-specific `config.local.{windows,linux}.yaml`
 
 ## 3. Testing
 
@@ -126,7 +135,7 @@ See the Git guidelines below and the additional notes in this document.
 ### In Progress
 | Task | Description | Notes |
 |------|-------------|-------|
-| Operational Inference Pipeline | Implement `preprocess.py` and `inference.py` for real-time and backfill operation, driven by 0/1/2 YYYYMMDDHH command-line arguments; add `src/logger.py`, `src/model_registry.py`, and `config/operational.yaml` | implementation complete, server testing pending |
+| Operational Inference Pipeline | Implement `preprocess.py` and `inference.py` for real-time and backfill operation, driven by 0/1/2 YYYYMMDDHH command-line arguments; add `src/logger.py`, `src/model_registry.py`, and `config/operational.yaml` | implementation complete, server testing in progress |
 
 ### Todo
 | Task | Description | Priority |
@@ -137,4 +146,4 @@ See the Git guidelines below and the additional notes in this document.
 
 ---
 
-**Last Updated**: 2026-07-26
+**Last Updated**: 2026-07-31

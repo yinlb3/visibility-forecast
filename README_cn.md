@@ -29,16 +29,18 @@ python access.py
 python tl.py
 python ots.py
 
-# 业务化流程
+# 业务化流程（先一次性生成最近站映射并注册模型，之后按起报时次运行包装脚本）
 python build_near_map.py
-python preprocess.py 2026071700
-python inference.py 2026071700
+python register_model.py model/pdfm2.dat 20240101 pdfm2
+bash run_pipeline.sh 2026071700        # Linux
+run_pipeline.bat 2026071700            # Windows
 ```
 
 运行前请确认：
 1. `D:\data\vis\` 目录包含所需的 `.npy`、`.csv`、`.xls` 等数据文件；
 2. 系统已安装中文字体（脚本会查找 `msyh.ttc`、`simhei.ttf` 等）；
-3. 内存充足（部分脚本会加载大型 numpy 数组并进行循环计算）。
+3. 内存充足（部分脚本会加载大型 numpy 数组并进行循环计算）；
+4. 业务化流程需配置 `config/operational.yaml` 及平台特定的 `config.local.{windows,linux}.yaml`。
 
 ## 数据来源
 
@@ -59,7 +61,7 @@ python inference.py 2026071700
 ### 进行中
 | 任务 | 描述 | 备注 |
 |------|------|------|
-| 业务化推理流程 | 实现 `preprocess.py`、`inference.py` 的实时与回算运行，由 0/1/2 个 YYYYMMDDHH 命令行参数驱动；新增 `src/logger.py`、`src/model_registry.py` 与 `config/operational.yaml` | 实现完成，服务器测试待进行 |
+| 业务化推理流程 | 实现 `preprocess.py`、`inference.py` 的实时与回算运行，由 0/1/2 个 YYYYMMDDHH 命令行参数驱动；新增 `src/logger.py`、`src/model_registry.py` 与 `config/operational.yaml` | 实现完成，服务器测试进行中 |
 
 ### 待办
 | 任务 | 描述 | 优先级 |
@@ -74,6 +76,6 @@ python inference.py 2026071700
 
 ---
 
-**最后更新**：2026-07-26
+**最后更新**：2026-07-31
 
 英文版见 [README.md](README.md)。

@@ -29,16 +29,19 @@ python access.py
 python tl.py
 python ots.py
 
-# Operational pipeline
+# Operational pipeline (run once to build the nearest-station map and register
+# the model, then use the wrapper for each initialization cycle)
 python build_near_map.py
-python preprocess.py 2026071700
-python inference.py 2026071700
+python register_model.py model/pdfm2.dat 20240101 pdfm2
+bash run_pipeline.sh 2026071700        # Linux
+run_pipeline.bat 2026071700            # Windows
 ```
 
 Before running, please confirm:
 1. The `D:\data\vis\` directory contains the required `.npy`, `.csv`, `.xls`, and other data files;
 2. Chinese fonts are installed on the system (scripts look for `msyh.ttc`, `simhei.ttf`, etc. in Windows default paths);
-3. Sufficient memory (some scripts load large numpy arrays and perform loop calculations).
+3. Sufficient memory (some scripts load large numpy arrays and perform loop calculations);
+4. For the operational pipeline: configure `config/operational.yaml` and the platform-specific `config.local.{windows,linux}.yaml`.
 
 ## Data Sources
 
@@ -59,7 +62,7 @@ Before running, please confirm:
 ### In Progress
 | Task | Description | Notes |
 |------|-------------|-------|
-| Operational Inference Pipeline | Implement `preprocess.py` and `inference.py` for real-time and backfill operation, driven by 0/1/2 YYYYMMDDHH command-line arguments; add `src/logger.py`, `src/model_registry.py`, and `config/operational.yaml` | implementation complete, server testing pending |
+| Operational Inference Pipeline | Implement `preprocess.py` and `inference.py` for real-time and backfill operation, driven by 0/1/2 YYYYMMDDHH command-line arguments; add `src/logger.py`, `src/model_registry.py`, and `config/operational.yaml` | implementation complete, server testing in progress |
 
 ### Todo
 | Task | Description | Priority |
@@ -74,6 +77,6 @@ Before running, please confirm:
 
 ---
 
-**Last Updated**: 2026-07-26
+**Last Updated**: 2026-07-31
 
 For Chinese version, see [README_cn.md](README_cn.md).
