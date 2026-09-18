@@ -44,12 +44,12 @@ You are an AI programming assistant for this meteorological data analysis projec
 - `access.py` - Forecast verification and PDF matching correction
 - `tl.py` - Temporal lead experiment analysis
 - `ots.py` - Optimal threshold selection
-- `preprocess.py` - Operational preprocessing entry (GRIB -> MICAPS4 + intermediates)
-- `inference.py` - Operational inference entry (nearest-station PDF correction)
+- `pipeline.py` - Unified operational pipeline (preprocess + inference in one process)
 - `build_near_map.py` - One-time nearest-station map builder
 - `src/grib_forecast.py` - GRIB reading and station-to-grid interpolation
 - `src/near_map.py` - Nearest-station map build/load utilities
 - `src/model_registry.py` - Model registry for operational inference
+- `src/tle_model.py` - Time-lagged ensemble averaging for operational inference
 - `src/logger.py` - Print-based operational logger
 - `D:\data\vis\` - Input data directory (not under version control)
 
@@ -59,13 +59,12 @@ You are an AI programming assistant for this meteorological data analysis projec
 # One-click execution
 python draw.py
 
-# Operational pipeline (preprocess + inference)
+# Operational pipeline (unified: preprocess + inference)
 bash run_pipeline.sh              # Linux: real-time or backfill
 run_pipeline.bat                  # Windows: real-time or backfill
 
 # Step-by-step (alternative scripts)
-python preprocess.py [YYYYMMDDHH] [YYYYMMDDHH]   # GRIB -> intermediates + m4
-python inference.py [YYYYMMDDHH] [YYYYMMDDHH]      # Correct intermediates -> m4
+python pipeline.py [--utc|--bjt] [YYYYMMDDHH] [YYYYMMDDHH]     # Unified GRIB -> corrected m4
 python build_near_map.py                           # Build nearest-station map once
 python register_model.py <dat_path> <training_end> [model_id] [registry_dir]
 python access.py    # Forecast correction and verification
@@ -135,7 +134,7 @@ See the Git guidelines below and the additional notes in this document.
 ### In Progress
 | Task | Description | Notes |
 |------|-------------|-------|
-| Operational Inference Pipeline | Implement `preprocess.py` and `inference.py` for real-time and backfill operation, driven by 0/1/2 YYYYMMDDHH command-line arguments; add `src/logger.py`, `src/model_registry.py`, and `config/operational.yaml` | implementation complete, server testing in progress |
+| Operational Inference Pipeline | Implement unified `pipeline.py` for real-time and backfill operation, driven by 0/1/2 YYYYMMDDHH command-line arguments; add `src/logger.py`, `src/model_registry.py`, `src/tle_model.py`, `config/operational.yaml`, and remove legacy `preprocess.py`/`inference.py`; GRIB -> PDFM correction -> save PDFM cache -> load previous 24 h caches (regenerate from GRIB if missing) -> TLE averaging -> m4 product output | implementation complete, server testing in progress |
 
 ### Todo
 | Task | Description | Priority |
@@ -146,4 +145,4 @@ See the Git guidelines below and the additional notes in this document.
 
 ---
 
-**Last Updated**: 2026-07-31
+**Last Updated**: 2026-08-17

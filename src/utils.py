@@ -2,7 +2,7 @@
 """General utility functions.
 
 Founded in 2026-04-04
-Modified in 2026-07-26
+Modified in 2026-08-17
 @author: yinlb
 """
 
@@ -11,14 +11,21 @@ import os
 import platform
 import pathlib
 import random
-import re
 import typing
 
 import arrow
+import matplotlib as mpl
+import numba
 import numpy as np
 import yaml
+
 from matplotlib import figure
-from numba import njit
+
+
+mpl.use('Agg')
+mpl.rcParams['font.family'] = 'serif'
+mpl.rcParams['font.serif'] = ['Times New Roman', 'SimSun']
+mpl.rcParams['axes.unicode_minus'] = False
 
 
 # ==================== Figure Save Utility ====================
@@ -38,7 +45,8 @@ def save_figure(
 
     Args:
         fig: Matplotlib figure to save.
-        base_path: Base file path without extension (e.g., Path('output/fig1')).
+        base_path: Base file path without extension
+            (e.g., Path('output/fig1')).
         cfg: Configuration dictionary containing plot settings.
         **save_kwargs: Additional kwargs passed to fig.savefig().
 
@@ -121,7 +129,9 @@ def compute_fake_timestamp(init_time: str, fake_cfg: typing.Dict) -> float:
 
     # Parse init_time as Asia/Shanghai (CST, UTC+8), which is the local time
     # implied by the GRIB filenames.
-    init_dt = arrow.get(init_time, 'YYYYMMDDHH').replace(tzinfo='Asia/Shanghai')
+    init_dt = arrow.get(init_time, 'YYYYMMDDHH').replace(
+        tzinfo='Asia/Shanghai'
+    )
     base_time = init_dt.shift(
         hours=int(fake_cfg['offset_hours'])
     ).floor('hour')
@@ -140,6 +150,37 @@ def compute_fake_timestamp(init_time: str, fake_cfg: typing.Dict) -> float:
     return base_time.shift(seconds=seconds).timestamp()
 
 
+def utc_to_beijing(init_time: str) -> str:
+    """Convert a YYYYMMDDHH string from UTC to Beijing time (CST, UTC+8).
+
+    Args:
+        init_time: YYYYMMDDHH string in UTC.
+
+    Returns:
+        YYYYMMDDHH string in Asia/Shanghai (Beijing) time.
+    """
+    init_dt = arrow.get(init_time, 'YYYYMMDDHH').replace(tzinfo='UTC')
+    bj_dt = init_dt.to('Asia/Shanghai')
+    return bj_dt.format('YYYYMMDDHH')
+
+
+def shift_init_time(init_time: str, hours: int) -> str:
+    """Shift a YYYYMMDDHH string by a signed number of hours.
+
+    Args:
+        init_time: YYYYMMDDHH string.
+        hours: Hours to add (positive) or subtract (negative).
+
+    Returns:
+        Shifted YYYYMMDDHH string.
+    """
+    return (
+        arrow.get(init_time, 'YYYYMMDDHH')
+        .shift(hours=hours)
+        .format('YYYYMMDDHH')
+    )
+
+
 def mask_missing(
     arr: np.ndarray,
     missing_value: float = 999990.0,
@@ -150,7 +191,8 @@ def mask_missing(
 
     Args:
         arr: Input array.
-        missing_value: Values >= this threshold are treated as missing (np.nan).
+        missing_value: Values >= this threshold are treated as missing
+            (np.nan).
 
     Returns:
         Array with missing values replaced by np.nan.
@@ -180,7 +222,8 @@ def load_vis_data(
         ob: Observation array with missing-value markers.
         pr: Forecast array with missing-value markers.
         n_val_days: Number of trailing days to use as validation set.
-        missing_value: Values >= this threshold are treated as missing (np.nan).
+        missing_value: Values >= this threshold are treated as missing
+            (np.nan).
 
     Returns:
         Tuple of (train_ob, train_pr, val_ob, val_pr, valid_stations).
@@ -216,7 +259,7 @@ def load_vis_data(
 # ==================== Temporal Lead Ensemble Utility ====================
 
 
-@njit
+@numba.njit
 def _apply_tle_equal_weight_numba(
     arr: np.ndarray,
     n_hours: int,
@@ -224,8 +267,9 @@ def _apply_tle_equal_weight_numba(
 ) -> None:
     """Numba-compiled equal-weight TLE averaging for access.py.
 
-    For each target time step i and lead time j, averages arr[i + j - ii, ii, :]
-    over ii in [0, n_hours - 1], matching the original access.py TLE loop.
+    For each target time step i and lead time j, averages
+    arr[i + j - ii, ii, :] over ii in [0, n_hours - 1], matching the
+    original access.py TLE loop.
     NaN values are skipped so that sparse forecast arrays still produce output.
     """
     n_times = arr.shape[0]
@@ -254,8 +298,9 @@ def apply_tle_equal_weight(
 ) -> np.ndarray:
     """Apply equal-weight temporal lead ensemble averaging for access.py.
 
-    For each target time step i and lead time j, averages arr[i + j - ii, ii, :]
-    over ii in [0, n_hours - 1]. NaN values are skipped.
+    For each target time step i and lead time j, averages
+    arr[i + j - ii, ii, :] over ii in [0, n_hours - 1]. NaN values are
+    skipped.
 
     Args:
         arr: Input array shaped (n_times, n_hours, n_stations).
@@ -346,15 +391,26 @@ def _load_yaml(path: pathlib.Path) -> typing.Dict:
     """
     Load YAML file if exists.
 
+    Tries UTF-8 first, then common Chinese encodings, and finally latin-1
+    with replacement as a last resort. This prevents crashes when a config
+    file has been edited with a non-UTF-8 editor.
+
     Args:
         path: pathlib.Path to YAML file.
 
     Returns:
-        Loaded dict or empty dict if file not found.
+        Loaded dict or empty dict if file not found or unreadable.
     """
-    if path.exists():
-        with open(path, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f) or {}
+    if not path.exists():
+        return {}
+    raw = path.read_bytes()
+    for enc in ('utf-8', 'gbk', 'gb18030', 'latin-1'):
+        try:
+            text = raw.decode(enc)
+            return yaml.safe_load(text) or {}
+        except (UnicodeDecodeError, yaml.YAMLError):
+            continue
+    print(f'Warning: could not decode YAML {path}, using empty config')
     return {}
 
 
@@ -512,7 +568,7 @@ def _validate_config(cfg: typing.Dict) -> None:
         'tl.input_files.pdfm_input_npy',
         'tl.input_files.station_index_npy',
         'tl.input_files.pre_existing_tle',
-        'tl.input_files.pre_existing_pdfm_tle',
+        'tl.input_files.existing_pdfm_tle',
         'tl.output_files.tle_template',
         'tl.output_files.pdfm_tle_template',
         'tl.params.n_hours',
@@ -527,7 +583,7 @@ def _validate_config(cfg: typing.Dict) -> None:
         'access.input_files.observation_npy',
         'access.input_files.forecast_npy',
         'access.params.n_raw_stations',
-        'access.params.n_east_china_stations',
+        'access.params.n_east_sta',
         'access.params.n_mlyr_stations',
         'access.params.val_days',
         'access.params.n_hours',
@@ -579,8 +635,8 @@ def _validate_config(cfg: typing.Dict) -> None:
         'vis_grade.params.n_raw_stations',
         'vis_grade.params.n_selected_stations',
         'vis_grade.params.grade_thresholds',
-        'vis_grade.params.missing_rate_threshold',
-        'vis_grade.params.excluded_station_index',
+        'vis_grade.params.miss_rate_threshold',
+        'vis_grade.params.excluded_sta_idx',
         'vis_grade.params.daily_obs_per_day',
         'vis_grade.params.map_extend',
         'vis_grade.params.plot_configs',

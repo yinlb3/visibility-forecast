@@ -1,13 +1,15 @@
 # Vis Project Configuration
 # Base configuration with placeholders for privacy-sensitive values
-# Copy to config.local.windows.yaml or config.local.linux.yaml and fill in real paths
+# Copy to config.local.windows.yaml or config.local.linux.yaml and fill in real
+# paths
 #
 # Founded in 2026-04-05
-# Modified in 2026-07-21
+# Modified in 2026-08-06
 # @author: yinlb
 
 paths:
-  # External data directory - MUST be overridden in local config (absolute path)
+  # External data directory - MUST be overridden in local config
+  # (absolute path)
   data_dir: '<DATA_DIR>'
   # Project output directory - relative path, cross-platform compatible
   output_dir: './figures'
@@ -21,7 +23,8 @@ fonts:
   chinese: []
 
 # Visibility grade thresholds (meters)
-# Grade 0: >=10000m (good), Grade 1: 2000-10000m, ..., Grade 6: <50m (dense fog)
+# Grade 0: >=10000m (good), Grade 1: 2000-10000m, ..., Grade 6: <50m
+# (dense fog)
 # Based on China Meteorological Administration visibility grade standards
 visibility:
   grade_thresholds: [10000., 2000., 1000., 500., 200., 50.]
@@ -32,7 +35,7 @@ draw:
   # Each flag corresponds to exactly one subsection in draw.py
   stages:
     stage_1_data_prep: true       # Part 1: configuration and data loading
-    stage_2_1_dist_feature: true  # 2.1: distribution feature calculation
+    p2_1_dist_feature: true       # 2.1: distribution feature calculation
     stage_2_2_event_type: true    # 2.2: event type proportion plots
     stage_2_3_temporal: true      # 2.3: temporal distribution plots
     stage_2_4_spatial: true       # 2.4: spatial distribution plots
@@ -45,9 +48,22 @@ draw:
   # Plot configuration
   plot:
     # Global output setting
-    output_formats: ['png', 'pdf', 'jpg', 'svg']
+    output_formats: ['png', 'svg']
+    # Schematic diagonal color grid parameters (schematic.py)
+    # Each grid cell is cell_size_inches x cell_size_inches; figure size is
+    # computed automatically from grid_size and cell_size_inches.
+    # color_map options:
+    #   - 'distinct' or 'distinct_ordered': ordered but distinguishable colors
+    #   - 'distinct_random': randomized colors, no gradient
+    #   - any matplotlib colormap name, e.g. 'turbo', 'hsv', 'rainbow'
+    grid_size: 24
+    cell_size_inches: 0.15
+    color_map: 'distinct_random'
+    random_seed: 260806
+    dpi: 800
 
-    # -------------------- Observation plots (src/p2_2_event_type.py, src/p2_3_temporal.py, src/p2_4_spatial.py) --------------------
+    # ---- Observation plots (src/p2_2_event_type.py, src/p2_3_temporal.py,
+    #      src/p2_4_spatial.py) ----
 
     # Pie charts: pie_1 ~ pie_6 (weather type proportion by visibility grade)
     obs_pies:
@@ -125,7 +141,7 @@ draw:
       vmax: 30
       clevs: [0, 1, 2, 4, 7, 10, 15, 20, 25, 30]
 
-    # -------------------- Spatiotemporal plots (src/p3_3_init_lead.py) --------------------
+    # ---- Spatiotemporal plots (src/p3_3_init_lead.py) ----
 
     # Init time-lead time TS4+ heatmaps
     hour_access_heatmaps:
@@ -170,7 +186,7 @@ draw:
       improvement_color: 'skyblue'
       dpi: 800
 
-    # -------------------- Forecast type / CDF plots (src/p3_4_ablation.py) --------------------
+    # ---- Forecast type / CDF plots (src/p3_4_ablation.py) ----
 
     # Visibility CDF curve
     vis_cdf:
@@ -227,7 +243,8 @@ draw:
       - '上海市'
 
   # Visibility grade thresholds (meters)
-  # Grade 0: >=10000m (good), Grade 1: 2000-10000m, ..., Grade 6: <50m (dense fog)
+  # Grade 0: >=10000m (good), Grade 1: 2000-10000m, ..., Grade 6: <50m
+  # (dense fog)
   # Based on China Meteorological Administration visibility grade standards
 
 # Temporal-lead experiment configuration (tl.py)
@@ -238,7 +255,7 @@ tl:
     pdfm_input_npy: 'vis1085_shr_pred2.npy'
     station_index_npy: 'index_sta08.npy'
     pre_existing_tle: 'vis1085_shr_pred_tle5.npy'
-    pre_existing_pdfm_tle: 'vis1085_shr_pred_pdfm_tle5.npy'
+    existing_pdfm_tle: 'vis1085_shr_pred_pdfm_tle5.npy'
   output_files:
     tle_template: '_temp_vis1085_shr_pred_tle{s}.npy'
     pdfm_tle_template: '_temp_vis1085_shr_pred_pdfm_tle{s}.npy'
@@ -260,7 +277,7 @@ access:
     forecast_npy: 'vis_gjz.npy'
   params:
     n_raw_stations: 2411
-    n_east_china_stations: 1183
+    n_east_sta: 1183
     n_mlyr_stations: 502
     val_days: 365
     n_hours: 24
@@ -269,7 +286,8 @@ access:
     run_scheme_0: true
     run_scheme_1: true
     run_scheme_2: true
-    run_region: 'both'  # 'all': full stations only, 'mlyr': MLYR subset only, 'both': both
+    # 'all': full stations only, 'mlyr': MLYR subset only, 'both': both
+    run_region: 'both'
   output_files:
     pdfm_models:
       pdfm0: 'pdfm0_east_china.dat'
@@ -333,8 +351,8 @@ vis_grade:
     n_raw_stations: 2410
     n_selected_stations: 97
     grade_thresholds: [10000., 2000., 1000., 500., 200., 50.]
-    missing_rate_threshold: 0.02
-    excluded_station_index: 54
+    miss_rate_threshold: 0.02
+    excluded_sta_idx: 54
     daily_obs_per_day: 4
     map_extend: [108.65, 114.4, 24.5, 30.25]
     plot_configs:

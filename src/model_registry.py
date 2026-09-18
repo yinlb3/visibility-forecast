@@ -6,7 +6,7 @@ Model metadata is stored in model_registry.json; model files are loaded
 via type-specific loaders.
 
 Founded in 2026-07-16
-Modified in 2026-07-31
+Modified in 2026-08-06
 @author: yinlb
 """
 
@@ -108,8 +108,8 @@ class ModelRegistry:
     def load_model(
         self,
         model_id: typing.Optional[str] = None,
-        init_time: typing.Optional[str] = None
-    ) -> typing.Any:
+        init_time: typing.Optional[str] = None,
+    ) -> pdf_model.PDF:
         """
         Load and return a model instance.
 
@@ -138,7 +138,7 @@ class ModelRegistry:
     def register_loader(
         self,
         model_type: str,
-        loader: typing.Callable[[pathlib.Path], typing.Any]
+        loader: typing.Callable[[pathlib.Path], pdf_model.PDF],
     ) -> None:
         """
         Register a custom loader for a model type.

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Founded in 2024-10-05
-Modified in 2026-07-21
+Modified in 2026-08-06
 @author: yinlb
 """
 import pathlib
@@ -11,7 +11,7 @@ import typing
 import arrow
 import numpy as np
 import pandas as pd
-from meteva import base as meb
+from meteva import base as meb    # type: ignore
 
 from src import utils
 
@@ -68,7 +68,9 @@ def _month_hour_bounds(
         Tuple of (start_hour_index, end_hour_index).
     """
     left = round((month_arrow - base_arrow).total_seconds() / 3600)
-    right = round((month_arrow.shift(months=1) - base_arrow).total_seconds() / 3600)
+    right = round(
+        (month_arrow.shift(months=1) - base_arrow).total_seconds() / 3600
+    )
     return left, right
 
 
@@ -130,7 +132,9 @@ def _fill_station_data(
             # Incomplete data: place each observation by its exact timestamp.
             for k in range(len(df0)):
                 obs_arrow = arrow.get(df0.loc[k, _TIME_COL])
-                hour_idx = round((obs_arrow - base_arrow).total_seconds() / 3600)
+                hour_idx = round(
+                    (obs_arrow - base_arrow).total_seconds() / 3600
+                )
                 vis[hour_idx, station_idx] = df0.loc[k, vis_col]
 
 
@@ -165,4 +169,7 @@ if __name__ == '__main__':
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
-    print(f'Program vis2411.py finished, total time: {utils.format_time(total_elapsed)}')
+    print(
+        f'Program vis2411.py finished, total time: '
+        f'{utils.format_time(total_elapsed)}'
+    )

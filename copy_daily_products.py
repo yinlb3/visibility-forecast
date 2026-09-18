@@ -20,7 +20,7 @@ Examples:
     python copy_daily_products.py 20260701 20260702 20260717 -p <DIR>
 
 Founded in 2026-07-17
-Modified in 2026-07-26
+Modified in 2026-08-06
 @author: yinlb
 """
 
@@ -33,7 +33,7 @@ import typing
 
 import arrow
 import numpy as np
-from meteva import base as meb
+from meteva import base as meb    # type: ignore
 
 from src import utils
 
@@ -122,7 +122,7 @@ def _init_time_from_filename(filename: str) -> str:
     raise ValueError(f'Cannot parse init time from filename: {filename}')
 
 
-def _apply_noise(grd: typing.Any, std: float = 0.01) -> typing.Any:
+def _apply_noise(grd: object, std: float = 0.01) -> object:
     """Return a copy of grd with per-cell Gaussian noise N(1, std) applied.
 
     Args:
@@ -238,9 +238,9 @@ def _parse_dst_days(args: typing.List[str]) -> typing.List[str]:
 
 
 def _fill_missing_leads(
-    lead_grids: typing.Dict[int, typing.Any],
+    lead_grids: typing.Dict[int, object],
     expected_leads: typing.List[int],
-) -> typing.Dict[int, typing.Any]:
+) -> typing.Dict[int, object]:
     """Fill missing leads by copying the nearest available lead grid.
 
     Prefers the nearest previous lead; if none exists, falls back to the
@@ -258,7 +258,7 @@ def _fill_missing_leads(
         return lead_grids
 
     available_leads = sorted(lead_grids.keys())
-    complete: typing.Dict[int, typing.Any] = {}
+    complete: typing.Dict[int, object] = {}
 
     for lead in expected_leads:
         if lead in lead_grids:
@@ -308,8 +308,8 @@ def _copy_day_chain(
     title_template = output_cfg['m4_title_template']
 
     # Load all source grids, grouped by init_time
-    init_time_grids: typing.Dict[str, typing.Dict[int, typing.Any]] = {}
-    init_time_base_filename: typing.Dict[str, str] = {}
+    init_time_grids: typing.Dict[str, typing.Dict[int, object]] = {}
+    init_base_filename: typing.Dict[str, str] = {}
 
     for src_file in sorted(src_folder.iterdir()):
         if not src_file.is_file():
@@ -318,7 +318,7 @@ def _copy_day_chain(
         lead = _lead_from_filename(src_file.name)
         if init_time not in init_time_grids:
             init_time_grids[init_time] = {}
-            init_time_base_filename[init_time] = src_file.name
+            init_base_filename[init_time] = src_file.name
         init_time_grids[init_time][lead] = meb.read_griddata_from_micaps4(
             str(src_file)
         )
@@ -341,7 +341,7 @@ def _copy_day_chain(
 
         for src_init, lead_grids in init_time_grids.items():
             dst_init = dst_day + src_init[8:]
-            base_filename = init_time_base_filename[src_init]
+            base_filename = init_base_filename[src_init]
             for lead, grd in lead_grids.items():
                 lead_grids[lead] = _apply_noise(
                     grd, std=float(fake_cfg['noise_std'])

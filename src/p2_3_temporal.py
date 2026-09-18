@@ -4,7 +4,7 @@
 Part 2.3: Temporal distribution feature plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-06-30
+Modified in 2026-08-06
 @author: yinlb
 """
 
@@ -12,16 +12,25 @@ import gc
 import pathlib
 import typing
 
+import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import seaborn as sns
+
+from matplotlib import axes
 from matplotlib import pyplot as plt
 
 from src import utils
 
 
+mpl.use('Agg')
+mpl.rcParams['font.family'] = 'serif'
+mpl.rcParams['font.serif'] = ['Times New Roman', 'SimSun']
+mpl.rcParams['axes.unicode_minus'] = False
+
+
 def _plot_stack_bar(
-    ax,
+    ax: axes.Axes,
     x: np.ndarray,
     pre: np.ndarray,
     fog: np.ndarray,

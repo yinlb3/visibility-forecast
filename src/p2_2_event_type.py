@@ -12,10 +12,18 @@ import gc
 import pathlib
 import typing
 
+import matplotlib as mpl
 import numpy as np
+
 from matplotlib import pyplot as plt
 
 from src import utils
+
+
+mpl.use('Agg')
+mpl.rcParams['font.family'] = 'serif'
+mpl.rcParams['font.serif'] = ['Times New Roman', 'SimSun']
+mpl.rcParams['axes.unicode_minus'] = False
 
 
 def plot_obs_pies(

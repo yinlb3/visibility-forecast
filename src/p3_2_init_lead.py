@@ -4,7 +4,7 @@
 Part 3.2: Different init/lead time evaluation result plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-06-30
+Modified in 2026-08-06
 @author: yinlb
 """
 
@@ -14,22 +14,30 @@ import io
 import pathlib
 import typing
 
+import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import seaborn as sns
+
 from matplotlib import pyplot as plt
-from meteva import base as meb
+from meteva import base as meb    # type: ignore
 from scipy import stats
 
 from src import utils
 
 
+mpl.use('Agg')
+mpl.rcParams['font.family'] = 'serif'
+mpl.rcParams['font.serif'] = ['Times New Roman', 'SimSun']
+mpl.rcParams['axes.unicode_minus'] = False
+
+
 def _save_scatter_sta(
     sta0: pd.DataFrame,
     save_path: str,
-    cmap,
-    clevs,
-    cfg: typing.Dict
+    cmap: object,
+    clevs: object,
+    cfg: typing.Dict,
 ) -> None:
     """Helper: save scatter_sta to configured formats."""
     formats = cfg['draw']['plot']['output_formats']
@@ -198,12 +206,12 @@ def plot_ts_comparison_bars(
     # Twin-axis: left bars for TS values, right line for improvement rate
     fig, ax1 = plt.subplots(figsize=figsize)
     ax1.bar(
-        x=df_vt_ts4.loc[:, 'vt'] - bar_width / 2,
+        x=df_vt_ts4.loc[:, 'vt'] + 1 - bar_width / 2,
         height=df_vt_ts4.loc[:, 'CMA-SH-WARR'],
         width=bar_width, color=color_cma, label='CMA-SH-WARR TS'
     )
     ax1.bar(
-        x=df_vt_ts4.loc[:, 'vt'] + bar_width / 2,
+        x=df_vt_ts4.loc[:, 'vt'] + 1 + bar_width / 2,
         height=df_vt_ts4.loc[:, 'PDFM-TLE'],
         width=bar_width, color=color_pdfm, label='PDFM-TLE TS'
     )
@@ -215,7 +223,7 @@ def plot_ts_comparison_bars(
     # Add secondary y-axis for improvement rate (percentage)
     ax2 = ax1.twinx()
     ax2.plot(
-        df_vt_ts4.loc[:, 'vt'], ts_improvement, '-o',
+        df_vt_ts4.loc[:, 'vt'] + 1, ts_improvement, '-o',
         c=color_improvement, label='PDFM-TLE TS improve'
     )
     ax2.set_ylim(tuple(twin_ylim))

@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 """
 Founded in 2024-07-10
-Modified in 2026-07-21
+Modified in 2026-08-06
 @author: yinlb
 """
 import pathlib
 
 import arrow
+import numba
 import numpy as np
-from numba import njit
 
 from src import utils, vis_acc
 
@@ -91,7 +91,7 @@ def _compute_tle_weights(
     return weights
 
 
-@njit
+@numba.njit
 def _apply_tle_step_numba(
     input_slice: np.ndarray,
     weights: np.ndarray,
@@ -158,13 +158,17 @@ def _apply_tle(
     half_window = _N_HOURS - 1
 
     for i in range(start_idx, end_idx):
+        window_start = i - _TLE_WINDOW_HOURS
+        window_end = window_start + _N_HOURS
         weights = _compute_tle_weights(
-            ref_pr[i - _TLE_WINDOW_HOURS: i - _TLE_WINDOW_HOURS + _N_HOURS, :, :],
-            ref_ob[i - _TLE_WINDOW_HOURS: i - _TLE_WINDOW_HOURS + _N_HOURS, :, :],
+            ref_pr[window_start:window_end, :, :],
+            ref_ob[window_start:window_end, :, :],
         )  # (5, n_hours)
         # Local window covers [i-n_hours+1, i+n_hours-1]
         input_slice = input_array[i - half_window: i + half_window + 1, :, :]
-        output[:, i, :, :] = _apply_tle_step_numba(input_slice, weights, _N_HOURS)
+        output[:, i, :, :] = _apply_tle_step_numba(
+            input_slice, weights, _N_HOURS
+        )
 
     return output
 
@@ -264,7 +268,7 @@ def main() -> None:
         np.load(str(data_dir / _TL_OUTPUT['pdfm_tle_template'].format(s=2))),
         np.load(str(data_dir / _TL_OUTPUT['pdfm_tle_template'].format(s=3))),
         np.load(str(data_dir / _TL_OUTPUT['pdfm_tle_template'].format(s=4))),
-        np.load(str(data_dir / _TL_INPUT['pre_existing_pdfm_tle'])),
+        np.load(str(data_dir / _TL_INPUT['existing_pdfm_tle'])),
     ])
     _verify_tle('pdfm-tle', val_ob, pred_pdfm_tle)
 
@@ -276,4 +280,7 @@ if __name__ == '__main__':
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
-    print(f'Program tl.py finished, total time: {utils.format_time(total_elapsed)}')
+    print(
+        f'Program tl.py finished, total time: '
+        f'{utils.format_time(total_elapsed)}'
+    )

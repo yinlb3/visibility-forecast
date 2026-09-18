@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Founded in 2024-10-23
-Modified in 2026-07-21
+Modified in 2026-08-06
 @author: yinlb
 """
 import pathlib
@@ -176,7 +176,9 @@ def main() -> None:
     data_dir = pathlib.Path(utils.CFG['paths']['data_dir'])
     base_dir = data_dir / _HUANGHUA_INPUT['base_dir']
 
-    data = np.zeros((_N_TOTAL_DAYS, _N_HOURS, _N_VARIABLES), dtype=np.float32) + np.nan
+    data = np.zeros(
+        (_N_TOTAL_DAYS, _N_HOURS, _N_VARIABLES), dtype=np.float32
+    ) + np.nan
     day_offset = 0
 
     for year in range(_START_YEAR, _END_YEAR):
@@ -187,7 +189,10 @@ def main() -> None:
             day_offset += n_days
             print(f'{year}-{month:02d}')
 
-    output_path = data_dir / _HUANGHUA_INPUT['base_dir'] / _HUANGHUA_OUTPUT['meteogram_npy']
+    output_path = (
+        data_dir / _HUANGHUA_INPUT['base_dir']
+        / _HUANGHUA_OUTPUT['meteogram_npy']
+    )
     np.save(str(output_path), data)
 
 
@@ -198,4 +203,7 @@ if __name__ == '__main__':
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
-    print(f'Program huanghua.py finished, total time: {utils.format_time(total_elapsed)}')
+    print(
+        f'Program huanghua.py finished, total time: '
+        f'{utils.format_time(total_elapsed)}'
+    )

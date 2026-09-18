@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Founded in 2024-03-24
-Modified in 2026-07-21
+Modified in 2026-08-06
 @author: yinlb
 """
 import pathlib
@@ -69,8 +69,12 @@ def _load_and_prepare(
 ) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray,
                   np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Load obs/forecast, mask missing values, and split train/val."""
-    ob_east_china = np.load(str(data_dir / _ACCESS_INPUT['observation_npy']))[:, :, 1:, :]
-    pr_east_china = np.load(str(data_dir / _ACCESS_INPUT['forecast_npy']))[:1461, :, 1:, :]
+    ob_east_china = np.load(
+        str(data_dir / _ACCESS_INPUT['observation_npy'])
+    )[:, :, 1:, :]
+    pr_east_china = np.load(
+        str(data_dir / _ACCESS_INPUT['forecast_npy'])
+    )[:1461, :, 1:, :]
     ob_east_china = utils.mask_missing(ob_east_china)
     pr_east_china = utils.mask_missing(pr_east_china)
 

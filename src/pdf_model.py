@@ -4,7 +4,7 @@
 PDF matching model for visibility forecast correction.
 
 Founded in 2024-03-24
-Modified in 2026-07-31
+Modified in 2026-08-06
 @author: yinlb
 """
 import pathlib
@@ -18,12 +18,15 @@ import numpy as np
 class PDF:
     """PDF matching model for visibility forecast correction."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize empty matching curve."""
         self.c = None
 
     @classmethod
-    def load(cls, path: typing.Union[str, pathlib.Path]) -> 'PDF':
+    def load(
+        cls: typing.Type['PDF'],
+        path: typing.Union[str, pathlib.Path],
+    ) -> 'PDF':
         """Load a fitted PDF model from a joblib-serialized file.
 
         Args:
@@ -42,7 +45,7 @@ class PDF:
             )
         return model
 
-    def fit(self, ob: np.ndarray, pr: np.ndarray):
+    def fit(self, ob: np.ndarray, pr: np.ndarray) -> None:
         """Fit PDF matching curve from obs and forecast samples.
 
         Args:

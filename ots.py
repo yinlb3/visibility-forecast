@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Founded in 2024-07-13
-Modified in 2026-07-21
+Modified in 2026-08-06
 @author: yinlb
 """
 import pathlib
@@ -52,7 +52,9 @@ def main() -> None:
     pr = np.load(str(data_dir / _OTS_INPUT['forecast_npy']))[:, :, 1:, :]
 
     # 2. Filter stations and split train/validation
-    train_ob, train_pr, val_ob, val_pr, valid_stations = utils.load_vis_data(ob, pr)
+    train_ob, train_pr, val_ob, val_pr, valid_stations = utils.load_vis_data(
+        ob, pr
+    )
     del ob, pr
 
     # 3. Apply pre-calibrated OTS thresholds using the OTS class
@@ -84,4 +86,7 @@ if __name__ == '__main__':
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
-    print(f'Program ots.py finished, total time: {utils.format_time(total_elapsed)}')
+    print(
+        f'Program ots.py finished, total time: '
+        f'{utils.format_time(total_elapsed)}'
+    )

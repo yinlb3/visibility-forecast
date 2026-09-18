@@ -4,7 +4,7 @@
 Part 1: Configuration and data loading module.
 
 Founded in 2026-04-14
-Modified in 2026-05-09
+Modified in 2026-08-06
 @author: yinlb
 """
 
@@ -21,8 +21,16 @@ from src import utils, vis_acc
 THRES = vis_acc.THRES
 
 
-def _save_stage1_cache(sta, vis, pre, rhu, vis_grade, month_ind,
-                       idx_mlyr, cache_dir: str) -> None:
+def _save_stage1_cache(
+    sta: pd.DataFrame,
+    vis: np.ndarray,
+    pre: np.ndarray,
+    rhu: np.ndarray,
+    vis_grade: np.ndarray,
+    month_ind: np.ndarray,
+    idx_mlyr: np.ndarray,
+    cache_dir: str,
+) -> None:
     """Save stage 1 intermediate results for skipping."""
     os.makedirs(cache_dir, exist_ok=True)
     sta.to_csv(str(pathlib.Path(cache_dir) / 'sta.csv'), index=False)
@@ -34,7 +42,12 @@ def _save_stage1_cache(sta, vis, pre, rhu, vis_grade, month_ind,
     np.save(str(pathlib.Path(cache_dir) / 'index_mlyr.npy'), idx_mlyr)
 
 
-def _load_stage1_cache(cache_dir: str):
+def _load_stage1_cache(
+    cache_dir: str,
+) -> typing.Tuple[
+    pd.DataFrame, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+    np.ndarray, np.ndarray,
+]:
     """Load stage 1 intermediate results."""
     sta = pd.read_csv(str(pathlib.Path(cache_dir) / 'sta.csv'))
     vis = np.load(str(pathlib.Path(cache_dir) / 'vis.npy'))

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Founded in 2023-11-19
-Modified in 2026-07-21
+Modified in 2026-08-06
 @author: yinlb
 """
 import pathlib
@@ -11,7 +11,7 @@ import typing
 import arrow
 import numpy as np
 import pandas as pd
-from meteva import base as meb
+from meteva import base as meb    # type: ignore
 
 from src import utils
 
@@ -26,8 +26,8 @@ _START_YEAR = int(_VIS_GRADE_PARAMS['start_year'])
 _END_YEAR = int(_VIS_GRADE_PARAMS['end_year'])
 _N_RAW_STATIONS = int(_VIS_GRADE_PARAMS['n_raw_stations'])
 _GRADE_THRESHOLDS = list(_VIS_GRADE_PARAMS['grade_thresholds'])
-_MISSING_RATE_THRESHOLD = float(_VIS_GRADE_PARAMS['missing_rate_threshold'])
-_EXCLUDED_STATION_INDEX = int(_VIS_GRADE_PARAMS['excluded_station_index'])
+_MISS_RATE_THRES = float(_VIS_GRADE_PARAMS['miss_rate_threshold'])
+_EXCLUDED_STA_IDX = int(_VIS_GRADE_PARAMS['excluded_sta_idx'])
 _DAILY_OBS_PER_DAY = int(_VIS_GRADE_PARAMS['daily_obs_per_day'])
 _MAP_EXTEND = list(_VIS_GRADE_PARAMS['map_extend'])
 _PLOT_CONFIGS = list(_VIS_GRADE_PARAMS['plot_configs'])
@@ -97,7 +97,9 @@ def _yearly_grade_days(
         missing = np.sum(year_slice == -1, axis=0)
         missing_rate[year_offset, :] = missing / n_days_in_year
         for grade in range(n_grades):
-            year_days[year_offset, :, grade] = np.sum(year_slice == grade, axis=0)
+            year_days[year_offset, :, grade] = np.sum(
+                year_slice == grade, axis=0
+            )
         day_index += n_days_in_year
 
     return year_days, missing_rate
@@ -113,8 +115,10 @@ def _select_stations(missing_rate: np.ndarray) -> np.ndarray:
         Boolean mask of selected stations.
     """
     n_years = missing_rate.shape[0]
-    sta_index = np.sum(missing_rate < _MISSING_RATE_THRESHOLD, axis=0) == n_years
-    sta_index[_EXCLUDED_STATION_INDEX] = False
+    sta_index = (
+        np.sum(missing_rate < _MISS_RATE_THRES, axis=0) == n_years
+    )
+    sta_index[_EXCLUDED_STA_IDX] = False
     return sta_index
 
 
@@ -226,4 +230,7 @@ if __name__ == '__main__':
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
-    print(f'Program vis_grade.py finished, total time: {utils.format_time(total_elapsed)}')
+    print(
+        f'Program vis_grade.py finished, total time: '
+        f'{utils.format_time(total_elapsed)}'
+    )

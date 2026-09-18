@@ -4,7 +4,7 @@
 Optimal Threshold Selection (OTS) for visibility forecast calibration.
 
 Founded in 2024-07-13
-Modified in 2026-07-21
+Modified in 2026-08-06
 @author: yinlb
 """
 import numpy as np
@@ -55,7 +55,7 @@ class OTS:
         print(self.t)
 
     def predict(self, pr: np.ndarray) -> np.ndarray:
-        """Map raw forecast values to calibrated visibility using fit thresholds.
+        """Map raw forecast to calibrated visibility using fit thresholds.
 
         Args:
             pr: Raw forecast array.
@@ -68,7 +68,9 @@ class OTS:
 
         index = pr >= t[0]
         pr_i = pr[index]
-        pred_pr[index] = (pr_i - t[0]) / (self._max_visibility - t[0]) * 50000 + 10000
+        pred_pr[index] = (
+            (pr_i - t[0]) / (self._max_visibility - t[0]) * 50000 + 10000
+        )
 
         index = (pr >= t[1]) & (pr < t[0])
         pr_i = pr[index]

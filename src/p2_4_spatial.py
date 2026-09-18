@@ -4,19 +4,18 @@
 Part 2.4: Spatial distribution feature plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-05-09
+Modified in 2026-08-06
 @author: yinlb
 """
 
 import contextlib
-import gc
 import io
 import pathlib
 import typing
 
 import numpy as np
 import pandas as pd
-from meteva import base as meb
+from meteva import base as meb    # type: ignore
 
 from src import utils
 
@@ -24,9 +23,9 @@ from src import utils
 def _scatter_sta_pair(
     sta0: pd.DataFrame,
     save_path: str,
-    cmap,
-    clevs,
-    cfg: typing.Dict
+    cmap: object,
+    clevs: object,
+    cfg: typing.Dict,
 ) -> None:
     """Helper: Plot station scatter using configured formats."""
     formats = cfg['draw']['plot']['output_formats']

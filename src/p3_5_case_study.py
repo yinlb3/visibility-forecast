@@ -4,7 +4,7 @@
 Part 3.5: Operational application case study evaluation result output module.
 
 Founded in 2026-04-14
-Modified in 2026-06-30
+Modified in 2026-08-06
 @author: yinlb
 """
 
@@ -259,7 +259,8 @@ def analyze_case_studies(
         pdfm_s = f'a:{ts_pdfm_all:.4f}, s:{ts_pdfm_s:.4f}, '
         pdfm_s += f'e:{ts_pdfm_e:.4f}, p:{ts_pdfm_p:.4f}'
         pdfm_str = f'PDFM=[{pdfm_s}]'
-        def _impr(t_pdfm, t_cma):
+        def _impr(t_pdfm: float, t_cma: float) -> float:
+            """Compute percentage improvement of PDFM over CMA."""
             return ((t_pdfm - t_cma) / t_cma * 100
                     if t_cma != 0 else np.nan)
         impr_all = _impr(ts_pdfm_all, ts_cma_all)

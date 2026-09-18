@@ -5,10 +5,11 @@ Reads visibility forecast fields from GRIB2 files and interpolates them
 onto a regular lat-lon grid using meteva station-to-grid IDW.
 
 Founded in 2026-07-16
-Modified in 2026-07-26
+Modified in 2026-08-06
 @author: yinlb
 """
 
+import os
 import pathlib
 import random
 import shutil
@@ -23,10 +24,11 @@ try:
 except ImportError as e:
     raise ImportError(f'pygrib not installed: {e}')
 
-from scipy.interpolate import griddata
+import scipy.interpolate
+import xarray as xr
 
 try:
-    from meteva import base as meb
+    from meteva import base as meb    # type: ignore
 except ImportError as e:
     raise ImportError(f'meteva not installed: {e}')
 
@@ -85,7 +87,7 @@ def _build_grid(
     lat_min: float,
     lat_max: float,
     resolution: float,
-) -> typing.Any:
+) -> xr.DataArray:
     """Build a meteva lat-lon grid with the given extent and resolution.
 
     Args:
@@ -105,10 +107,10 @@ def _build_grid(
 
 
 def set_forecast_time(
-    grd: typing.Any,
+    grd: xr.DataArray,
     init_time: str,
     lead: int
-) -> typing.Any:
+) -> xr.DataArray:
     """Return a copy of grd with time/dtime set to init_time and lead.
 
     The MICAPS4 writer derives the header init time and forecast lead
@@ -126,7 +128,11 @@ def set_forecast_time(
     return grd.assign_coords(time=[init_dt], dtime=[lead])
 
 
-def _interpolate_to_grid(sta, grid, interp_cfg: typing.Dict):
+def _interpolate_to_grid(
+    sta: object,
+    grid: object,
+    interp_cfg: typing.Dict,
+) -> xr.DataArray:
     """Apply configured station-to-grid interpolation method.
 
     Args:
@@ -166,7 +172,7 @@ def interp_station_to_grid(
     lat: np.ndarray,
     lon: np.ndarray,
     interp_cfg: typing.Dict,
-):
+) -> xr.DataArray:
     """Interpolate station-like vis/lon/lat data to a regular lat-lon grid.
 
     Supports one-step IDW to the target resolution or two-step IDW-to-coarse
@@ -219,7 +225,9 @@ def interp_station_to_grid(
             lon_min:lon_max - fine_res + fine_res * 0.5:fine_res,
             lat_min:lat_max - fine_res + fine_res * 0.5:fine_res
         ]
-        grid_z = griddata(points, vals, (grid_x, grid_y), method='linear')
+        grid_z = scipy.interpolate.griddata(
+            points, vals, (grid_x, grid_y), method='linear'
+        )
         # griddata returns (n_lon, n_lat); transpose to (n_lat, n_lon)
         return meb.grid_data(grid_fine, grid_z.T)
 
@@ -275,8 +283,8 @@ def _resolve_forecast_path(
 def load_forecast_for_init(
     init_time: str,
     cfg: typing.Dict,
-    lead: int
-):
+    lead: int,
+) -> typing.Tuple[typing.Optional[xr.DataArray], pathlib.Path]:
     """Load and interpolate forecast GRIB for one lead hour.
 
     If a temp_dir is configured, the GRIB file is first copied to that local
@@ -303,7 +311,7 @@ def load_forecast_for_init(
 
     if use_temp:
         temp_dir = pathlib.Path(temp_dir_cfg)
-        temp_dir.mkdir(parents=True, exist_ok=True)
+        os.makedirs(temp_dir, exist_ok=True)
         temp_path = temp_dir / file_path.name
         shutil.copy2(str(file_path), str(temp_path))
     else:
@@ -352,11 +360,19 @@ def forecast_file_exists(init_time: str, cfg: typing.Dict, lead: int) -> bool:
         return False
 
 
+def _is_lead_file(path: pathlib.Path) -> bool:
+    """Check if filename ends with '.NNN', e.g. 2026070100.012."""
+    if not path.is_file():
+        return False
+    suffix = path.suffix
+    return len(suffix) == 4 and suffix[1:].isdigit()
+
+
 def generate_fallback_grid(
     cfg: typing.Dict,
     init_time: str,
     lead: int
-) -> typing.Any:
+) -> xr.DataArray:
     """Create a synthetic grid by noising a random existing m4 file.
 
     Picks a random MICAPS4 file from the configured sample directory, or
@@ -378,13 +394,6 @@ def generate_fallback_grid(
     sample_dir_cfg = fallback_cfg['sample_dir']
     noise_mean = float(fallback_cfg['noise_mean'])
     noise_std = float(fallback_cfg['noise_std'])
-
-    def _is_lead_file(path: pathlib.Path) -> bool:
-        """Check if filename ends with '.NNN', e.g. 2026070100.012."""
-        if not path.is_file():
-            return False
-        suffix = path.suffix
-        return len(suffix) == 4 and suffix[1:].isdigit()
 
     if sample_dir_cfg and sample_dir_cfg != '<SAMPLE_DIR>':
         search_root = pathlib.Path(sample_dir_cfg)
@@ -426,11 +435,82 @@ def generate_fallback_grid(
     return set_forecast_time(grd, init_time, lead)
 
 
+def load_supplement_grid(
+    init_time: str,
+    cfg: typing.Dict,
+    lead: int,
+    copy_mode: str
+) -> xr.DataArray:
+    """Load a supplement grid for a missing GRIB based on copy mode.
+
+    For copy='product', generate a synthetic grid by noising a random existing
+    m4 file, matching the behavior of copy_daily_products.py.
+    For copy='files', reuse an existing MICAPS4 product file for the same
+    init_time/lead, or fall back to the nearest available lead in the same
+    day folder, matching the idea of copy_daily_files.py.
+
+    Args:
+        init_time: YYYYMMDDHH string.
+        cfg: Merged configuration dictionary.
+        lead: Forecast lead hour.
+        copy_mode: 'files' or 'product'.
+
+    Returns:
+        meteva grid_data object.
+
+    Raises:
+        FileNotFoundError: If no supplement grid can be produced.
+    """
+    copy_mode = str(copy_mode).lower()
+    if copy_mode == 'product':
+        return generate_fallback_grid(cfg, init_time, lead)
+
+    if copy_mode != 'files':
+        raise ValueError(f'Unsupported supplement copy_mode: {copy_mode}')
+
+    product_dir = pathlib.Path(
+        cfg['operational']['paths']['product_dir']
+    )
+    day_dir = product_dir / init_time[:8]
+    exact_path = day_dir / f'{init_time}.{lead:03d}'
+
+    candidates = list()
+    if exact_path.exists():
+        candidates.append(exact_path)
+    elif day_dir.exists():
+        available = sorted(
+            [p for p in day_dir.iterdir() if _is_lead_file(p)]
+        )
+        if available:
+            leads_files = [(int(p.suffix[1:]), p) for p in available]
+            nearest = min(leads_files, key=lambda x: abs(x[0] - lead))[1]
+            candidates.append(nearest)
+
+    if not candidates:
+        raise FileNotFoundError(
+            f'No existing m4 product found for supplement: '
+            f'{init_time} f{lead:02d}'
+        )
+
+    sample_grd = meb.read_griddata_from_micaps4(str(candidates[0]))
+    sample_values = np.squeeze(sample_grd.values)
+    lons = sample_grd.coords['lon'].values
+    lats = sample_grd.coords['lat'].values
+    lon_step = float(lons[1] - lons[0])
+    lat_step = float(lats[1] - lats[0])
+    grid = meb.grid(
+        [float(lons[0]), float(lons[-1]), lon_step],
+        [float(lats[0]), float(lats[-1]), lat_step],
+    )
+    grd = meb.grid_data(grid, sample_values)
+    return set_forecast_time(grd, init_time, lead)
+
+
 def load_forecast_task(
     init_time: str,
     cfg: typing.Dict,
     lead: int
-) -> typing.Tuple[str, int, typing.Any, pathlib.Path]:
+) -> typing.Tuple[str, int, xr.DataArray, pathlib.Path]:
     """Load and interpolate one (init_time, lead) pair for parallel execution.
 
     Args:

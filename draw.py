@@ -7,7 +7,7 @@ Main entry module for visibility data visualization. Responsibilities:
 3. Draw statistical charts for papers (bars, box, violin, pie, heatmap).
 
 Founded in 2024-04-18
-Modified in 2026-07-21
+Modified in 2026-08-06
 @author: yinlb
 """
 
@@ -15,10 +15,10 @@ import os
 import pathlib
 
 import arrow
-import numpy as np
 import pandas as pd
 
 from src import (
+    utils,
     p1_config_data as p1,
     p2_1_dist_feature as p21,
     p2_2_event_type as p22,
@@ -29,7 +29,6 @@ from src import (
     p3_3_wt_ts4 as p33,
     p3_4_ablation as p34,
     p3_5_case_study as p35,
-    utils,
 )
 
 
@@ -119,7 +118,7 @@ def main() -> None:
     # 2.1 Distribution feature calculation
     print('2.1 Distribution feature calculation')
     sec_start = arrow.now()
-    if stages['stage_2_1_dist_feature']:
+    if stages['p2_1_dist_feature']:
         df_month = pd.DataFrame(p21.build_month_stats(
             vis_grade=vis_grade, pre=pre, rhu=rhu,
             month_ind=month_ind, thres=thres
