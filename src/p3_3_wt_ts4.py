@@ -4,11 +4,9 @@
 Part 3.3: Weather type evaluation output module.
 
 Founded in 2026-05-19
-Modified in 2026-06-30
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
-
-import typing
 
 import numpy as np
 

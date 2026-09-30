@@ -4,8 +4,8 @@
 Part 3.2: Different init/lead time evaluation result plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-08-06
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import contextlib
@@ -14,7 +14,6 @@ import io
 import pathlib
 import typing
 
-import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -24,12 +23,6 @@ from meteva import base as meb    # type: ignore
 from scipy import stats
 
 from src import utils
-
-
-mpl.use('Agg')
-mpl.rcParams['font.family'] = 'serif'
-mpl.rcParams['font.serif'] = ['Times New Roman', 'SimSun']
-mpl.rcParams['axes.unicode_minus'] = False
 
 
 def _save_scatter_sta(
@@ -76,8 +69,8 @@ def plot_hour_access_heatmaps(
     linewidths = plot_cfg['linewidths']
     ts4_vmin = plot_cfg['ts4_vmin']
     ts4_vmax = plot_cfg['ts4_vmax']
-    improvement_vmin = plot_cfg['improvement_vmin']
-    improvement_vmax = plot_cfg['improvement_vmax']
+    gainovement_vmin = plot_cfg['gainovement_vmin']
+    gainovement_vmax = plot_cfg['gainovement_vmax']
     dpi = plot_cfg['dpi']
 
     # 1. Plot CMA-SH-WARR TS4+ heatmap
@@ -88,8 +81,8 @@ def plot_hour_access_heatmaps(
         cmap=cmap, vmin=ts4_vmin, vmax=ts4_vmax,
         linewidths=linewidths
     )
-    plt.xticks(np.arange(24) + 0.5, [str(x) for x in range(1, 25)])
-    yticks = [f'{x:02d}:00' for x in range(24)]
+    plt.xticks(np.arange(24) + 0.5, [str(h) for h in range(1, 25)])
+    yticks = [f'{h:02d}:00' for h in range(24)]
     plt.yticks(np.arange(24) + 0.5, yticks, rotation=0)
     plt.tick_params(axis='x', which='both', bottom=False, top=False)
     plt.tick_params(axis='y', which='both', left=False, right=False)
@@ -115,8 +108,8 @@ def plot_hour_access_heatmaps(
         cmap=cmap, vmin=ts4_vmin, vmax=ts4_vmax,
         linewidths=linewidths
     )
-    plt.xticks(np.arange(24) + 0.5, [str(x + 1) for x in range(24)])
-    yticks = [f'{x:02d}:00' for x in range(24)]
+    plt.xticks(np.arange(24) + 0.5, [str(h + 1) for h in range(24)])
+    yticks = [f'{h:02d}:00' for h in range(24)]
     plt.yticks(np.arange(24) + 0.5, yticks, rotation=0)
     plt.tick_params(axis='x', which='both', bottom=False, top=False)
     plt.tick_params(axis='y', which='both', left=False, right=False)
@@ -133,46 +126,46 @@ def plot_hour_access_heatmaps(
     ts_max = np.max(hour_access[1, :, :, 7])
     print(f'{prefix} PDFM-TLE TS4+ range: {ts_min:.4f} ~ {ts_max:.4f}')
 
-    # 3. Plot TS improvement rate heatmap and locate max
-    # Improvement = (PDFM - CMA) / CMA * 100,
-    # guard against div-zero handled by vmin/vmax
+    # 3. Plot TS gainovement rate heatmap and locate max
+    # Gainovement = (PDFM - CMA) / CMA * 100,
+    # guard against div-zero hour_accessndled by vmin/vmax
     ts_before = hour_access[0, :, :, 7]
     ts_after = hour_access[1, :, :, 7]
-    ts_improvement = (ts_after - ts_before) / ts_before * 100
+    ts_gainovement = (ts_after - ts_before) / ts_before * 100
     sns.heatmap(
-        ts_improvement,
-        cmap=cmap, vmin=improvement_vmin, vmax=improvement_vmax,
+        ts_gainovement,
+        cmap=cmap, vmin=gainovement_vmin, vmax=gainovement_vmax,
         linewidths=linewidths
     )
-    plt.xticks(np.arange(24) + 0.5, [str(x + 1) for x in range(24)])
-    yticks = [f'{x:02d}:00' for x in range(24)]
+    plt.xticks(np.arange(24) + 0.5, [str(h + 1) for h in range(24)])
+    yticks = [f'{h:02d}:00' for h in range(24)]
     plt.yticks(np.arange(24) + 0.5, yticks, rotation=0)
     plt.tick_params(axis='x', which='both', bottom=False, top=False)
     plt.tick_params(axis='y', which='both', left=False, right=False)
     plt.xlabel('预报时效 (h) ')
     plt.ylabel('起报时次 (UTC) ')
     utils.save_figure(
-        plt.gcf(), pathlib.Path(output_dir) / 'pdf-tl_hour_ts4+_improvement',
+        plt.gcf(), pathlib.Path(output_dir) / 'pdf-tl_hour_ts4+_gainovement',
         cfg, bbox_inches='tight', dpi=dpi
     )
     plt.cla()
     plt.close('all')
     gc.collect()
     # np.where may return multiple equal-maximum cells; report the first one
-    # as a representative location for the largest improvement.
-    loc = np.where(ts_improvement == np.max(ts_improvement))
-    ts_min = np.min(ts_improvement)
-    ts_max = np.max(ts_improvement)
-    print(f'{prefix} TS improvement range: {ts_min:.4f}% ~ {ts_max:.4f}%')
-    print(f'{prefix} TS improvement mean: {np.mean(ts_improvement):.4f}%')
+    # as a representative location for the largest gainovement.
+    loc = np.where(ts_gainovement == np.max(ts_gainovement))
+    ts_min = np.min(ts_gainovement)
+    ts_max = np.max(ts_gainovement)
+    print(f'{prefix} TS gainovement range: {ts_min:.4f}% ~ {ts_max:.4f}%')
+    print(f'{prefix} TS gainovement mean: {np.mean(ts_gainovement):.4f}%')
     init_h, lead_h = int(loc[0][0]), int(loc[1][0])
     loc_str = f'init_hour={init_h}, lead_hour={lead_h}'
-    print(f'{prefix} TS improvement max location: {loc_str}')
+    print(f'{prefix} TS gainovement max location: {loc_str}')
 
 
 def plot_ts_comparison_bars(
     df_vt_ts4: pd.DataFrame,
-    df_fhour_ts4: pd.DataFrame,
+    df_ft_ts4: pd.DataFrame,
     output_dir: str,
     cfg: typing.Dict
 ) -> None:
@@ -183,27 +176,27 @@ def plot_ts_comparison_bars(
     bar_width = plot_cfg['bar_width']
     color_cma = plot_cfg['color_cma']
     color_pdfm = plot_cfg['color_pdfm']
-    color_improvement = plot_cfg['color_improvement']
+    color_gainovement = plot_cfg['color_gainovement']
     vt_xlim = plot_cfg['vt_xlim']
-    fhour_xlim = plot_cfg['fhour_xlim']
+    ft_xlim = plot_cfg['ft_xlim']
     primary_ylim = plot_cfg['primary_ylim']
     primary_yticks = plot_cfg['primary_yticks']
     twin_ylim = plot_cfg['twin_ylim']
     twin_yticks = plot_cfg['twin_yticks']
     ts_before = np.array(df_vt_ts4.loc[:, 'CMA-SH-WARR'])
     ts_after = np.array(df_vt_ts4.loc[:, 'PDFM-TLE'])
-    ts_improvement = (ts_after - ts_before) / ts_before * 100
-    ts_min = np.min(ts_improvement)
-    ts_max = np.max(ts_improvement)
+    ts_gainovement = (ts_after - ts_before) / ts_before * 100
+    ts_min = np.min(ts_gainovement)
+    ts_max = np.max(ts_gainovement)
     prefix = '[plot_ts_comparison_bars]'
-    print(f'{prefix} VT TS improve: {ts_min:.4f}% ~ {ts_max:.4f}%')
-    ts_str = ' '.join(f'{x:.4f}' for x in ts_improvement)
-    print(f'[plot_ts_comparison_bars] VT TS improve: [{ts_str}]')
+    print(f'{prefix} VT TS gainove: {ts_min:.4f}% ~ {ts_max:.4f}%')
+    ts_str = ' '.join(f'{val:.4f}' for val in ts_gainovement)
+    print(f'[plot_ts_comparison_bars] VT TS gainove: [{ts_str}]')
     ts_max_val = np.max(df_vt_ts4.loc[:, 'PDFM-TLE'])
     print(f'[plot_ts_comparison_bars] VT PDFM-TLE max: {ts_max_val:.4f}')
 
     # 1. Plot lead-time (VT) TS4+ comparison bars
-    # Twin-axis: left bars for TS values, right line for improvement rate
+    # Twin-axis: left bars for TS values, right line for gainovement rate
     fig, ax1 = plt.subplots(figsize=figsize)
     ax1.bar(
         x=df_vt_ts4.loc[:, 'vt'] + 1 - bar_width / 2,
@@ -216,15 +209,15 @@ def plot_ts_comparison_bars(
         width=bar_width, color=color_pdfm, label='PDFM-TLE TS'
     )
     ax1.set_xlim(tuple(vt_xlim))
-    ax1.set_xticks(range(1, 25), [str(x) for x in range(1, 25)])
+    ax1.set_xticks(range(1, 25), [str(l) for l in range(1, 25)])
     ax1.set_ylim(tuple(primary_ylim))
     ax1.set_yticks(tuple(primary_yticks))
     ax1.set_ylabel('TS')
-    # Add secondary y-axis for improvement rate (percentage)
+    # Add secondary y-axis for gainovement rate (percentage)
     ax2 = ax1.twinx()
     ax2.plot(
-        df_vt_ts4.loc[:, 'vt'] + 1, ts_improvement, '-o',
-        c=color_improvement, label='PDFM-TLE TS improve'
+        df_vt_ts4.loc[:, 'vt'] + 1, ts_gainovement, '-o',
+        c=color_gainovement, label='PDFM-TLE TS gainove'
     )
     ax2.set_ylim(tuple(twin_ylim))
     ax2.set_yticks(tuple(twin_yticks))
@@ -241,38 +234,38 @@ def plot_ts_comparison_bars(
     del fig, ax1, ax2
     gc.collect()
 
-    ts_before = np.array(df_fhour_ts4.loc[:, 'CMA-SH-WARR'])
-    ts_after = np.array(df_fhour_ts4.loc[:, 'PDFM-TLE'])
-    ts_improvement = (ts_after - ts_before) / ts_before * 100
-    ts_min = np.min(ts_improvement)
-    ts_max = np.max(ts_improvement)
-    print(f'{prefix} FHour TS improve: {ts_min:.4f}% ~ {ts_max:.4f}%')
-    ts_str = ' '.join(f'{x:.4f}' for x in ts_improvement)
-    print(f'[plot_ts_comparison_bars] FHour TS improve: [{ts_str}]')
-    ts_max_val = np.max(df_fhour_ts4.loc[:, 'PDFM-TLE'])
-    print(f'[plot_ts_comparison_bars] FHour PDFM-TLE max: {ts_max_val:.4f}')
+    ts_before = np.array(df_ft_ts4.loc[:, 'CMA-SH-WARR'])
+    ts_after = np.array(df_ft_ts4.loc[:, 'PDFM-TLE'])
+    ts_gainovement = (ts_after - ts_before) / ts_before * 100
+    ts_min = np.min(ts_gainovement)
+    ts_max = np.max(ts_gainovement)
+    print(f'{prefix} FT TS gainove: {ts_min:.4f}% ~ {ts_max:.4f}%')
+    ts_str = ' '.join(f'{val:.4f}' for val in ts_gainovement)
+    print(f'[plot_ts_comparison_bars] FT TS gainove: [{ts_str}]')
+    ts_max_val = np.max(df_ft_ts4.loc[:, 'PDFM-TLE'])
+    print(f'[plot_ts_comparison_bars] FT PDFM-TLE max: {ts_max_val:.4f}')
 
-    # 2. Plot forecast-time (FHour) TS4+ comparison bars
+    # 2. Plot forecast-time (FT) TS4+ comparison bars
     fig, ax1 = plt.subplots(figsize=figsize)
     ax1.bar(
-        x=df_fhour_ts4.loc[:, 'fhour'] - bar_width / 2,
-        height=df_fhour_ts4.loc[:, 'CMA-SH-WARR'],
+        x=df_ft_ts4.loc[:, 'ft'] - bar_width / 2,
+        height=df_ft_ts4.loc[:, 'CMA-SH-WARR'],
         width=bar_width, color=color_cma, label='CMA-SH-WARR的TS'
     )
     ax1.bar(
-        x=df_fhour_ts4.loc[:, 'fhour'] + bar_width / 2,
-        height=df_fhour_ts4.loc[:, 'PDFM-TLE'],
+        x=df_ft_ts4.loc[:, 'ft'] + bar_width / 2,
+        height=df_ft_ts4.loc[:, 'PDFM-TLE'],
         width=bar_width, color=color_pdfm, label='PDFM-TLE的TS'
     )
-    ax1.set_xlim(tuple(fhour_xlim))
-    ax1.set_xticks(range(24), [f'{x:02d}:00' for x in range(24)])
+    ax1.set_xlim(tuple(ft_xlim))
+    ax1.set_xticks(range(24), [f'{h:02d}:00' for h in range(24)])
     ax1.set_ylim(tuple(primary_ylim))
     ax1.set_yticks(tuple(primary_yticks))
     ax1.set_ylabel('TS')
     ax2 = ax1.twinx()
     ax2.plot(
-        df_fhour_ts4.loc[:, 'fhour'], ts_improvement, '-o',
-        c=color_improvement, label='PDFM-TLE的TS改善率'
+        df_ft_ts4.loc[:, 'ft'], ts_gainovement, '-o',
+        c=color_gainovement, label='PDFM-TLE的TS改善率'
     )
     ax2.set_ylim(tuple(twin_ylim))
     ax2.set_yticks(tuple(twin_yticks))
@@ -281,7 +274,7 @@ def plot_ts_comparison_bars(
     ax2.legend(loc='upper left')
     plt.xlabel('预报时间 (UTC) ')
     utils.save_figure(
-        plt.gcf(), pathlib.Path(output_dir) / 'vis_fhour_ts4+',
+        plt.gcf(), pathlib.Path(output_dir) / 'vis_ft_ts4+',
         cfg, bbox_inches='tight', dpi=dpi
     )
     plt.cla()
@@ -296,7 +289,7 @@ def plot_sta_ts4_maps(
     output_dir: str,
     cfg: typing.Dict
 ) -> None:
-    """Plot station-level TS4+ and improvement rate spatial maps."""
+    """Plot station-level TS4+ and gainovement rate spatial maps."""
     plot_cfg = cfg['draw']['plot']['sta_ts4_maps']
     prefix = '[plot_sta_ts4_maps]'
     # 1. Calc correlation between spatial coords and TS4+
@@ -357,21 +350,21 @@ def plot_mre_violins(
     output_dir: str,
     cfg: typing.Dict
 ) -> None:
-    """Plot MRE and improvement rate violin/box plots."""
+    """Plot MRE and gainovement rate violin/box plots."""
     plot_cfg = cfg['draw']['plot']['mre_violins']
     # 1. Plot MRE violin comparison (CMA vs PDFM)
     # Guard against zero-division when MRE before is zero
     mre_before = np.array(df_sta.loc[:, 'CMA-SH-WARR'])
     mre_after = np.array(df_sta.loc[:, 'PDFM-TLE'])
     with np.errstate(divide='ignore', invalid='ignore'):
-        mre_improvement = np.where(
+        mre_gainovement = np.where(
             mre_before == 0, np.nan, (mre_before - mre_after) / mre_before * 100
         )
 
     mre_figsize = plot_cfg['mre_figsize']
     mre_palette = plot_cfg['mre_palette']
-    improvement_figsize = plot_cfg['improvement_figsize']
-    improvement_color = plot_cfg['improvement_color']
+    gainovement_figsize = plot_cfg['gainovement_figsize']
+    gainovement_color = plot_cfg['gainovement_color']
     dpi = plot_cfg['dpi']
 
     plt.figure(figsize=mre_figsize)
@@ -392,22 +385,22 @@ def plot_mre_violins(
     gc.collect()
     median_before = np.nanmedian(df_sta.loc[:, 'CMA-SH-WARR'])
     median_after = np.nanmedian(df_sta.loc[:, 'PDFM-TLE'])
-    median_improve = median_before - median_after
+    median_gainove = median_before - median_after
     prefix = '[plot_mre_violins]'
     median_str = f'{median_before:.4f}, {median_after:.4f}'
     print(f'{prefix} MRE median (CMA-SH-WARR, PDFM-TLE): {median_str}')
-    print(f'{prefix} MRE median improvement: {median_improve:.4f}')
+    print(f'{prefix} MRE median gainovement: {median_gainove:.4f}')
 
-    # 2. Plot MRE improvement rate violin
-    plt.figure(figsize=improvement_figsize)
-    sns.violinplot(data={'PDFM-TLE': mre_improvement}, color=improvement_color)
+    # 2. Plot MRE gainovement rate violin
+    plt.figure(figsize=gainovement_figsize)
+    sns.violinplot(data={'PDFM-TLE': mre_gainovement}, color=gainovement_color)
     plt.ylabel('MRE改善率')
     utils.save_figure(
-        plt.gcf(), pathlib.Path(output_dir) / 'boxplot_mre_improvement',
+        plt.gcf(), pathlib.Path(output_dir) / 'boxplot_mre_gainovement',
         cfg, bbox_inches='tight', dpi=dpi
     )
     plt.cla()
     plt.close('all')
     gc.collect()
-    pos_ratio = np.mean(mre_improvement > 0) * 100
-    print(f'{prefix} Positive improvement ratio: {pos_ratio:.2f}%')
+    pos_ratio = np.mean(mre_gainovement > 0) * 100
+    print(f'{prefix} Positive gainovement ratio: {pos_ratio:.2f}%')

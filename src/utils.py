@@ -2,8 +2,8 @@
 """General utility functions.
 
 Founded in 2026-04-04
-Modified in 2026-08-17
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import ctypes
@@ -26,6 +26,12 @@ mpl.use('Agg')
 mpl.rcParams['font.family'] = 'serif'
 mpl.rcParams['font.serif'] = ['Times New Roman', 'SimSun']
 mpl.rcParams['axes.unicode_minus'] = False
+
+
+# Single source of truth for the matplotlib backend and rcParams above:
+# importing this module is enough, so plotting modules must not repeat the
+# settings. schematic.py is the only exception because it registers a
+# concrete Chinese font file at runtime.
 
 
 # ==================== Figure Save Utility ====================
@@ -271,25 +277,33 @@ def _apply_tle_equal_weight_numba(
     arr[i + j - ii, ii, :] over ii in [0, n_hours - 1], matching the
     original access.py TLE loop.
     NaN values are skipped so that sparse forecast arrays still produce output.
+
+    Args:
+        arr: Forecast array of shape (n_times, n_hours, n_stations).
+        n_hours: Number of lead times to average over.
+        out: Pre-allocated output array of the same shape as arr.
+
+    Returns:
+        None. Results are written into out in place.
     """
     n_times = arr.shape[0]
     n_stations = arr.shape[2]
     for i in range(n_times):
         for j in range(n_hours):
-            for s in range(n_stations):
+            for sta_idx in range(n_stations):
                 n_valid = 0
                 vis_sum = np.float32(0.0)
                 for ii in range(n_hours):
                     idx = i + j - ii
                     if idx < 0 or idx >= n_times:
                         continue
-                    value = arr[idx, ii, s]
+                    value = arr[idx, ii, sta_idx]
                     if np.isnan(value):
                         continue
                     n_valid += 1
                     vis_sum += value
                 if n_valid > 0:
-                    out[i, j, s] = vis_sum / np.float32(n_valid)
+                    out[i, j, sta_idx] = vis_sum / np.float32(n_valid)
 
 
 def apply_tle_equal_weight(
@@ -327,6 +341,9 @@ def get_available_memory_gb() -> float:
     system = platform.system().lower()
     try:
         if system == 'windows':
+            # ctypes structure mirroring the Win32 MEMORYSTATUSEX layout.
+            # It carries no state and no behaviour, so the usual copy()
+            # method does not apply.
             class MEMORYSTATUSEX(ctypes.Structure):
                 _fields_ = [
                     ('dwLength', ctypes.c_ulong),
@@ -609,37 +626,6 @@ def _validate_config(cfg: typing.Dict) -> None:
         'access.output_files.corrected_forecasts.pred2_mlyr',
         'access.output_files.corrected_forecasts.pdfm_mlyr',
         'access.output_files.corrected_forecasts.tle_mlyr',
-        'vis2411.input_files.csv_template',
-        'vis2411.output_files.visibility_npy',
-        'vis2411.params.start_year',
-        'vis2411.params.n_months',
-        'vis2411.params.n_stations',
-        'vis2411.params.n_total_hours',
-        'vis2411.params.station_id_column',
-        'vis2411.params.time_column',
-        'vis2411.params.vis_column_legacy',
-        'vis2411.params.vis_column_modern',
-        'vis2411.params.modern_split_year',
-        'ots.input_files.observation_npy',
-        'ots.input_files.forecast_npy',
-        'ots.input_files.station_index_npy',
-        'ots.output_files.calibrated_forecast',
-        'ots.params.max_visibility',
-        'ots.params.output_lead_hours',
-        'ots.params.mapping_thresholds',
-        'vis_grade.input_files.visibility_npy',
-        'vis_grade.input_files.station_csv',
-        'vis_grade.output_files.output_dir',
-        'vis_grade.params.start_year',
-        'vis_grade.params.end_year',
-        'vis_grade.params.n_raw_stations',
-        'vis_grade.params.n_selected_stations',
-        'vis_grade.params.grade_thresholds',
-        'vis_grade.params.miss_rate_threshold',
-        'vis_grade.params.excluded_sta_idx',
-        'vis_grade.params.daily_obs_per_day',
-        'vis_grade.params.map_extend',
-        'vis_grade.params.plot_configs',
         'huanghua.input_files.base_dir',
         'huanghua.input_files.filename_templates',
         'huanghua.output_files.meteogram_npy',

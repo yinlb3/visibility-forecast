@@ -1,9 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
+Lead-by-lead TLE experiment over station observations.
+
+Averages the raw NWP forecast across lead hours at every station and
+verification time, producing five TLE variants plus a pre-existing
+reference, then verifies them against the observations. This is the
+station-space counterpart of the grid-space TLE in src/postprocess.py;
+its outputs (for example vis_gjz_tle2_mlyr_2024.npy) feed the 2024 case
+study in src/p3_5_case_study.py.
+
 Founded in 2024-07-10
-Modified in 2026-08-06
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 import pathlib
 
@@ -114,18 +123,20 @@ def _apply_tle_step_numba(
     center = n_hours - 1
 
     for j in range(n_hours):
-        for s in range(5):
+        for scheme_idx in range(5):
             denom = 0.0
             for k in range(j, n_hours):
-                denom += weights[s, k]
+                denom += weights[scheme_idx, k]
             if denom == 0.0:
                 continue
             for station in range(n_stations):
                 vis = 0.0
                 for k in range(j, n_hours):
                     t_idx = center + j - k
-                    vis += weights[s, k] * input_slice[t_idx, k, station]
-                output[s, j, station] = vis / denom
+                    vis += (
+                        weights[scheme_idx, k] * input_slice[t_idx, k, station]
+                    )
+                output[scheme_idx, j, station] = vis / denom
 
     return output
 
@@ -200,9 +211,9 @@ def _verify_tle(
         val_ob: Observation array.
         pred_tle: TLE predictions, shape (5, T, n_hours, n_stations).
     """
-    for s in range(pred_tle.shape[0]):
-        print(f'****** {name}{s} ******')
-        pred = pred_tle[s].copy()
+    for scheme_idx in range(pred_tle.shape[0]):
+        print(f'****** {name}{scheme_idx} ******')
+        pred = pred_tle[scheme_idx].copy()
         pred[pred >= _VISIBILITY_CAP] = _VISIBILITY_CAP
         acc = vis_acc.VisAcc(val_ob, pred)
         _print_metrics(acc)
@@ -233,9 +244,9 @@ def main() -> None:
 
     # 4. Compute TLE on raw NWP forecast
     pred_tle = _apply_tle(val_pr, val_pr, val_ob)
-    for s in range(5):
-        tle_name = _TL_OUTPUT['tle_template'].format(s=s)
-        np.save(str(data_dir / tle_name), pred_tle[s])
+    for scheme_idx in range(5):
+        tle_name = _TL_OUTPUT['tle_template'].format(s=scheme_idx)
+        np.save(str(data_dir / tle_name), pred_tle[scheme_idx])
 
     # 5. Reload TLE files and verify (including pre-existing tle5)
     pred_tle = np.stack([
@@ -257,9 +268,9 @@ def main() -> None:
 
     # 7. Compute TLE on PDFM forecast
     pred_pdfm_tle = _apply_tle(pred_pdfm, val_pr, val_ob)
-    for s in range(5):
-        tle_name = _TL_OUTPUT['pdfm_tle_template'].format(s=s)
-        np.save(str(data_dir / tle_name), pred_pdfm_tle[s])
+    for scheme_idx in range(5):
+        tle_name = _TL_OUTPUT['pdfm_tle_template'].format(s=scheme_idx)
+        np.save(str(data_dir / tle_name), pred_pdfm_tle[scheme_idx])
 
     # 8. Reload PDFM-TLE files and verify (including pre-existing tle5)
     pred_pdfm_tle = np.stack([
@@ -274,13 +285,13 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    print('Program tl.py started')
+    print('Program tle_experiment.py started')
     total_start = arrow.now()
 
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
     print(
-        f'Program tl.py finished, total time: '
+        f'Program tle_experiment.py finished, total time: '
         f'{utils.format_time(total_elapsed)}'
     )

@@ -1,9 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
+Extract Huanghua airport observations from its monthly logbook workbooks.
+
+Huanghua airport publishes observations in a proprietary monthly-logbook
+layout (one Excel workbook per month, several sheets per workbook) rather
+than the standard national station feed, so this script converts that
+layout into the flat .npy arrays the rest of the project expects. The
+source layout is described by the `huanghua` section of config.yaml.
+
 Founded in 2024-10-23
-Modified in 2026-08-06
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 import pathlib
 
@@ -197,13 +205,13 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    print('Program huanghua.py started')
+    print('Program huanghua_airport.py started')
     total_start = arrow.now()
 
     main()
 
     total_elapsed = (arrow.now() - total_start).total_seconds()
     print(
-        f'Program huanghua.py finished, total time: '
+        f'Program huanghua_airport.py finished, total time: '
         f'{utils.format_time(total_elapsed)}'
     )

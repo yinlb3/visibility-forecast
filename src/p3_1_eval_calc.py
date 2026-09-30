@@ -4,8 +4,8 @@
 Part 3.1: Evaluation result calculation module.
 
 Founded in 2026-04-14
-Modified in 2026-07-21
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import pathlib
@@ -82,7 +82,7 @@ def _calc_one_station(
     acc = VisAcc(ob_i, pdfm_i)
     return {
         'sta': i,
-        'corr_cma': acc_nwp.get_r(),
+        'corrmse_cma': acc_nwp.get_r(),
         'mae_cma': acc_nwp.get_mae(),
         'rmse_cma': acc_nwp.get_rmse(),
         'mre_cma': acc_nwp.get_mre(),
@@ -92,7 +92,7 @@ def _calc_one_station(
         'ts4_cma': acc_nwp.get_ts_ge()[3],
         'ts5_cma': acc_nwp.get_ts_ge()[4],
         'ts6_cma': acc_nwp.get_ts_ge()[5],
-        'corr_pdfm': acc.get_r(),
+        'corrmse_pdfm': acc.get_r(),
         'mae_pdfm': acc.get_mae(),
         'rmse_pdfm': acc.get_rmse(),
         'mre_pdfm': acc.get_mre(),
@@ -119,6 +119,9 @@ def calc_and_save_station_metrics(
         cma_sh_warr (np.ndarray): CMA-SH-WARR forecast array.
         pred_pdfm_tle2 (np.ndarray): PDFM-TLE forecast array (scheme 3).
         output_dir (str): Output directory path.
+
+    Returns:
+        None. Results are written to CSV files under output_dir.
     """
     csv_dir = pathlib.Path(output_dir) / 'csv'
     csv_dir.mkdir(parents=True, exist_ok=True)
@@ -151,7 +154,7 @@ def calc_and_save_station_metrics(
         metrics[key]['sta'] = sta_ids
 
     for res in results:
-        metrics['corr']['CMA-SH-WARR'].append(res['corr_cma'])
+        metrics['corr']['CMA-SH-WARR'].append(res['corrmse_cma'])
         metrics['mae']['CMA-SH-WARR'].append(res['mae_cma'])
         metrics['rmse']['CMA-SH-WARR'].append(res['rmse_cma'])
         metrics['mre']['CMA-SH-WARR'].append(res['mre_cma'])
@@ -161,7 +164,7 @@ def calc_and_save_station_metrics(
         metrics['ts4']['CMA-SH-WARR'].append(res['ts4_cma'])
         metrics['ts5']['CMA-SH-WARR'].append(res['ts5_cma'])
         metrics['ts6']['CMA-SH-WARR'].append(res['ts6_cma'])
-        metrics['corr']['PDFM-TLE'].append(res['corr_pdfm'])
+        metrics['corr']['PDFM-TLE'].append(res['corrmse_pdfm'])
         metrics['mae']['PDFM-TLE'].append(res['mae_pdfm'])
         metrics['rmse']['PDFM-TLE'].append(res['rmse_pdfm'])
         metrics['mre']['PDFM-TLE'].append(res['mre_pdfm'])
@@ -341,12 +344,12 @@ def _create_group(keys: typing.Tuple[str, ...]) -> typing.Dict[str, dict]:
 
 def _fmt_list(lst: list) -> str:
     """Format a list of floats with 4 decimal places."""
-    return '[' + ', '.join(f'{float(x):.4f}' for x in lst) + ']'
+    return '[' + ', '.join(f'{float(val):.4f}' for val in lst) + ']'
 
 
 def _fmt_list_m(lst: list) -> str:
     """Format a list of meter-based metrics with 1 decimal place."""
-    return '[' + ', '.join(f'{float(x):.1f}' for x in lst) + ']'
+    return '[' + ', '.join(f'{float(val):.1f}' for val in lst) + ']'
 
 
 def _append_metrics(
@@ -369,9 +372,13 @@ def _append_metrics(
     return group_new
 
 
-def build_fhour_index(n_days: int = 8760, n_hours: int = 24) -> np.ndarray:
+def build_ft_index(n_days: int = 8760, n_hours: int = 24) -> np.ndarray:
     """
-    Build forecast lead time index array.
+    Build forecast time (ft) index array.
+
+    ft is the forecast time of day in UTC, i.e. the hour at which the
+    forecast was initialized. It is distinct from vt, the forecast lead
+    time. The index repeats every n_hours so each row starts at hour 0.
 
     Args:
         n_days (int): Number of days in forecast period. Defaults to 8760.
@@ -380,10 +387,10 @@ def build_fhour_index(n_days: int = 8760, n_hours: int = 24) -> np.ndarray:
     Returns:
         np.ndarray: 2D index array of shape (n_days, n_hours).
     """
-    fhour_ind = (
+    ft_ind = (
         np.arange(n_days)[:, None] + np.arange(n_hours)[None, :]
     ) % n_hours
-    return fhour_ind
+    return ft_ind
 
 
 def _calc_temporal_block(
@@ -391,7 +398,7 @@ def _calc_temporal_block(
     vis_ob: np.ndarray,
     cma_sh_warr: np.ndarray,
     pred_pdfm_tle: np.ndarray,
-    fhour_ind: np.ndarray
+    ft_ind: np.ndarray
 ) -> typing.Dict[str, typing.Union[int, float]]:
     """
     Calc metrics for one init-hour block (parallel worker).
@@ -401,19 +408,19 @@ def _calc_temporal_block(
         vis_ob (np.ndarray): Observed visibility array.
         cma_sh_warr (np.ndarray): CMA-SH-WARR forecast array.
         pred_pdfm_tle (np.ndarray): PDFM-TLE forecast array.
-        fhour_ind (np.ndarray): Forecast lead time index array.
+        ft_ind (np.ndarray): Forecast lead time index array.
 
     Returns:
         typing.Dict[str, typing.Union[int, float]]: Dict with block index and
         verification metrics for visibility type, start hour, and forecast hour.
     """
     # Initialize metric groups:
-    # vt=visibility type, shour=start hour, fhour=forecast hour
+    # vt = visibility type, shour = start hour, ft = forecast time (UTC)
     vt = _create_group(('vt', 'CMA-SH-WARR', 'PDFM-TLE'))
     shour = _create_group(('shour', 'CMA-SH-WARR', 'PDFM-TLE'))
-    fhour = _create_group(('fhour', 'CMA-SH-WARR', 'PDFM-TLE'))
-    # ha: hour_access array (2 schemes, 24 hours, 10 metrics)
-    ha = np.zeros((2, 24, 10), dtype=np.float32) + np.nan
+    ft = _create_group(('ft', 'CMA-SH-WARR', 'PDFM-TLE'))
+    # hour_access: per-forecast-time array (2 schemes, 24 hours, 10 metrics)
+    hour_access = np.zeros((2, 24, 10), dtype=np.float32) + np.nan
 
     # Metrics by visibility type (all hours for this init type)
     for k in vt:
@@ -432,33 +439,33 @@ def _calc_temporal_block(
     shour = _append_metrics(acc, shour, 'PDFM-TLE')
 
     # Metrics by forecast lead hour
-    for k in fhour:
-        fhour[k]['fhour'].append(i)
-    acc_nwp = VisAcc(vis_ob[fhour_ind == i], cma_sh_warr[fhour_ind == i])
-    fhour = _append_metrics(acc_nwp, fhour, 'CMA-SH-WARR')
-    ob_slice = vis_ob[fhour_ind == i, :]
-    pr_slice = pred_pdfm_tle[fhour_ind == i, :]
+    for k in ft:
+        ft[k]['ft'].append(i)
+    acc_nwp = VisAcc(vis_ob[ft_ind == i], cma_sh_warr[ft_ind == i])
+    ft = _append_metrics(acc_nwp, ft, 'CMA-SH-WARR')
+    ob_slice = vis_ob[ft_ind == i, :]
+    pr_slice = pred_pdfm_tle[ft_ind == i, :]
     acc = VisAcc(ob_slice, pr_slice)
-    fhour = _append_metrics(acc, fhour, 'PDFM-TLE')
+    ft = _append_metrics(acc, ft, 'PDFM-TLE')
 
     # Hour-access matrix:
     # metrics for each start hour x forecast hour combination
     for j in range(24):
         acc_nwp = VisAcc(vis_ob[i::24, j, :], cma_sh_warr[i::24, j, :])
-        ha[0, j, 0] = acc_nwp.get_r()
-        ha[0, j, 1] = acc_nwp.get_mae()
-        ha[0, j, 2] = acc_nwp.get_rmse()
-        ha[0, j, 3] = acc_nwp.get_mre()
-        ha[0, j, 4:] = acc_nwp.get_ts_ge()
+        hour_access[0, j, 0] = acc_nwp.get_r()
+        hour_access[0, j, 1] = acc_nwp.get_mae()
+        hour_access[0, j, 2] = acc_nwp.get_rmse()
+        hour_access[0, j, 3] = acc_nwp.get_mre()
+        hour_access[0, j, 4:] = acc_nwp.get_ts_ge()
 
         acc = VisAcc(vis_ob[i::24, j, :], pred_pdfm_tle[i::24, j, :])
-        ha[1, j, 0] = acc.get_r()
-        ha[1, j, 1] = acc.get_mae()
-        ha[1, j, 2] = acc.get_rmse()
-        ha[1, j, 3] = acc.get_mre()
-        ha[1, j, 4:] = acc.get_ts_ge()
+        hour_access[1, j, 0] = acc.get_r()
+        hour_access[1, j, 1] = acc.get_mae()
+        hour_access[1, j, 2] = acc.get_rmse()
+        hour_access[1, j, 3] = acc.get_mre()
+        hour_access[1, j, 4:] = acc.get_ts_ge()
 
-    return {'vt': vt, 'shour': shour, 'fhour': fhour, 'ha': ha}
+    return {'vt': vt, 'shour': shour, 'ft': ft, 'hour_access': hour_access}
 
 
 def calc_temporal_metrics(
@@ -481,17 +488,17 @@ def calc_temporal_metrics(
     Returns:
         np.ndarray: hour_access array of shape (2, 24, 24, 10).
     """
-    fhour_ind = build_fhour_index()
+    ft_ind = build_ft_index()
     vt_group = _create_group(('vt', 'CMA-SH-WARR', 'PDFM-TLE'))
     shour_group = _create_group(('shour', 'CMA-SH-WARR', 'PDFM-TLE'))
-    fhour_group = _create_group(('fhour', 'CMA-SH-WARR', 'PDFM-TLE'))
+    ft_group = _create_group(('ft', 'CMA-SH-WARR', 'PDFM-TLE'))
     # hour_access dims: (2 schemes, 24 init hours, 24 lead hours, 10 metrics)
     hour_access = np.zeros((2, 24, 24, 10), dtype=np.float32) + np.nan
 
     # Parallel calculation over 24 init-hour blocks
     blocks = joblib.Parallel(n_jobs=-1, backend='loky')(
         joblib.delayed(_calc_temporal_block)(
-            i, vis_ob, cma_sh_warr, pred_pdfm_tle2, fhour_ind
+            i, vis_ob, cma_sh_warr, pred_pdfm_tle2, ft_ind
         )
         for i in range(24)
     )
@@ -506,43 +513,43 @@ def calc_temporal_metrics(
             shour_group[k]['shour'].extend(blk['shour'][k]['shour'])
             shour_group[k]['CMA-SH-WARR'].extend(blk['shour'][k]['CMA-SH-WARR'])
             shour_group[k]['PDFM-TLE'].extend(blk['shour'][k]['PDFM-TLE'])
-        for k in fhour_group:
-            fhour_group[k]['fhour'].extend(blk['fhour'][k]['fhour'])
-            fhour_group[k]['CMA-SH-WARR'].extend(blk['fhour'][k]['CMA-SH-WARR'])
-            fhour_group[k]['PDFM-TLE'].extend(blk['fhour'][k]['PDFM-TLE'])
-        hour_access[:, i, :, :] = blk['ha']
+        for k in ft_group:
+            ft_group[k]['ft'].extend(blk['ft'][k]['ft'])
+            ft_group[k]['CMA-SH-WARR'].extend(blk['ft'][k]['CMA-SH-WARR'])
+            ft_group[k]['PDFM-TLE'].extend(blk['ft'][k]['PDFM-TLE'])
+        hour_access[:, i, :, :] = blk['hour_access']
 
     csv_dir = pathlib.Path(output_dir) / 'csv'
     csv_dir.mkdir(parents=True, exist_ok=True)
     df_vt_ts4 = pd.DataFrame(vt_group['ts4'])
-    df_fhour_ts4 = pd.DataFrame(fhour_group['ts4'])
+    df_ft_ts4 = pd.DataFrame(ft_group['ts4'])
     df_vt_ts4.to_csv(str(csv_dir / 'vis_vt_ts4+.csv'), index=False)
-    df_fhour_ts4.to_csv(str(csv_dir / 'vis_fhour_ts4+.csv'), index=False)
+    df_ft_ts4.to_csv(str(csv_dir / 'vis_ft_ts4+.csv'), index=False)
     np.save(str(csv_dir / 'hour_access.npy'), hour_access)
-    return hour_access, df_vt_ts4, df_fhour_ts4
+    return ha, df_vt_ts4, df_ft_ts4
 
 
-def load_v_type(data_dir: str, idx_mlyr: np.ndarray) -> np.ndarray:
+def load_lve_type(data_dir: str, idx_mlyr: np.ndarray) -> np.ndarray:
     """
     Load visibility type data.
 
     Args:
-        data_dir (str): Directory containing v_type.npy.
+        data_dir (str): Directory containing lve_type.npy.
         idx_mlyr (np.ndarray): Index array for MLYR stations.
 
     Returns:
         np.ndarray: Reshaped visibility type array.
     """
-    v_type = np.load(str(pathlib.Path(data_dir) / 'v_type.npy'))
-    v_type = np.reshape(v_type[-365:, :, :, idx_mlyr], (-1, 24, 502))
-    return v_type
+    lve_type = np.load(str(pathlib.Path(data_dir) / 'lve_type.npy'))
+    lve_type = np.reshape(lve_type[-365:, :, :, idx_mlyr], (-1, 24, 502))
+    return lve_type
 
 
 def calc_type_metrics(
     vis_ob: np.ndarray,
     cma_sh_warr: np.ndarray,
     pred_pdfm_tle0: np.ndarray,
-    v_type: np.ndarray
+    lve_type: np.ndarray
 ) -> typing.Tuple[typing.Dict[str, pd.DataFrame], str]:
     """
     Calc metrics by visibility type and return formatted output string.
@@ -551,7 +558,7 @@ def calc_type_metrics(
         vis_ob (np.ndarray): Observed visibility array.
         cma_sh_warr (np.ndarray): CMA-SH-WARR forecast array.
         pred_pdfm_tle0 (np.ndarray): PDFM-TLE forecast array (scheme 1).
-        v_type (np.ndarray): Visibility type mask array.
+        lve_type (np.ndarray): Visibility type mask array.
 
     Returns:
         typing.Tuple[typing.Dict[str, pd.DataFrame], str]: DataFrame dict and
@@ -562,40 +569,48 @@ def calc_type_metrics(
     for i in range(3):
         for k in dfs:
             dfs[k]['type'].append(i)
-        acc_nwp = VisAcc(vis_ob[v_type == i], cma_sh_warr[v_type == i])
+        acc_nwp = VisAcc(vis_ob[lve_type == i], cma_sh_warr[lve_type == i])
         dfs = _append_metrics(acc_nwp, dfs, 'CMA-SH-WARR')
-        acc = VisAcc(vis_ob[v_type == i], pred_pdfm_tle0[v_type == i])
+        acc = VisAcc(vis_ob[lve_type == i], pred_pdfm_tle0[lve_type == i])
         dfs = _append_metrics(acc, dfs, 'PDFM-TLE')
 
     # Build formatted output string for console display
     lines = list()
     lines.append('[Type Metrics] CMA-SH-WARR')
-    c_cma = _fmt_list(dfs['corr']['CMA-SH-WARR'])
-    a_cma = _fmt_list_m(dfs['mae']['CMA-SH-WARR'])
-    r_cma = _fmt_list_m(dfs['rmse']['CMA-SH-WARR'])
-    m_cma = _fmt_list(dfs['mre']['CMA-SH-WARR'])
-    lines.append(f'  corr={c_cma}, mae={a_cma} m, rmse={r_cma} m, mre={m_cma}')
-    t1 = _fmt_list(dfs['ts1']['CMA-SH-WARR'])
-    t2 = _fmt_list(dfs['ts2']['CMA-SH-WARR'])
-    t3 = _fmt_list(dfs['ts3']['CMA-SH-WARR'])
-    t4 = _fmt_list(dfs['ts4']['CMA-SH-WARR'])
-    t5 = _fmt_list(dfs['ts5']['CMA-SH-WARR'])
-    t6 = _fmt_list(dfs['ts6']['CMA-SH-WARR'])
-    ts_str = f'ts1={t1}, ts2={t2}, ts3={t3}, ts4={t4}, ts5={t5}, ts6={t6}'
+    corr_cma = _fmt_list(dfs['corr']['CMA-SH-WARR'])
+    mae_cma = _fmt_list_m(dfs['mae']['CMA-SH-WARR'])
+    rmse_cma = _fmt_list_m(dfs['rmse']['CMA-SH-WARR'])
+    mre_cma = _fmt_list(dfs['mre']['CMA-SH-WARR'])
+    lines.append(
+        f'  corr={corr_cma}, mae={mae_cma} m, '
+        f'rmse={rmse_cma} m, mre={mre_cma}'
+    )
+    ts1 = _fmt_list(dfs['ts1']['CMA-SH-WARR'])
+    ts2 = _fmt_list(dfs['ts2']['CMA-SH-WARR'])
+    ts3 = _fmt_list(dfs['ts3']['CMA-SH-WARR'])
+    ts4 = _fmt_list(dfs['ts4']['CMA-SH-WARR'])
+    ts5 = _fmt_list(dfs['ts5']['CMA-SH-WARR'])
+    ts6 = _fmt_list(dfs['ts6']['CMA-SH-WARR'])
+    ts_str = f'ts1={ts1}, ts2={ts2}, ts3={ts3}'
+    ts_str += f', ts4={ts4}, ts5={ts5}, ts6={ts6}'
     lines.append(f'  TS  = {ts_str}')
     lines.append('[Type Metrics] PDFM-TLE')
-    c_pdfm = _fmt_list(dfs['corr']['PDFM-TLE'])
-    a_pdfm = _fmt_list_m(dfs['mae']['PDFM-TLE'])
-    r_pdfm = _fmt_list_m(dfs['rmse']['PDFM-TLE'])
-    m_pdfm = _fmt_list(dfs['mre']['PDFM-TLE'])
-    lines.append(f'  corr={c_pdfm}, mae={a_pdfm}, rmse={r_pdfm}, mre={m_pdfm}')
-    t1p = _fmt_list(dfs['ts1']['PDFM-TLE'])
-    t2p = _fmt_list(dfs['ts2']['PDFM-TLE'])
-    t3p = _fmt_list(dfs['ts3']['PDFM-TLE'])
-    t4p = _fmt_list(dfs['ts4']['PDFM-TLE'])
-    t5p = _fmt_list(dfs['ts5']['PDFM-TLE'])
-    t6p = _fmt_list(dfs['ts6']['PDFM-TLE'])
-    ts_str = f'ts1={t1p}, ts2={t2p}, ts3={t3p}, ts4={t4p}, ts5={t5p}, ts6={t6p}'
+    corr_pdfm = _fmt_list(dfs['corr']['PDFM-TLE'])
+    mae_pdfm = _fmt_list_m(dfs['mae']['PDFM-TLE'])
+    rmse_pdfm = _fmt_list_m(dfs['rmse']['PDFM-TLE'])
+    mre_pdfm = _fmt_list(dfs['mre']['PDFM-TLE'])
+    lines.append(
+        f'  corr={corr_pdfm}, mae={mae_pdfm} m, '
+        f'rmse={rmse_pdfm} m, mre={mre_pdfm}'
+    )
+    ts1_pdfm = _fmt_list(dfs['ts1']['PDFM-TLE'])
+    ts2_pdfm = _fmt_list(dfs['ts2']['PDFM-TLE'])
+    ts3_pdfm = _fmt_list(dfs['ts3']['PDFM-TLE'])
+    ts4_pdfm = _fmt_list(dfs['ts4']['PDFM-TLE'])
+    ts5_pdfm = _fmt_list(dfs['ts5']['PDFM-TLE'])
+    ts6_pdfm = _fmt_list(dfs['ts6']['PDFM-TLE'])
+    ts_str = f'ts1={ts1_pdfm}, ts2={ts2_pdfm}, ts3={ts3_pdfm}'
+    ts_str += f', ts4={ts4_pdfm}, ts5={ts5_pdfm}, ts6={ts6_pdfm}'
     lines.append(f'  TS  = {ts_str}')
 
     return {k: pd.DataFrame(dfs[k]) for k in dfs}, '\n'.join(lines)

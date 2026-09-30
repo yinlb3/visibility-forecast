@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Founded in 2024-03-24
-Modified in 2026-08-06
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 import pathlib
 import typing
@@ -13,8 +13,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from src import p1_config_data as p1
-from src import pdf_model, utils, vis_acc
+from src import postprocess, utils, vis_acc
 
 
 # Load access experiment configuration at import time
@@ -33,7 +32,7 @@ _RUN_SCHEME_2 = bool(_ACCESS_PARAMS['run_scheme_2'])
 _RUN_REGION = str(_ACCESS_PARAMS['run_region']).lower()
 
 
-PDF = pdf_model.PDF
+PDFM = postprocess.PDFM
 
 def _build_region_index(
     sta_path: pathlib.Path,
@@ -45,6 +44,14 @@ def _build_region_index(
     The input numpy arrays (vis1183_ob.npy, vis_gjz.npy) already contain
     only east-china stations (1183), so we only need the MLYR subset mask
     of length 1183.
+
+    Args:
+        sta_path: Path to the national station CSV.
+        provinces_all: Provinces making up east china.
+        provinces_region: Provinces making up the target sub-region.
+
+    Returns:
+        Boolean mask of length n_east, True for target-region stations.
     """
     sta_all = pd.read_csv(str(sta_path), low_memory=False, encoding='utf-8')
     # Filter to east china first, matching the input arrays
@@ -68,7 +75,14 @@ def _load_and_prepare(
     data_dir: pathlib.Path,
 ) -> typing.Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray,
                   np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Load obs/forecast, mask missing values, and split train/val."""
+    """Load obs/forecast, mask missing values, and split train/val.
+
+    Args:
+        data_dir: Root data directory from configuration.
+
+    Returns:
+        Tuple of (train_ob, train_pr, val_ob, val_pr, valid_stations).
+    """
     ob_east_china = np.load(
         str(data_dir / _ACCESS_INPUT['observation_npy'])
     )[:, :, 1:, :]
@@ -145,9 +159,9 @@ def _run_scheme_overall(
     pred_path: pathlib.Path,
     region: str,
 ) -> None:
-    """Run scheme 0: overall PDF matching."""
+    """Run scheme 0: overall PDFM correction."""
     time_arrow = arrow.now()
-    model = PDF()
+    model = PDFM()
     model.fit(train_ob.flatten(), train_pr.flatten())
     elapsed = (arrow.now() - time_arrow).total_seconds()
     print(f'Scheme 0 {region} {utils.format_time(elapsed)}')
@@ -167,12 +181,12 @@ def _run_scheme_hour(
     pred_path: pathlib.Path,
     region: str,
 ) -> None:
-    """Run scheme 1: hour-specific PDF matching."""
+    """Run scheme 1: hour-specific PDFM correction."""
     pred_pdfm = np.zeros_like(val_pr, dtype=np.float32) + np.nan
     time_arrow = arrow.now()
     models = list()
     for i in range(_N_HOURS):
-        model = PDF()
+        model = PDFM()
         model.fit(
             train_ob[:, :, i, :].flatten(),
             train_pr[:, :, i, :].flatten(),
@@ -198,13 +212,13 @@ def _run_scheme_station(
     pred_tle_path: pathlib.Path,
     region: str,
 ) -> None:
-    """Run scheme 2: station-specific PDF matching."""
+    """Run scheme 2: station-specific PDFM correction."""
     pred_pdfm = np.zeros_like(val_pr, dtype=np.float32) + np.nan
     time_arrow = arrow.now()
     models = list()
     n_stations = val_pr.shape[-1]
     for i in range(n_stations):
-        model = PDF()
+        model = PDFM()
         model.fit(
             train_ob[:, :, :, i].flatten(),
             train_pr[:, :, :, i].flatten(),
@@ -223,7 +237,7 @@ def _run_scheme_station(
 
 
 def main() -> None:
-    """Run PDF matching correction experiment."""
+    """Run PDFM correction experiment."""
     data_dir = pathlib.Path(utils.CFG['paths']['data_dir'])
     out_cfg = _ACCESS_OUTPUT
 
@@ -240,7 +254,7 @@ def main() -> None:
         _save_npy(data_dir / 'vis_ob_mlyr.npy', val_ob_mlyr)
         _save_npy(data_dir / 'vis_pr_mlyr.npy', val_pr_mlyr)
 
-    # 2. Scheme 0: overall PDF matching
+    # 2. Scheme 0: overall PDFM correction
     pdfm_models = out_cfg['pdfm_models']
     corrected = out_cfg['corrected_forecasts']
     if _RUN_SCHEME_0:
@@ -259,7 +273,7 @@ def main() -> None:
                 'mlyr',
             )
 
-    # 3. Scheme 1: hour-specific PDF matching
+    # 3. Scheme 1: hour-specific PDFM correction
     if _RUN_SCHEME_1:
         if _run_all:
             _run_scheme_hour(
@@ -276,7 +290,7 @@ def main() -> None:
                 'mlyr',
             )
 
-    # 4. Scheme 2: station-specific PDF matching
+    # 4. Scheme 2: station-specific PDFM correction
     if _RUN_SCHEME_2:
         if _run_all:
             _run_scheme_station(

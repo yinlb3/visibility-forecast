@@ -6,8 +6,8 @@ nearest station. Build it with build_near_map.py whenever the grid spec
 or station table changes; inference.py only loads and validates it.
 
 Founded in 2026-07-26
-Modified in 2026-07-26
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import json
@@ -35,6 +35,7 @@ def load_stations(cfg: typing.Dict) -> pd.DataFrame:
     """
     region = cfg['operational']['runtime']['region']
     region_cfg = cfg['draw']['regions']
+    # 'mlyr' selects the sub-region; any other value means all of east china.
     if region == 'mlyr':
         provinces = tuple(region_cfg['mlyr_provinces'])
     else:
@@ -42,6 +43,8 @@ def load_stations(cfg: typing.Dict) -> pd.DataFrame:
 
     sta_path = cfg['operational']['inference']['station_csv']
     sta, _ = p1.read_sta(sta_path=sta_path, provinces=provinces)
+    # The correction models are indexed by integer station id, so the table
+    # column must be cast before it is used as a key.
     sta['id'] = sta['id'].astype(int)
     return sta
 
@@ -112,6 +115,8 @@ def build_near_id_map(
     lats = grid['slat'] + np.arange(grid['nlat']) * grid['dlat']
     lon2d, lat2d = np.meshgrid(lons, lats)
     sta_xy = np.column_stack([sta['lon'].values, sta['lat'].values])
+    # cKDTree on (lon, lat) gives the nearest station per cell; station ids
+    # are scattered back to the 2-D grid so correction can index by cell.
     _, idx = cKDTree(sta_xy).query(
         np.column_stack([lon2d.ravel(), lat2d.ravel()])
     )
@@ -170,6 +175,8 @@ def load_near_map(
             f'Please run build_near_map.py first.'
         )
     bundle = np.load(str(path))
+    # A stale map silently mis-corrects every cell, so the grid spec and the
+    # station list are both verified before the map is used.
     same_grid = all(
         np.isclose(
             float(bundle[key]), float(grid[key]), rtol=1e-9, atol=1e-9
@@ -178,6 +185,7 @@ def load_near_map(
     )
     same_grid = same_grid and int(bundle['nlon']) == int(grid['nlon'])
     same_grid = same_grid and int(bundle['nlat']) == int(grid['nlat'])
+    # Station order may differ from training order, so only the set matters.
     same_sta = np.array_equal(
         np.sort(bundle['sta_ids']), np.sort(sta['id'].values)
     )

@@ -4,19 +4,18 @@
 Part 1: Configuration and data loading module.
 
 Founded in 2026-04-14
-Modified in 2026-08-06
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import os
 import pathlib
 import typing
 
-import arrow
 import numpy as np
 import pandas as pd
 
-from src import utils, vis_acc
+from src import vis_acc
 
 THRES = vis_acc.THRES
 
@@ -59,7 +58,7 @@ def _load_stage1_cache(
     return sta, vis, pre, rhu, vis_grade, month_ind, idx_mlyr
 
 
-def read_sta(sta_path: str, provinces: tuple) -> tuple:
+def read_station(sta_path: str, provinces: tuple) -> tuple:
     """Read station info and filter by province."""
     sta = pd.read_csv(sta_path, low_memory=False, encoding='utf-8')
     sta = sta.sort_values(by=['id'])

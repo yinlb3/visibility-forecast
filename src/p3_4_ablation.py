@@ -4,8 +4,8 @@
 Part 3.4: Ablation experiment result output module.
 
 Founded in 2026-04-14
-Modified in 2026-06-30
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import gc
@@ -13,18 +13,11 @@ import os
 import pathlib
 import typing
 
-import matplotlib as mpl
 import numpy as np
 
 from matplotlib import pyplot as plt
 
 from src import utils
-
-
-mpl.use('Agg')
-mpl.rcParams['font.family'] = 'serif'
-mpl.rcParams['font.serif'] = ['Times New Roman', 'SimSun']
-mpl.rcParams['axes.unicode_minus'] = False
 
 
 def plot_vis_cdf(

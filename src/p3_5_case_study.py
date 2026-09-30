@@ -4,8 +4,8 @@
 Part 3.5: Operational application case study evaluation result output module.
 
 Founded in 2026-04-14
-Modified in 2026-08-06
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import pathlib
@@ -153,30 +153,32 @@ def analyze_case_studies(
         j = round((arrow.get(dt[1]) - base).total_seconds() / 3600)
         k = round((arrow.get(dt[2]) - base).total_seconds() / 3600)
         # 2. Extract four phases: all period, start, end, and peak
-        ob_all = vis_ob_[i: j + 24, :, :]
-        fcst_all = cma_sh_warr_[i: j + 24, :, :]
-        ts_ge4_cma_all = VisAcc(ob_all, fcst_all).get_ts_ge()[3]
-        ob_s = vis_ob_[i: i + 24, :, :]
-        fcst_s = cma_sh_warr_[i: i + 24, :, :]
-        ts_ge4_cma_start = VisAcc(ob_s, fcst_s).get_ts_ge()[3]
-        ob_e = vis_ob_[j: j + 24, :, :]
-        fcst_e = cma_sh_warr_[j: j + 24, :, :]
-        ts_ge4_cma_end = VisAcc(ob_e, fcst_e).get_ts_ge()[3]
-        ob_p = vis_ob_[k: k + 24, :, :]
-        fcst_p = cma_sh_warr_[k: k + 24, :, :]
-        ts_ge4_cma_peak = VisAcc(ob_p, fcst_p).get_ts_ge()[3]
-        p_ob_all = vis_ob_[i: j + 24, :, :]
-        p_fcst_all = pred_pdfm2_[i: j + 24, :, :]
-        ts_ge4_pdfm_all = VisAcc(p_ob_all, p_fcst_all).get_ts_ge()[3]
-        p_ob_s = vis_ob_[i: i + 24, :, :]
-        p_fcst_s = pred_pdfm2_[i: i + 24, :, :]
-        ts_ge4_pdfm_start = VisAcc(p_ob_s, p_fcst_s).get_ts_ge()[3]
-        p_ob_e = vis_ob_[j: j + 24, :, :]
-        p_fcst_e = pred_pdfm2_[j: j + 24, :, :]
-        ts_ge4_pdfm_end = VisAcc(p_ob_e, p_fcst_e).get_ts_ge()[3]
-        p_ob_p = vis_ob_[k: k + 24, :, :]
-        p_fcst_p = pred_pdfm2_[k: k + 24, :, :]
-        ts_ge4_pdfm_peak = VisAcc(p_ob_p, p_fcst_p).get_ts_ge()[3]
+        ob_entire = vis_ob_[i: j + 24, :, :]
+        fcst_entire = cma_sh_warr_[i: j + 24, :, :]
+        ts_ge4_cma_all = VisAcc(ob_entire, fcst_entire).get_ts_ge()[3]
+        ob_onset = vis_ob_[i: i + 24, :, :]
+        fcst_onset = cma_sh_warr_[i: i + 24, :, :]
+        ts_ge4_cma_start = VisAcc(ob_onset, fcst_onset).get_ts_ge()[3]
+        ob_termination = vis_ob_[j: j + 24, :, :]
+        fcst_termination = cma_sh_warr_[j: j + 24, :, :]
+        ts_ge4_cma_end = VisAcc(ob_termination, fcst_termination).get_ts_ge()[3]
+        ob_severe = vis_ob_[k: k + 24, :, :]
+        fcst_severe = cma_sh_warr_[k: k + 24, :, :]
+        ts_ge4_cma_peak = VisAcc(ob_severe, fcst_severe).get_ts_ge()[3]
+        p_ob_entire = vis_ob_[i: j + 24, :, :]
+        p_fcst_entire = pred_pdfm2_[i: j + 24, :, :]
+        ts_ge4_pdfm_all = VisAcc(p_ob_entire, p_fcst_entire).get_ts_ge()[3]
+        p_ob_onset = vis_ob_[i: i + 24, :, :]
+        p_fcst_onset = pred_pdfm2_[i: i + 24, :, :]
+        ts_ge4_pdfm_start = VisAcc(p_ob_onset, p_fcst_onset).get_ts_ge()[3]
+        p_ob_termination = vis_ob_[j: j + 24, :, :]
+        p_fcst_termination = pred_pdfm2_[j: j + 24, :, :]
+        ts_ge4_pdfm_end = VisAcc(
+            p_ob_termination, p_fcst_termination
+        ).get_ts_ge()[3]
+        p_ob_severe = vis_ob_[k: k + 24, :, :]
+        p_fcst_severe = pred_pdfm2_[k: k + 24, :, :]
+        ts_ge4_pdfm_peak = VisAcc(p_ob_severe, p_fcst_severe).get_ts_ge()[3]
         case_str = f'Case {idx:02d} [{dt[0]}~{dt[1]}, pk={dt[2]}] '
         cma_str = f'CMA=[a:{ts_ge4_cma_all:.4f}, s:{ts_ge4_cma_start:.4f}, '
         cma_str += f'e:{ts_ge4_cma_end:.4f}, p:{ts_ge4_cma_peak:.4f}]  '
@@ -187,71 +189,103 @@ def analyze_case_studies(
         case_idx[i: i + 24, 1] = True
         case_idx[j: j + 24, 2] = True
         case_idx[k: k + 24, 3] = True
-        cat_data[(cat, 0, 'ob')].append(ob_all)
-        cat_data[(cat, 0, 'cma')].append(fcst_all)
-        cat_data[(cat, 0, 'pdfm')].append(p_fcst_all)
-        cat_data[(cat, 1, 'ob')].append(ob_s)
-        cat_data[(cat, 1, 'cma')].append(fcst_s)
-        cat_data[(cat, 1, 'pdfm')].append(p_fcst_s)
-        cat_data[(cat, 2, 'ob')].append(ob_e)
-        cat_data[(cat, 2, 'cma')].append(fcst_e)
-        cat_data[(cat, 2, 'pdfm')].append(p_fcst_e)
-        cat_data[(cat, 3, 'ob')].append(ob_p)
-        cat_data[(cat, 3, 'cma')].append(fcst_p)
-        cat_data[(cat, 3, 'pdfm')].append(p_fcst_p)
+        cat_data[(cat, 0, 'ob')].append(ob_entire)
+        cat_data[(cat, 0, 'cma')].append(fcst_entire)
+        cat_data[(cat, 0, 'pdfm')].append(p_fcst_entire)
+        cat_data[(cat, 1, 'ob')].append(ob_onset)
+        cat_data[(cat, 1, 'cma')].append(fcst_onset)
+        cat_data[(cat, 1, 'pdfm')].append(p_fcst_onset)
+        cat_data[(cat, 2, 'ob')].append(ob_termination)
+        cat_data[(cat, 2, 'cma')].append(fcst_termination)
+        cat_data[(cat, 2, 'pdfm')].append(p_fcst_termination)
+        cat_data[(cat, 3, 'ob')].append(ob_severe)
+        cat_data[(cat, 3, 'cma')].append(fcst_severe)
+        cat_data[(cat, 3, 'pdfm')].append(p_fcst_severe)
 
-    # 3. Calc merged statistics across all cases by phase
-    idx0 = case_idx[:, 0]
-    ob0, fcst0 = vis_ob_[idx0, :, :], cma_sh_warr_[idx0, :, :]
-    ts_ge4_cma_m_all = VisAcc(ob0, fcst0).get_ts_ge()[3]
-    idx1 = case_idx[:, 1]
-    ob1, fcst1 = vis_ob_[idx1, :, :], cma_sh_warr_[idx1, :, :]
-    ts_ge4_cma_m_start = VisAcc(ob1, fcst1).get_ts_ge()[3]
-    idx2 = case_idx[:, 2]
-    ob2, fcst2 = vis_ob_[idx2, :, :], cma_sh_warr_[idx2, :, :]
-    ts_ge4_cma_m_end = VisAcc(ob2, fcst2).get_ts_ge()[3]
-    idx3 = case_idx[:, 3]
-    ob3, fcst3 = vis_ob_[idx3, :, :], cma_sh_warr_[idx3, :, :]
-    ts_ge4_cma_m_peak = VisAcc(ob3, fcst3).get_ts_ge()[3]
-    p_ob0, p_fcst0 = vis_ob_[idx0, :, :], pred_pdfm2_[idx0, :, :]
-    ts_ge4_pdfm_m_all = VisAcc(p_ob0, p_fcst0).get_ts_ge()[3]
-    p_ob1, p_fcst1 = vis_ob_[idx1, :, :], pred_pdfm2_[idx1, :, :]
-    ts_ge4_pdfm_m_start = VisAcc(p_ob1, p_fcst1).get_ts_ge()[3]
-    p_ob2, p_fcst2 = vis_ob_[idx2, :, :], pred_pdfm2_[idx2, :, :]
-    ts_ge4_pdfm_m_end = VisAcc(p_ob2, p_fcst2).get_ts_ge()[3]
-    p_ob3, p_fcst3 = vis_ob_[idx3, :, :], pred_pdfm2_[idx3, :, :]
-    ts_ge4_pdfm_m_peak = VisAcc(p_ob3, p_fcst3).get_ts_ge()[3]
-    merged_str = f'Merged cases  '
-    cma_s = f'a:{ts_ge4_cma_m_all:.4f}, s:{ts_ge4_cma_m_start:.4f}, '
-    cma_s += f'e:{ts_ge4_cma_m_end:.4f}, p:{ts_ge4_cma_m_peak:.4f}'
+    # 3. Calc merged statistics across all cases by phase.
+    # Merging concatenates the same phase of every case, so each of the
+    # four masks below collects one phase over the whole 2024 case set.
+    idx_entire = case_idx[:, 0]
+    ob_merged, fcst_merged = (
+        vis_ob_[idx_entire, :, :], cma_sh_warr_[idx_entire, :, :]
+    )
+    ts_ge4_cma_merged_entire = VisAcc(ob_merged, fcst_merged).get_ts_ge()[3]
+    idx_onset = case_idx[:, 1]
+    ob_merged, fcst_merged = (
+        vis_ob_[idx_onset, :, :], cma_sh_warr_[idx_onset, :, :]
+    )
+    ts_ge4_cma_merged_onset = VisAcc(ob_merged, fcst_merged).get_ts_ge()[3]
+    idx_termination = case_idx[:, 2]
+    ob_merged, fcst_merged = (
+        vis_ob_[idx_termination, :, :], cma_sh_warr_[idx_termination, :, :]
+    )
+    ts_ge4_cma_merged_termination = VisAcc(
+        ob_merged, fcst_merged
+    ).get_ts_ge()[3]
+    idx_severe = case_idx[:, 3]
+    ob_merged, fcst_merged = (
+        vis_ob_[idx_severe, :, :], cma_sh_warr_[idx_severe, :, :]
+    )
+    ts_ge4_cma_merged_severe = VisAcc(ob_merged, fcst_merged).get_ts_ge()[3]
+    p_ob_merged, p_fcst_merged = (
+        vis_ob_[idx_entire, :, :], pred_pdfm2_[idx_entire, :, :]
+    )
+    ts_ge4_pdfm_merged_entire = VisAcc(
+        p_ob_merged, p_fcst_merged
+    ).get_ts_ge()[3]
+    p_ob_merged, p_fcst_merged = (
+        vis_ob_[idx_onset, :, :], pred_pdfm2_[idx_onset, :, :]
+    )
+    ts_ge4_pdfm_merged_onset = VisAcc(
+        p_ob_merged, p_fcst_merged
+    ).get_ts_ge()[3]
+    p_ob_merged, p_fcst_merged = (
+        vis_ob_[idx_termination, :, :], pred_pdfm2_[idx_termination, :, :]
+    )
+    ts_ge4_pdfm_merged_termination = VisAcc(
+        p_ob_merged, p_fcst_merged
+    ).get_ts_ge()[3]
+    p_ob_merged, p_fcst_merged = (
+        vis_ob_[idx_severe, :, :], pred_pdfm2_[idx_severe, :, :]
+    )
+    ts_ge4_pdfm_merged_severe = VisAcc(
+        p_ob_merged, p_fcst_merged
+    ).get_ts_ge()[3]
+    merged_str = 'Merged cases  '
+    cma_s = f'a:{ts_ge4_cma_merged_entire:.4f}, '
+    cma_s += f's:{ts_ge4_cma_merged_onset:.4f}, '
+    cma_s += f'e:{ts_ge4_cma_merged_termination:.4f}, '
+    cma_s += f'p:{ts_ge4_cma_merged_severe:.4f}'
     cma_str = f'CMA=[{cma_s}]  '
-    pdfm_s = f'a:{ts_ge4_pdfm_m_all:.4f}, s:{ts_ge4_pdfm_m_start:.4f}, '
-    pdfm_s += f'e:{ts_ge4_pdfm_m_end:.4f}, p:{ts_ge4_pdfm_m_peak:.4f}'
+    pdfm_s = f'a:{ts_ge4_pdfm_merged_entire:.4f}, '
+    pdfm_s += f's:{ts_ge4_pdfm_merged_onset:.4f}, '
+    pdfm_s += f'e:{ts_ge4_pdfm_merged_termination:.4f}, '
+    pdfm_s += f'p:{ts_ge4_pdfm_merged_severe:.4f}'
     pdfm_str = f'PDFM=[{pdfm_s}]'
     print(merged_str + cma_str + pdfm_str)
 
     # 4. Calc statistics by category
     for cat in sorted({k[0] for k in cat_data.keys()}):
-        ob_all_cat = np.concatenate(cat_data[(cat, 0, 'ob')])
+        ob_entire_cat = np.concatenate(cat_data[(cat, 0, 'ob')])
         cma_all_cat = np.concatenate(cat_data[(cat, 0, 'cma')])
         pdfm_all_cat = np.concatenate(cat_data[(cat, 0, 'pdfm')])
-        ts_cma_all = VisAcc(ob_all_cat, cma_all_cat).get_ts_ge()[3]
-        ts_pdfm_all = VisAcc(ob_all_cat, pdfm_all_cat).get_ts_ge()[3]
-        ob_s_cat = np.concatenate(cat_data[(cat, 1, 'ob')])
+        ts_cma_all = VisAcc(ob_entire_cat, cma_all_cat).get_ts_ge()[3]
+        ts_pdfm_all = VisAcc(ob_entire_cat, pdfm_all_cat).get_ts_ge()[3]
+        ob_onset_cat = np.concatenate(cat_data[(cat, 1, 'ob')])
         cma_s_cat = np.concatenate(cat_data[(cat, 1, 'cma')])
         pdfm_s_cat = np.concatenate(cat_data[(cat, 1, 'pdfm')])
-        ts_cma_s = VisAcc(ob_s_cat, cma_s_cat).get_ts_ge()[3]
-        ts_pdfm_s = VisAcc(ob_s_cat, pdfm_s_cat).get_ts_ge()[3]
-        ob_e_cat = np.concatenate(cat_data[(cat, 2, 'ob')])
+        ts_cma_s = VisAcc(ob_onset_cat, cma_s_cat).get_ts_ge()[3]
+        ts_pdfm_s = VisAcc(ob_onset_cat, pdfm_s_cat).get_ts_ge()[3]
+        ob_termination_cat = np.concatenate(cat_data[(cat, 2, 'ob')])
         cma_e_cat = np.concatenate(cat_data[(cat, 2, 'cma')])
         pdfm_e_cat = np.concatenate(cat_data[(cat, 2, 'pdfm')])
-        ts_cma_e = VisAcc(ob_e_cat, cma_e_cat).get_ts_ge()[3]
-        ts_pdfm_e = VisAcc(ob_e_cat, pdfm_e_cat).get_ts_ge()[3]
-        ob_p_cat = np.concatenate(cat_data[(cat, 3, 'ob')])
+        ts_cma_e = VisAcc(ob_termination_cat, cma_e_cat).get_ts_ge()[3]
+        ts_pdfm_e = VisAcc(ob_termination_cat, pdfm_e_cat).get_ts_ge()[3]
+        ob_severe_cat = np.concatenate(cat_data[(cat, 3, 'ob')])
         cma_p_cat = np.concatenate(cat_data[(cat, 3, 'cma')])
         pdfm_p_cat = np.concatenate(cat_data[(cat, 3, 'pdfm')])
-        ts_cma_p = VisAcc(ob_p_cat, cma_p_cat).get_ts_ge()[3]
-        ts_pdfm_p = VisAcc(ob_p_cat, pdfm_p_cat).get_ts_ge()[3]
+        ts_cma_p = VisAcc(ob_severe_cat, cma_p_cat).get_ts_ge()[3]
+        ts_pdfm_p = VisAcc(ob_severe_cat, pdfm_p_cat).get_ts_ge()[3]
         cat_str = f'Category {cat}  '
         cma_s = f'a:{ts_cma_all:.4f}, s:{ts_cma_s:.4f}, '
         cma_s += f'e:{ts_cma_e:.4f}, p:{ts_cma_p:.4f}'
@@ -259,14 +293,14 @@ def analyze_case_studies(
         pdfm_s = f'a:{ts_pdfm_all:.4f}, s:{ts_pdfm_s:.4f}, '
         pdfm_s += f'e:{ts_pdfm_e:.4f}, p:{ts_pdfm_p:.4f}'
         pdfm_str = f'PDFM=[{pdfm_s}]'
-        def _impr(t_pdfm: float, t_cma: float) -> float:
-            """Compute percentage improvement of PDFM over CMA."""
+        def _gain(t_pdfm: float, t_cma: float) -> float:
+            """Compute percentage gainovement of PDFM over CMA."""
             return ((t_pdfm - t_cma) / t_cma * 100
                     if t_cma != 0 else np.nan)
-        impr_all = _impr(ts_pdfm_all, ts_cma_all)
-        impr_s = _impr(ts_pdfm_s, ts_cma_s)
-        impr_e = _impr(ts_pdfm_e, ts_cma_e)
-        impr_p = _impr(ts_pdfm_p, ts_cma_p)
-        impr_str = (f'Impr=[a:{impr_all:.2f}%, s:{impr_s:.2f}%, '
-                    f'e:{impr_e:.2f}%, p:{impr_p:.2f}%]')
-        print(cat_str + cma_str + pdfm_str + '  ' + impr_str)
+        gain_all = _gain(ts_pdfm_all, ts_cma_all)
+        gain_s = _gain(ts_pdfm_s, ts_cma_s)
+        gain_e = _gain(ts_pdfm_e, ts_cma_e)
+        gain_p = _gain(ts_pdfm_p, ts_cma_p)
+        gain_str = (f'Gain=[a:{gain_all:.2f}%, s:{gain_s:.2f}%, '
+                    f'e:{gain_e:.2f}%, p:{gain_p:.2f}%]')
+        print(cat_str + cma_str + pdfm_str + '  ' + gain_str)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Register a trained PDF model into the operational model registry.
+"""Register a trained PDFM model into the operational model registry.
 
 Copies the .dat model file into the registry directory and upserts its
 metadata entry (model_id, training_end, created_at, station_ids) into
@@ -11,8 +11,8 @@ Usage:
     python register_model.py <dat_path> <training_end> [model_id] [registry_dir]
 
 Founded in 2026-07-31
-Modified in 2026-07-31
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import json
@@ -24,7 +24,7 @@ import typing
 
 import arrow
 
-from src import logger, model_registry, near_map, pdf_model, utils
+from src import logger, model_registry, near_map, postprocess, utils
 
 
 def _parse_args(argv: typing.List[str]) -> typing.Tuple:
@@ -51,25 +51,25 @@ def _parse_args(argv: typing.List[str]) -> typing.Tuple:
 
 
 def _inspect_model(dat_path: pathlib.Path) -> int:
-    """Load a .dat file and return the number of PDF models inside.
+    """Load a .dat file and return the number of PDFM models inside.
 
     Args:
         dat_path: Path to the joblib-serialized model file.
 
     Returns:
-        int: 1 for a single PDF, list length for per-station models.
+        int: 1 for a single PDFM, list length for per-station models.
 
     Raises:
-        TypeError: If the file contains neither PDF nor list[PDF].
+        TypeError: If the file contains neither PDFM nor list[PDFM].
     """
-    model = pdf_model.load_pdf_file(dat_path)
-    if isinstance(model, pdf_model.PDF):
+    model = postprocess.load_pdfm_file(dat_path)
+    if isinstance(model, postprocess.PDFM):
         return 1
     if isinstance(model, list) and all(
-        isinstance(m, pdf_model.PDF) for m in model
+        isinstance(m, postprocess.PDFM) for m in model
     ):
         return len(model)
-    raise TypeError(f'Expected PDF or list[PDF], got {type(model)}')
+    raise TypeError(f'Expected PDFM or list[PDFM], got {type(model)}')
 
 
 def _resolve_registry_dir(
@@ -149,7 +149,7 @@ def main(args: typing.Optional[typing.Tuple] = None) -> None:
     if not dat_path.exists():
         raise FileNotFoundError(f'Model file not found: {dat_path}')
     n_models = _inspect_model(dat_path)
-    logger.info(f'Model file {dat_path}: {n_models} PDF model(s)')
+    logger.info(f'Model file {dat_path}: {n_models} PDFM model(s)')
 
     # 3. Build station_ids and check the model/station count
     sta = near_map.load_stations(cfg)
@@ -175,7 +175,7 @@ def main(args: typing.Optional[typing.Tuple] = None) -> None:
         model_id = f'{dat_path.stem}_tend{tend.format("YYYYMMDD")}'
     entry = {
         'model_id': model_id,
-        'model_type': 'PDF',
+        'model_type': 'PDFM',
         'path': dat_path.name,
         'training_end': tend.isoformat(),
         'created_at': arrow.now().isoformat(),

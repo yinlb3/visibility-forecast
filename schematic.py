@@ -6,15 +6,17 @@ Display color distribution along diagonal
 Fixed Chinese font and memory issues
 
 Founded in 2026-04-04
-Modified in 2026-08-06
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
+import colorsys
+import gc
 import pathlib
+import random
 import typing
 
 import arrow
-import matplotlib as mpl
 import numpy as np
 
 from matplotlib import axes
@@ -25,12 +27,9 @@ from matplotlib import pyplot as plt
 from src import utils
 
 
-mpl.use('Agg')
-mpl.rcParams['font.family'] = 'serif'
-mpl.rcParams['font.serif'] = ['Times New Roman', 'SimSun']
-mpl.rcParams['axes.unicode_minus'] = False
-
-
+# schematic.py is the only module that registers a concrete Chinese font
+# file at runtime (see _set_matplotlib_params). The global backend and
+# rcParams are set once in src/utils.py and inherited through the import.
 def _setup_chinese_font(fonts_cfg: typing.Dict) -> typing.Optional[str]:
     """
     Configure Chinese font support.
@@ -154,15 +153,14 @@ def _generate_color_map(
         # Build a pool from several qualitative colormaps, then sample evenly
         # in hue space so adjacent diagonals are clearly different but not
         # arranged in a rigid alternating pattern.
-        import colorsys
-
         qualitative_cmaps = ['tab20', 'tab20b', 'tab20c', 'Set1', 'Set2',
                              'Set3', 'Dark2', 'Pastel1']
         pool = _build_qualitative_pool(qualitative_cmaps)
 
         # Sort pool by hue and pick evenly spaced colors
         pool_with_hue = [
-            (colorsys.rgb_to_hsv(c[0], c[1], c[2])[0], c) for c in pool
+            (colorsys.rgb_to_hsv(rgb[0], rgb[1], rgb[2])[0], rgb)
+            for rgb in pool
         ]
         pool_with_hue.sort(key=lambda x: x[0])
         n_pool = len(pool_with_hue)
@@ -176,8 +174,6 @@ def _generate_color_map(
     if distinct_mode == 'distinct_random':
         # Randomly shuffle a qualitative color pool for a non-gradient look.
         # Fixed seed guarantees reproducibility.
-        import random
-
         qualitative_cmaps = ['tab20', 'tab20b', 'tab20c', 'Set1', 'Set2',
                              'Set3', 'Dark2', 'Pastel1']
         pool = _build_qualitative_pool(qualitative_cmaps)
@@ -203,7 +199,7 @@ def _draw_grid(
 
     Only the right-lower triangle (i + j >= size - 1) is filled,
     because those cells represent valid (init_time, lead_time) pairs
-    that share the same forecast valid time along each anti-diagonal.
+    that shere the same forecast valid time along each anti-diagonal.
     Add black grid lines for distinction.
 
     Args:
@@ -234,7 +230,6 @@ def _draw_grid(
                 ax.add_patch(rect)
 
         # Force garbage collection after each batch
-        import gc
         gc.collect()
 
     # Set axis range

@@ -4,15 +4,14 @@
 Part 2.3: Temporal distribution feature plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-08-06
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import gc
 import pathlib
 import typing
 
-import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -21,12 +20,6 @@ from matplotlib import axes
 from matplotlib import pyplot as plt
 
 from src import utils
-
-
-mpl.use('Agg')
-mpl.rcParams['font.family'] = 'serif'
-mpl.rcParams['font.serif'] = ['Times New Roman', 'SimSun']
-mpl.rcParams['axes.unicode_minus'] = False
 
 
 def _plot_stack_bar(
@@ -102,7 +95,7 @@ def plot_monthly_bars(
         color_precip=color_precip, color_fog=color_fog, color_haze=color_haze
     )
     ax.set_xlim(tuple(xlim))
-    ax.set_xticks(range(1, 13), [f'{x}月' for x in range(1, 13)])
+    ax.set_xticks(range(1, 13), [f'{mon}月' for mon in range(1, 13)])
     ax.set_ylim(tuple(ylim))
     ax.set_yticks(tuple(yticks))
     ax.set_xlabel('月份')
@@ -124,7 +117,7 @@ def plot_monthly_bars(
         color=False, bar_width=bar_width
     )
     ax.set_xlim(tuple(xlim))
-    ax.set_xticks(range(1, 13), [f'{x}月' for x in range(1, 13)])
+    ax.set_xticks(range(1, 13), [f'{mon}月' for mon in range(1, 13)])
     ax.set_ylim(tuple(ylim))
     ax.set_yticks(tuple(yticks))
     ax.set_xlabel('月份')
@@ -224,7 +217,7 @@ def plot_hourly_bars(
     )
     ax.set_xlim(tuple(xlim))
     ax.set_xticks(range(0, 24, 2))
-    ax.set_xticklabels([f'{x:02d}:00' for x in range(0, 24, 2)])
+    ax.set_xticklabels([f'{hr:02d}:00' for hr in range(0, 24, 2)])
     ax.set_ylim(tuple(ylim))
     ax.set_yticks(tuple(yticks))
     ax.set_xlabel('时间 (UTC) ')
@@ -247,7 +240,7 @@ def plot_hourly_bars(
     )
     ax.set_xlim(tuple(xlim))
     ax.set_xticks(range(0, 24, 2))
-    ax.set_xticklabels([f'{x:02d}:00' for x in range(0, 24, 2)])
+    ax.set_xticklabels([f'{hr:02d}:00' for hr in range(0, 24, 2)])
     ax.set_ylim(tuple(ylim))
     ax.set_yticks(tuple(yticks))
     ax.set_xlabel('时间 (UTC) ')

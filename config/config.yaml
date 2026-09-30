@@ -247,7 +247,7 @@ draw:
   # (dense fog)
   # Based on China Meteorological Administration visibility grade standards
 
-# Temporal-lead experiment configuration (tl.py)
+# Lead-by-lead TLE experiment configuration (tle_experiment.py)
 tl:
   input_files:
     observation_npy: 'vis1183_ob.npy'
@@ -308,72 +308,10 @@ access:
       pdfm_mlyr: 'vis_gjz_pdfm_mlyr.npy'
       tle_mlyr: 'vis_gjz_tle_mlyr.npy'
 
-# National station visibility extraction configuration (vis2411.py)
-vis2411:
-  input_files:
-    csv_template: '{yyyymm}.csv'
-  output_files:
-    visibility_npy: 'vis.npy'
-  params:
-    start_year: 1951
-    n_months: 876
-    n_stations: 2411
-    n_total_hours: 639912
-    station_id_column: 'Station_Id_C'
-    time_column: 'Datetime'
-    vis_column_legacy: 'VIS_HOR_10MI'
-    vis_column_modern: 'VIS_Min'
-    modern_split_year: 2016
-
-# Optimal threshold selection configuration (ots.py)
-ots:
-  input_files:
-    observation_npy: 'vis1183_ob.npy'
-    forecast_npy: 'vis1183_pr.npy'
-    station_index_npy: 'index_sta08.npy'
-  output_files:
-    calibrated_forecast: 'vis1085_shr_ots0.npy'
-  params:
-    max_visibility: 60000.0
-    output_lead_hours: 24
-    mapping_thresholds: [30500.0, 8900.0, 1300.0, 270.0, 160.0, 84.0]
-
-# Visibility grade analysis configuration (vis_grade.py)
-vis_grade:
-  input_files:
-    visibility_npy: 'vis_grade.npy'
-    station_csv: '国家气象观测站.csv'
-  output_files:
-    output_dir: 'vis_grade'
-  params:
-    start_year: 1980
-    end_year: 2013
-    n_raw_stations: 2410
-    n_selected_stations: 97
-    grade_thresholds: [10000., 2000., 1000., 500., 200., 50.]
-    miss_rate_threshold: 0.02
-    excluded_sta_idx: 54
-    daily_obs_per_day: 4
-    map_extend: [108.65, 114.4, 24.5, 30.25]
-    plot_configs:
-      - column: '<1000'
-        filename: '1000.png'
-        title: '能见度不足1000米天数'
-        clevs: [0, 8, 16, 24, 32, 40, 48, 56, 64]
-      - column: '<500'
-        filename: '500.png'
-        title: '能见度不足500米天数'
-        clevs: [0, 6, 12, 18, 24, 30, 36, 42, 48]
-      - column: '<200'
-        filename: '200.png'
-        title: '能见度不足200米天数'
-        clevs: [0, 4, 8, 12, 16, 20, 24, 28, 32]
-      - column: '<50'
-        filename: '50.png'
-        title: '能见度不足50米天数'
-        clevs: [0, 3, 6, 9, 12, 15, 18, 21, 24]
-
-# Huanghua airport monthly logbook extraction configuration (huanghua.py)
+# Huanghua airport monthly logbook extraction configuration
+# (huanghua_airport.py). Huanghua airport publishes its observations in a
+# proprietary monthly-logbook layout, so this section describes that source
+# format rather than the standard national station feed.
 huanghua:
   input_files:
     base_dir: '历年月总簿（2013-2023）'

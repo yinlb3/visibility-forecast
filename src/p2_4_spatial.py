@@ -4,8 +4,8 @@
 Part 2.4: Spatial distribution feature plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-08-06
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import contextlib
@@ -16,8 +16,6 @@ import typing
 import numpy as np
 import pandas as pd
 from meteva import base as meb    # type: ignore
-
-from src import utils
 
 
 def _scatter_sta_pair(

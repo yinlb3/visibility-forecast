@@ -86,6 +86,8 @@ operational:
   forecast:
     # Filename template for raw GRIB2 forecast files.
     # Available placeholders: {init_time}, {init_date}, {init_year}, {lead}
+    # The template is a single indivisible value and stays on one line even
+    # when it exceeds 80 characters.
     filename_template: '{init_year}/{init_date}/Z_NAFP_C_BCSH_{init_time}0000_P_surface-warr-f{lead:02d}.BIN'
     # Lead hours to process for each initialization time (f01-f24)
     lead_hours: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,

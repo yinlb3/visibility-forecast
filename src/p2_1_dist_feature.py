@@ -4,8 +4,8 @@
 Part 2.1: Distribution feature calculation module.
 
 Founded in 2026-04-14
-Modified in 2026-05-09
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import pathlib
@@ -46,16 +46,24 @@ def build_month_stats(
         df_month['month'].append(j + 1)
         mask = month_ind == j + 1
         valid = np.sum(vis_grade[mask, :] >= 0)
-        vg = vis_grade[mask, :]
-        a_m = mask_pre[mask, :]
-        b_m = mask_fog[mask, :]
-        c_m = mask_haze[mask, :]
+        grade_month = vis_grade[mask, :]
+        mask_pre_month = mask_pre[mask, :]
+        mask_fog_month = mask_fog[mask, :]
+        mask_haze_month = mask_haze[mask, :]
         for i in range(len(thres)):
             grade = i + 1
-            df_month[str(grade)].append(np.sum(vg >= grade) / valid)
-            df_month[str(grade) + 'pre'].append(np.sum(a_m >= grade) / valid)
-            df_month[str(grade) + 'fog'].append(np.sum(b_m >= grade) / valid)
-            df_month[str(grade) + 'haze'].append(np.sum(c_m >= grade) / valid)
+            df_month[str(grade)].append(
+                np.sum(grade_month >= grade) / valid
+            )
+            df_month[str(grade) + 'pre'].append(
+                np.sum(mask_pre_month >= grade) / valid
+            )
+            df_month[str(grade) + 'fog'].append(
+                np.sum(mask_fog_month >= grade) / valid
+            )
+            df_month[str(grade) + 'haze'].append(
+                np.sum(mask_haze_month >= grade) / valid
+            )
     return df_month
 
 

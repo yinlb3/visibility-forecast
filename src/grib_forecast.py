@@ -5,8 +5,8 @@ Reads visibility forecast fields from GRIB2 files and interpolates them
 onto a regular lat-lon grid using meteva station-to-grid IDW.
 
 Founded in 2026-07-16
-Modified in 2026-08-06
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import os
@@ -193,11 +193,11 @@ def interp_station_to_grid(
 
     lon_min, lon_max, lat_min, lat_max = _compute_extent(lat, lon, buffer_deg)
 
-    n = values.size
+    n_points = values.size
     df = pd.DataFrame({
-        'level': np.zeros(n, dtype=np.int32),
-        'time': [pd.Timestamp.now()] * n,
-        'dtime': np.zeros(n, dtype=np.int32),
+        'level': np.zeros(n_points, dtype=np.int32),
+        'time': [pd.Timestamp.now()] * n_points,
+        'dtime': np.zeros(n_points, dtype=np.int32),
         'id': np.arange(n, dtype=np.int32),
         'lon': lon.flatten(),
         'lat': lat.flatten(),
@@ -397,13 +397,17 @@ def generate_fallback_grid(
 
     if sample_dir_cfg and sample_dir_cfg != '<SAMPLE_DIR>':
         search_root = pathlib.Path(sample_dir_cfg)
-        candidates = [p for p in search_root.iterdir() if _is_lead_file(p)]
+        candidates = [
+            item for item in search_root.iterdir() if _is_lead_file(item)
+        ]
     else:
         # Default: scan all lead files under ops/products
         product_root = pathlib.Path(
             cfg['operational']['paths']['product_dir']
         )
-        candidates = [p for p in product_root.rglob('*') if _is_lead_file(p)]
+        candidates = [
+            item for item in product_root.rglob('*') if _is_lead_file(item)
+        ]
 
     if not candidates:
         raise FileNotFoundError(
@@ -479,11 +483,15 @@ def load_supplement_grid(
         candidates.append(exact_path)
     elif day_dir.exists():
         available = sorted(
-            [p for p in day_dir.iterdir() if _is_lead_file(p)]
+            [item for item in day_dir.iterdir() if _is_lead_file(item)]
         )
         if available:
-            leads_files = [(int(p.suffix[1:]), p) for p in available]
-            nearest = min(leads_files, key=lambda x: abs(x[0] - lead))[1]
+            leads_files = [
+                (int(item.suffix[1:]), item) for item in available
+            ]
+            nearest = min(
+                leads_files, key=lambda pair: abs(pair[0] - lead)
+            )[1]
             candidates.append(nearest)
 
     if not candidates:

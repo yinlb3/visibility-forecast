@@ -4,26 +4,20 @@
 Part 2.2: Event type proportion output and plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-06-30
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import gc
 import pathlib
 import typing
 
-import matplotlib as mpl
 import numpy as np
+import seaborn as sns
 
 from matplotlib import pyplot as plt
 
 from src import utils
-
-
-mpl.use('Agg')
-mpl.rcParams['font.family'] = 'serif'
-mpl.rcParams['font.serif'] = ['Times New Roman', 'SimSun']
-mpl.rcParams['axes.unicode_minus'] = False
 
 
 def plot_obs_pies(
@@ -74,8 +68,6 @@ def plot_obs_violin_box(
     """
     Plot violin/box for vis < 500m events.
     """
-    import seaborn as sns
-
     plot_cfg = cfg['draw']['plot']['obs_violin_box']
     # Focus on vis < 500m (grade 4+) because these events have the largest
     # forecast difficulty and operational impact among all low-vis categories.

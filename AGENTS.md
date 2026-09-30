@@ -41,17 +41,23 @@ You are an AI programming assistant for this meteorological data analysis projec
 - `src/utils.py`, `src/vis_acc.py` - Shared utilities and verification class
 - `figures/` - Output directory for images, CSV, NPY files
 - `draw.py` - Main orchestrator (flat pipeline, calls step modules directly)
-- `access.py` - Forecast verification and PDF matching correction
-- `tl.py` - Temporal lead experiment analysis
-- `ots.py` - Optimal threshold selection
-- `pipeline.py` - Unified operational pipeline (preprocess + inference in one process)
+- `access.py` - Forecast verification and PDFM correction schemes
+- `tle_experiment.py` - Lead-by-lead TLE experiment over station observations
+- `huanghua_airport.py` - Huanghua airport monthly-logbook data extraction
+- `pipeline.py` - Unified operational pipeline (read, correct, write in one process)
 - `build_near_map.py` - One-time nearest-station map builder
 - `src/grib_forecast.py` - GRIB reading and station-to-grid interpolation
+- `src/forecast_prep.py` - Data stage: GRIB reading, interpolation, intermediate storage
+- `src/postprocess.py` - Model stage: PDFM class, TLE averaging, PDFM cache
+- `src/product_writer.py` - Product stage: MICAPS4 output and display copying
 - `src/near_map.py` - Nearest-station map build/load utilities
 - `src/model_registry.py` - Model registry for operational inference
-- `src/tle_model.py` - Time-lagged ensemble averaging for operational inference
 - `src/logger.py` - Print-based operational logger
 - `D:\data\vis\` - Input data directory (not under version control)
+
+The operational pipeline is split by stage, each stage in one module:
+`forecast_prep` (data) -> `postprocess` (model) -> `product_writer`
+(product). `pipeline.py` only orchestrates the flow and parses arguments.
 
 ## 2. Commands
 
@@ -59,17 +65,17 @@ You are an AI programming assistant for this meteorological data analysis projec
 # One-click execution
 python draw.py
 
-# Operational pipeline (unified: preprocess + inference)
+# Operational pipeline (GRIB -> PDFM/TLE -> corrected m4)
 bash run_pipeline.sh              # Linux: real-time or backfill
 run_pipeline.bat                  # Windows: real-time or backfill
 
 # Step-by-step (alternative scripts)
-python pipeline.py [--utc|--bjt] [YYYYMMDDHH] [YYYYMMDDHH]     # Unified GRIB -> corrected m4
+python pipeline.py [--utc|--bjt] [YYYYMMDDHH] [YYYYMMDDHH]  # GRIB -> corrected m4
 python build_near_map.py                           # Build nearest-station map once
 python register_model.py <dat_path> <training_end> [model_id] [registry_dir]
-python access.py    # Forecast correction and verification
-python tl.py        # Temporal lead experiment analysis
-python ots.py       # Optimal threshold selection
+python access.py            # PDFM correction schemes and verification
+python tle_experiment.py     # Lead-by-lead TLE experiment
+python huanghua_airport.py   # Huanghua airport logbook extraction
 ```
 
 Before running, confirm:
@@ -134,7 +140,7 @@ See the Git guidelines below and the additional notes in this document.
 ### In Progress
 | Task | Description | Notes |
 |------|-------------|-------|
-| Operational Inference Pipeline | Implement unified `pipeline.py` for real-time and backfill operation, driven by 0/1/2 YYYYMMDDHH command-line arguments; add `src/logger.py`, `src/model_registry.py`, `src/tle_model.py`, `config/operational.yaml`, and remove legacy `preprocess.py`/`inference.py`; GRIB -> PDFM correction -> save PDFM cache -> load previous 24 h caches (regenerate from GRIB if missing) -> TLE averaging -> m4 product output | implementation complete, server testing in progress |
+| Operational Inference Pipeline | Implement unified `pipeline.py` for real-time and backfill operation, driven by 0/1/2 YYYYMMDDHH command-line arguments; add `src/logger.py`, `src/model_registry.py`, `config/operational.yaml`, and remove legacy `preprocess.py`/`inference.py`; GRIB -> PDFM correction -> save PDFM cache -> load previous 24 h caches (regenerate from GRIB if missing) -> TLE averaging -> m4 product output | implementation complete, server testing in progress |
 
 ### Todo
 | Task | Description | Priority |
@@ -142,7 +148,8 @@ See the Git guidelines below and the additional notes in this document.
 | Special Industry Risk Product Development | Develop visibility risk products for special industries such as transportation and aviation | P1 |
 | Preprocessing Parallelization | Research memory-aware dynamic parallelization for GRIB interpolation tasks (joblib / batch scheduling) to speed up multi-init-time preprocessing on servers | P2 |
 | Multi-model Data Application | Apply multi-model forecast data to visibility analysis and product services | P2 |
+| Code Documentation Refresh | Refresh `README.md`, `README_cn.md`, and `docs/OPERATIONAL_INFERENCE_PIPELINE_cn.md` to match the current code; `comment_analysis.md` was removed because it described modules that no longer exist | P2 |
 
 ---
 
-**Last Updated**: 2026-08-17
+**Last Updated**: 2026-09-30

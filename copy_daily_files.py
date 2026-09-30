@@ -18,8 +18,8 @@ Examples:
     python copy_daily_files.py 20260701 20260702 20260717 -p <DIR>
 
 Founded in 2026-07-17
-Modified in 2026-07-26
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import argparse
@@ -273,4 +273,5 @@ def main(argv: typing.Optional[typing.List[str]] = None) -> None:
 
 
 if __name__ == '__main__':
+    print('Program copy_daily_files.py started')
     main()

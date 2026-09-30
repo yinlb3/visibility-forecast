@@ -6,8 +6,8 @@ Model metadata is stored in model_registry.json; model files are loaded
 via type-specific loaders.
 
 Founded in 2026-07-16
-Modified in 2026-08-06
-@author: yinlb
+Modified in 2026-09-30
+@author: yinlb, space-bunny
 """
 
 import copy
@@ -17,7 +17,7 @@ import typing
 
 import arrow
 
-from src import pdf_model
+from src import postprocess
 
 
 class ModelRegistry:
@@ -46,7 +46,10 @@ class ModelRegistry:
         self._default_model_id = default_model_id
         self._models: typing.Dict[str, typing.Dict] = {}
         self._loaders: typing.Dict[str, typing.Callable] = {
-            'PDF': self._load_pdf,
+            # Both keys map to the same loader: registry files written
+            # before the PDFM rename still carry model_type 'PDF'.
+            'PDFM': self._load_pdfm,
+            'PDF': self._load_pdfm,
         }
         self.discover()
 
@@ -58,6 +61,8 @@ class ModelRegistry:
             return
         with open(registry_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
+        # Both shapes are accepted: a mapping keyed by model_id, and the
+        # older list-of-entries form. The list form is converted in place.
         models = data.get('models', {})
         if isinstance(models, list):
             self._models = {entry['model_id']: entry for entry in models}
@@ -86,6 +91,7 @@ class ModelRegistry:
                 f'Model \'{model_id}\' not found in registry. '
                 f'Available: {self.list_models()}'
             )
+        # Return a copy so callers cannot mutate the registry state.
         return self._models[model_id].copy()
 
     def select_model_id(
@@ -109,7 +115,7 @@ class ModelRegistry:
         self,
         model_id: typing.Optional[str] = None,
         init_time: typing.Optional[str] = None,
-    ) -> pdf_model.PDF:
+    ) -> postprocess.PDFM:
         """
         Load and return a model instance.
 
@@ -132,13 +138,15 @@ class ModelRegistry:
                 f'No loader registered for model type \'{model_type}\''
             )
         rel_path = metadata.get('path', '')
+        # Paths in the registry are relative so the registry stays portable
+        # across machines and deployment directories.
         full_path = self._registry_dir / rel_path
         return self._loaders[model_type](full_path)
 
     def register_loader(
         self,
         model_type: str,
-        loader: typing.Callable[[pathlib.Path], pdf_model.PDF],
+        loader: typing.Callable[[pathlib.Path], postprocess.PDFM],
     ) -> None:
         """
         Register a custom loader for a model type.
@@ -185,6 +193,7 @@ class ModelRegistry:
                 for the given init_time.
         """
         target = model_id if model_id is not None else self._default_model_id
+        # An explicit id is taken as-is; only 'latest' needs resolution.
         if target != 'latest':
             return target
 
@@ -193,11 +202,13 @@ class ModelRegistry:
             raise RuntimeError('No models registered in registry.')
 
         if init_time is not None:
+            # Backfill safety: only models whose training ended before the
+            # init time are valid, otherwise the run leaks future information.
             dt = arrow.get(init_time, 'YYYYMMDDHH')
             valid = [
-                m for m in candidates
-                if 'training_end' in m
-                and arrow.get(m['training_end']) <= dt
+                model_meta for model_meta in candidates
+                if 'training_end' in model_meta
+                and arrow.get(model_meta['training_end']) <= dt
             ]
             if not valid:
                 raise RuntimeError(
@@ -207,31 +218,36 @@ class ModelRegistry:
 
         latest = max(
             candidates,
-            key=lambda m: arrow.get(m.get('created_at', '1970-01-01'))
+            key=lambda model_meta: arrow.get(
+                model_meta.get('created_at', '1970-01-01')
+            )
         )
         return latest['model_id']
 
-    def _load_pdf(
+    def _load_pdfm(
         self, path: pathlib.Path
-    ) -> typing.Union[pdf_model.PDF, typing.List[pdf_model.PDF]]:
-        """Load a PDF model or a list of station-specific PDF models.
+    ) -> typing.Union[
+        postprocess.PDFM, typing.List[postprocess.PDFM]
+    ]:
+        """Load a PDFM model or a list of station-specific PDFM models.
 
         Args:
             path: Path to the joblib-serialized model file.
 
         Returns:
-            A PDF instance, or a list of PDF instances.
+            A PDFM instance, or a list of PDFM instances.
 
         Raises:
-            TypeError: If the file contains neither PDF nor list[PDF].
+            TypeError: If the file contains neither PDFM nor list[PDFM].
         """
-        model = pdf_model.load_pdf_file(path)
-        if isinstance(model, pdf_model.PDF):
+        model = postprocess.load_pdfm_file(path)
+        if isinstance(model, postprocess.PDFM):
             return model
+        # Per-station models are stored as a plain list in one file.
         if isinstance(model, list) and all(
-            isinstance(m, pdf_model.PDF) for m in model
+            isinstance(item, postprocess.PDFM) for item in model
         ):
             return model
         raise TypeError(
-            f'Expected PDF or list[PDF], got {type(model)}'
+            f'Expected PDFM or list[PDFM], got {type(model)}'
         )

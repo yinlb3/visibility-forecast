@@ -4,13 +4,15 @@ config/*.local.windows.yaml
 config/*.local.linux.yaml
 config.local.yaml
 
-# IDE configuration
+# Tool session data
+.kimi/
+.claude/
+
+# IDE / editor MCP configuration
 .idea/
 .vscode/
+.serena/
 *.swp
-
-# Kimi CLI session data
-.kimi/
 
 # Virtual environments
 venv/
@@ -49,9 +51,12 @@ _*.py
 _*.txt
 _*.csv
 _*.npy
+# Dunder files are standard Python module files (__init__.py, __main__.py),
+# not temporary ones. This must stay AFTER _*.py or the exemption is ignored.
+!__*__.py
 
 # Local-only documentation (not for upload)
-docs/OPERATIONAL_INFERENCE_PIPELINE.md
+docs/OPERATIONAL_INFERENCE_PIPELINE_cn.md
 
 # Model registry data (large binaries, keep local only)
 model/
