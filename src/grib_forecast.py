@@ -9,7 +9,6 @@ Modified in 2026-09-30
 @author: yinlb, space-bunny
 """
 
-import os
 import pathlib
 import random
 import shutil
@@ -311,7 +310,7 @@ def load_forecast_for_init(
 
     if use_temp:
         temp_dir = pathlib.Path(temp_dir_cfg)
-        os.makedirs(temp_dir, exist_ok=True)
+        temp_dir.mkdir(parents=True, exist_ok=True)
         temp_path = temp_dir / file_path.name
         shutil.copy2(str(file_path), str(temp_path))
     else:

@@ -9,7 +9,6 @@ Modified in 2026-09-30
 """
 
 import gc
-import os
 import pathlib
 import typing
 
@@ -96,7 +95,7 @@ def plot_weather_type_eval_bw(
 ) -> None:
     """Plot weather-type metric comparison bars (B&W style)."""
     plot_cfg = cfg['draw']['plot']['weather_type_eval_bw']
-    os.makedirs(name=output_dir, exist_ok=True)
+    pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
     figsize = plot_cfg['figsize']
     dpi = plot_cfg['dpi']
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)

@@ -8,7 +8,6 @@ Modified in 2026-09-30
 @author: yinlb, space-bunny
 """
 
-import os
 import pathlib
 import typing
 
@@ -31,7 +30,7 @@ def _save_stage1_cache(
     cache_dir: str,
 ) -> None:
     """Save stage 1 intermediate results for skipping."""
-    os.makedirs(cache_dir, exist_ok=True)
+    pathlib.Path(cache_dir).mkdir(parents=True, exist_ok=True)
     sta.to_csv(str(pathlib.Path(cache_dir) / 'sta.csv'), index=False)
     np.save(str(pathlib.Path(cache_dir) / 'vis.npy'), vis)
     np.save(str(pathlib.Path(cache_dir) / 'pre.npy'), pre)

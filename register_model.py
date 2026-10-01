@@ -16,7 +16,6 @@ Modified in 2026-09-30
 """
 
 import json
-import os
 import pathlib
 import shutil
 import sys
@@ -119,6 +118,7 @@ def _upsert_entry(json_path: pathlib.Path, entry: typing.Dict) -> None:
     ]
     models.append(entry)
     data['models'] = models
+    json_path.parent.mkdir(parents=True, exist_ok=True)
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2)
     action = 'Updated' if replaced else 'Added'
@@ -163,7 +163,7 @@ def main(args: typing.Optional[typing.Tuple] = None) -> None:
 
     # 4. Copy the model file into the registry directory
     reg_dir = _resolve_registry_dir(dir_arg, cfg)
-    os.makedirs(str(reg_dir), exist_ok=True)
+    pathlib.Path(reg_dir).mkdir(parents=True, exist_ok=True)
     dst_path = reg_dir / dat_path.name
     if dat_path.resolve() != dst_path.resolve():
         shutil.copy2(str(dat_path), str(dst_path))

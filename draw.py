@@ -7,7 +7,7 @@ Main entry module for visibility data visualization. Responsibilities:
 3. Draw statistical charts for papers (bars, box, violin, pie, heatmap).
 
 Founded in 2024-04-18
-Modified in 2026-08-06
+Modified in 2026-09-30
 @author: yinlb
 """
 
@@ -67,9 +67,12 @@ def main() -> None:
     data_dir = cfg['paths']['data_dir']
     thres = tuple(cfg['visibility']['grade_thresholds'])
 
+    # Create the output directory up front: every stage writes below it
+    os.makedirs(output_dir, exist_ok=True)
+
     # Either run full data prep or load from cached stage 1 results
     if stages['stage_1_data_prep']:
-        sta, idx_east_china = p1.read_sta(
+        sta, idx_east_china = p1.read_station(
             sta_path=str(pathlib.Path(data_dir) / 'sta2411.csv'),
             provinces=provinces
         )
@@ -93,7 +96,6 @@ def main() -> None:
         sta, vis, pre, rhu, vis_grade, month_ind, idx_mlyr = (
             p1._load_stage1_cache(cache_dir)
         )
-        os.makedirs(output_dir, exist_ok=True)
 
     # Load forecast datasets: CMA-SH-WARR + 5 PDFM-TLE experiment schemes
     print('[Data Prep] Loading forecast data...')
@@ -245,14 +247,14 @@ def main() -> None:
             pred_pdfm_tle2=pred_pdfm_tle2,
             output_dir=output_dir
         )
-        v_type = p31.load_v_type(
+        lve_type = p31.load_lve_type(
             data_dir=data_dir, idx_mlyr=idx_mlyr
         )
         type_dfs, type_str = p31.calc_type_metrics(
             vis_ob=vis_ob,
             cma_sh_warr=cma_sh_warr,
             pred_pdfm_tle0=pred_pdfm_tle0,
-            v_type=v_type
+            lve_type=lve_type
         )
         p31.save_type_results(type_dfs, output_dir=output_dir)
     else:
@@ -266,7 +268,7 @@ def main() -> None:
             str(csv_dir / 'vis_vt_ts4+.csv'), low_memory=False
         )
         df_fhour_ts4 = pd.read_csv(
-            str(csv_dir / 'vis_fhour_ts4+.csv'), low_memory=False
+            str(csv_dir / 'vis_ft_ts4+.csv'), low_memory=False
         )
 
     for s in overall_strs:

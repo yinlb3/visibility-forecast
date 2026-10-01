@@ -223,6 +223,7 @@ def main() -> None:
     """Run temporal-lead experiment and verification."""
     # 1. Load observation and forecast data
     data_dir = pathlib.Path(utils.CFG['paths']['data_dir'])
+    data_dir.mkdir(parents=True, exist_ok=True)
     ob = np.load(str(data_dir / _TL_INPUT['observation_npy']))[:, :, 1:, :]
     pr = np.load(str(data_dir / _TL_INPUT['forecast_npy']))[:, :, 1:, :]
     ob = utils.mask_missing(ob)

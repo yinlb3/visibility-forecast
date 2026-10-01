@@ -80,10 +80,10 @@ def write_corrected_m4_products(
     bj_init_time = utils.utc_to_beijing(init_time)
 
     product_dir = pathlib.Path(paths['product_dir']) / bj_init_time[:8]
-    os.makedirs(product_dir, exist_ok=True)
+    product_dir.mkdir(parents=True, exist_ok=True)
     display_dir = _display_dir_from_config(cfg)
     if display_dir is not None:
-        os.makedirs(display_dir, exist_ok=True)
+        display_dir.mkdir(parents=True, exist_ok=True)
 
     grid = meta['grid']
     meb_grid = meb.grid(

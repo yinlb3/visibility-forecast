@@ -129,6 +129,7 @@ def _apply_tle_to_4d(
 
 def _save_npy(path: pathlib.Path, arr: np.ndarray) -> None:
     """Save numpy array as float32 to path."""
+    path.parent.mkdir(parents=True, exist_ok=True)
     np.save(str(path), arr.astype(np.float32))
 
 

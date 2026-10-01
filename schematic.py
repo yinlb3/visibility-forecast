@@ -473,10 +473,11 @@ def main() -> None:
     _add_arrow_annotation(ax_arrow, grid_size, target_col=12.5)
 
     # 8. Save output files (no title per user request)
-    # Save files in all configured formats.
-    # PNG is rendered once; JPG/JPEG is derived from PNG via PIL to avoid
-    # Save files in all configured formats
+    # Create the output directory first: matplotlib does not create it
     output_dir = pathlib.Path(out_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save files in all configured formats
     for fmt in plot_cfg['output_formats']:
         output_path = str(output_dir / f'diagonal_grid_fixed.{fmt}')
         plt.savefig(

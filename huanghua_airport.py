@@ -201,6 +201,7 @@ def main() -> None:
         data_dir / _HUANGHUA_INPUT['base_dir']
         / _HUANGHUA_OUTPUT['meteogram_npy']
     )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     np.save(str(output_path), data)
 
 

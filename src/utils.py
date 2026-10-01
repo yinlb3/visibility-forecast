@@ -69,6 +69,9 @@ def save_figure(
     # Ensure base_path is Path object
     base = pathlib.Path(base_path)
 
+    # Create the parent directory so callers need not prepare it in advance
+    base.parent.mkdir(parents=True, exist_ok=True)
+
     for fmt in formats:
         # Clean format string (remove leading dot if present)
         fmt_clean = fmt.lstrip('.').lower()

@@ -354,8 +354,18 @@ def _fmt_list_m(lst: list) -> str:
 
 def _append_metrics(
     acc: VisAcc, group: typing.Dict[str, dict], name: str
-) -> None:
-    """Append VisAcc results to a metric group."""
+) -> typing.Dict[str, dict]:
+    """
+    Append VisAcc results to a metric group.
+
+    Args:
+        acc: Verification accumulator holding the computed metrics.
+        group: Metric group to extend.
+        name: Scheme name used as the key for the metric values.
+
+    Returns:
+        typing.Dict[str, dict]: The updated group, safe to assign back.
+    """
     group_new = group.copy()
     group_new['corr'][name].append(acc.get_r())
     group_new['mae'][name].append(acc.get_mae())
@@ -474,7 +484,7 @@ def calc_temporal_metrics(
     pred_pdfm_tle0: np.ndarray,
     pred_pdfm_tle2: np.ndarray,
     output_dir: str
-) -> np.ndarray:
+) -> typing.Tuple[np.ndarray, pd.DataFrame, pd.DataFrame]:
     """
     Calc init time/lead time/forecast time metrics and save.
 
@@ -486,7 +496,8 @@ def calc_temporal_metrics(
         output_dir (str): Output directory path.
 
     Returns:
-        np.ndarray: hour_access array of shape (2, 24, 24, 10).
+        typing.Tuple[np.ndarray, pd.DataFrame, pd.DataFrame]: hour_access
+        array of shape (2, 24, 24, 10), plus the vt and ft TS4 DataFrames.
     """
     ft_ind = build_ft_index()
     vt_group = _create_group(('vt', 'CMA-SH-WARR', 'PDFM-TLE'))
@@ -526,7 +537,7 @@ def calc_temporal_metrics(
     df_vt_ts4.to_csv(str(csv_dir / 'vis_vt_ts4+.csv'), index=False)
     df_ft_ts4.to_csv(str(csv_dir / 'vis_ft_ts4+.csv'), index=False)
     np.save(str(csv_dir / 'hour_access.npy'), hour_access)
-    return ha, df_vt_ts4, df_ft_ts4
+    return hour_access, df_vt_ts4, df_ft_ts4
 
 
 def load_lve_type(data_dir: str, idx_mlyr: np.ndarray) -> np.ndarray:
@@ -534,13 +545,15 @@ def load_lve_type(data_dir: str, idx_mlyr: np.ndarray) -> np.ndarray:
     Load visibility type data.
 
     Args:
-        data_dir (str): Directory containing lve_type.npy.
+        data_dir (str): Directory containing v_type.npy.
         idx_mlyr (np.ndarray): Index array for MLYR stations.
 
     Returns:
         np.ndarray: Reshaped visibility type array.
     """
-    lve_type = np.load(str(pathlib.Path(data_dir) / 'lve_type.npy'))
+    # The on-disk file is v_type.npy; only the function and variable names
+    # use the lve_ (Low Visibility Event) abbreviation.
+    lve_type = np.load(str(pathlib.Path(data_dir) / 'v_type.npy'))
     lve_type = np.reshape(lve_type[-365:, :, :, idx_mlyr], (-1, 24, 502))
     return lve_type
 
