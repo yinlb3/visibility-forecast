@@ -6,7 +6,7 @@ Display color distribution along diagonal
 Fixed Chinese font and memory issues
 
 Founded in 2026-04-04
-Modified in 2026-09-30
+Modified in 2026-10-01
 @author: yinlb, space-bunny
 """
 
@@ -20,70 +20,14 @@ import arrow
 import numpy as np
 
 from matplotlib import axes
-from matplotlib import font_manager as fm
 from matplotlib import patches
 from matplotlib import pyplot as plt
 
 from src import utils
 
 
-# schematic.py is the only module that registers a concrete Chinese font
-# file at runtime (see _set_matplotlib_params). The global backend and
-# rcParams are set once in src/utils.py and inherited through the import.
-def _setup_chinese_font(fonts_cfg: typing.Dict) -> typing.Optional[str]:
-    """
-    Configure Chinese font support.
-
-    Auto-detect system Chinese fonts
-    to fix DejaVu Sans missing CJK glyphs.
-
-    Args:
-        fonts_cfg: Font configuration dict with 'chinese' key.
-
-    Returns:
-        Path to available Chinese font, or None if not found.
-    """
-    possible_fonts = fonts_cfg['chinese']
-
-    # Try to find available Chinese font
-    for font_path in possible_fonts:
-        try:
-            # Test if font is available
-            prop = fm.FontProperties(fname=font_path)
-            text = 'Test Chinese'
-            # Try to render test text
-            fig_test = plt.figure()
-            ax_test = fig_test.add_subplot(111)
-            ax_test.text(0.5, 0.5, text, fontproperties=prop)
-            plt.close(fig_test)
-            print(f'Found font: {font_path}')
-            return font_path
-        except Exception:
-            continue
-
-    print('Warning: No Chinese font found, using English title')
-    return None
-
-
-def _set_matplotlib_params(chinese_font_path: typing.Optional[str]) -> None:
-    """
-    Set matplotlib parameters.
-
-    Including fonts, backend, etc.
-    Avoid font rendering issues.
-
-    Args:
-        chinese_font_path: Path to Chinese font, or None.
-    """
-    plt.rcParams['axes.unicode_minus'] = False  # Correct minus sign display
-
-    # If Chinese font found, register and use
-    if chinese_font_path:
-        # Register font
-        font_prop = fm.FontProperties(fname=chinese_font_path)
-        # Set global font
-        plt.rcParams['font.family'] = font_prop.get_name()
-        print(f'Font set to: {font_prop.get_name()}')
+# The matplotlib backend, rcParams and the Chinese font are applied by
+# src.utils.setup_plot_style(), which main() calls before plotting.
 
 
 # ==================== Core Functions ====================
@@ -394,9 +338,8 @@ def main() -> None:
     output_dpi = plot_cfg['dpi']
     out_dir = cfg['paths']['output_dir']
 
-    # 3. Setup Chinese font and matplotlib parameters
-    chinese_font_path = _setup_chinese_font(cfg['fonts'])
-    _set_matplotlib_params(chinese_font_path)
+    # 3. Apply the shared plot style, Chinese font first
+    utils.setup_plot_style(cfg['fonts'], chinese_first=True)
 
     # 4. Compute figure size from grid dimensions and cell size
     grid_width = grid_size * cell_size_inches

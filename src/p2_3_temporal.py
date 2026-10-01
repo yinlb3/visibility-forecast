@@ -4,7 +4,7 @@
 Part 2.3: Temporal distribution feature plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-09-30
+Modified in 2026-10-01
 @author: yinlb, space-bunny
 """
 
@@ -40,28 +40,28 @@ def _plot_stack_bar(
     if color:
         ax.bar(
             x=x, height=pre, width=bar_width,
-            color=color_precip, label='Precip'
+            color=color_precip, label='降水类'
         )
         ax.bar(
             x=x, height=fog, bottom=pre, width=bar_width,
-            color=color_fog, label='Fog'
+            color=color_fog, label='雾类'
         )
         ax.bar(
             x=x, height=haze, bottom=pre + fog, width=bar_width,
-            color=color_haze, label='Haze'
+            color=color_haze, label='霾类'
         )
     else:
         ax.bar(
             x=x, height=pre, width=bar_width,
-            color='black', edgecolor=edgecolor, label='Precip'
+            color='black', edgecolor=edgecolor, label='降水类'
         )
         ax.bar(
             x=x, height=fog, bottom=pre, width=bar_width,
-            color='white', edgecolor=edgecolor, hatch=hatch, label='Fog'
+            color='white', edgecolor=edgecolor, hatch=hatch, label='雾类'
         )
         ax.bar(
             x=x, height=haze, bottom=pre + fog, width=bar_width,
-            color='white', edgecolor=edgecolor, label='Haze'
+            color='white', edgecolor=edgecolor, label='霾类'
         )
 
 

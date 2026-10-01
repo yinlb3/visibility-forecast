@@ -1,9 +1,9 @@
-# vis
+# visibility-forecast
 
-[![Gitee](https://img.shields.io/badge/Gitee-vis-blue)](https://gitee.com/yinlb97/vis)
-[![GitHub](https://img.shields.io/badge/GitHub-vis-black)](https://github.com/yinlb3/vis)
+[![Gitee](https://img.shields.io/badge/Gitee-visibility--forecast-blue)](https://gitee.com/yinlb97/visibility-forecast)
+[![GitHub](https://img.shields.io/badge/GitHub-visibility--forecast-black)](https://github.com/yinlb3/visibility-forecast)
 
-> 气象能见度数据分析与可视化的 Python 脚本集合。
+> 面向中国东部气象站的能见度事件分析与快速更新预报订正，实现PDFM-TLE订正、分级检验（TS/FAR/MAR/POD）、时空分布分析与GRIB到业务产品的全流程。
 
 ## 功能特性
 
@@ -60,6 +60,7 @@ python huanghua_airport.py
 | 代码规范合规与路径配置 | 系统性检查并修复代码规范项，硬编码路径迁移至配置文件 | 2026-05-09 |
 | 代码重构 | 重构 `access.py`、`tl.py`、`vis2411.py`、`ots.py`、`vis_grade.py`、`huanghua.py`；可复用类（`PDF`、`OTS`）迁入 `src/pdf_model.py`、`src/ots_model.py`；硬编码路径改为 `config.yaml`；统一入口与英文注释 | 2026-07-16 |
 | 流程合并与阶段拆分 | 将 `preprocess.py`、`inference.py` 合并为 `pipeline.py`；业务化流程按数据（`forecast_prep`）、模型（`postprocess`）、产品（`product_writer`）三阶段拆分为独立模块；`PDF` 更名为 `PDFM` 并保持旧模型文件可加载；下线 `ots.py`、`vis2411.py`、`vis_grade.py`；`tl.py` 更名为 `tle_experiment.py`、`huanghua.py` 更名为 `huanghua_airport.py`；重写 `docs/OPERATIONAL_INFERENCE_PIPELINE_cn.md` 与 `docs/ABBREVIATIONS.md` | 2026-09-30 |
+| 公共绘图工具与命名清理 | 将 `setup_plot_style`、`save_station_scatter` 提取至 `src/utils.py`；恢复全部阶段开关；2.1 阶段键名统一为 `stage_2_1_dist_feature`；将拼写错误的 `gainovement` 更正为 `improvement`；图形输出由 SVG 改为 EPS 以适应期刊要求 | 2026-10-01 |
 
 ### 进行中
 | 任务 | 描述 | 备注 |
@@ -84,6 +85,6 @@ python huanghua_airport.py
 
 ---
 
-**最后更新**：2026-09-30
+**最后更新**：2026-10-01
 
 英文版见 [README.md](README.md)。

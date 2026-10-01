@@ -60,3 +60,32 @@ docs/OPERATIONAL_INFERENCE_PIPELINE_cn.md
 
 # Model registry data (large binaries, keep local only)
 model/
+
+# Proprietary documents, raw data and archives.
+# Cline checkpoints stash untracked-but-not-ignored files into git objects,
+# so anything listed here also stays out of the object database.
+# Use "git add -f <file>" when a sample of these must be tracked on purpose.
+*.docx
+*.doc
+*.pdf
+*.npy
+*.npz
+*.csv
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.rar
+*.zip
+*.7z
+
+# Plot outputs and images. "figures*/" also covers the legacy "figures-" dir,
+# which the plain "figures/" rule above does not match.
+figures*/
+*.tif
+*.tiff
+*.jpg
+*.jpeg
+*.eps
+*.png
+*.svg

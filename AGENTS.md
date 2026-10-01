@@ -15,7 +15,7 @@ You are an AI programming assistant for this meteorological data analysis projec
 - Writing and refactoring Python code for visibility data processing and visualization
 - Following the established code style (English comments, pinyin abbreviations for local variables)
 - Ensuring memory efficiency when handling large numpy arrays
-- Maintaining consistency with the 9-stage analysis pipeline defined in `draw.py`
+- Maintaining consistency with the 10-stage analysis pipeline defined in `draw.py`
 
 ### Project knowledge
 
@@ -106,7 +106,10 @@ See the Git guidelines below and the additional notes in this document.
 
 **Additional notes**:
 - Dual-platform sync: Push to both Gitee and GitHub
-- Do not commit large data files (`.npy`, `.csv`) to git
+- Do not commit large data files (`.npy`, `.csv`) to git. `.gitignore`
+  already excludes documents, raw data, archives and figure outputs
+  (`*.docx`, `*.npy`, `*.csv`, `figures*/`, ...). Use `git add -f` only
+  when a small sample must be tracked on purpose.
 
 ## 6. Boundaries
 
@@ -117,7 +120,7 @@ See the Git guidelines below and the additional notes in this document.
   - Mark file modifications with line numbers when showing changes
 
 - **Ask first**:
-  - Before modifying the 9-stage pipeline structure in `draw.py`
+  - Before modifying the 10-stage pipeline structure in `draw.py`
   - Before changing visibility grade thresholds (`THRES` constant)
   - Before adding new dependencies
 
@@ -136,6 +139,8 @@ See the Git guidelines below and the additional notes in this document.
 | Evaluation Calculation Parallelization | Parallelize station-level and init-hour block metrics calculation in `src/p3_1_eval_calc.py` using `joblib.Parallel(n_jobs=-1)`, reducing runtime to approximately 1/3 of original | 2026-04-15 |
 | Code Style Compliance & Path Configuration | Systematically check and fix code style items, and migrate hard-coded paths to the configuration file | 2026-05-09 |
 | Code Refactoring | Refactor `access.py`, `tl.py`, `vis2411.py`, `ots.py`, `vis_grade.py`, `huanghua.py`; move reusable classes (`PDF`, `OTS`) into `src/pdf_model.py` and `src/ots_model.py`; replace hard-coded paths with `config.yaml`; standardize entry points and English comments | 2026-07-16 |
+| Pipeline Consolidation and Stage Split | Merge `preprocess.py` and `inference.py` into `pipeline.py`; split the operational flow into three stage modules (`forecast_prep` data, `postprocess` model, `product_writer` product); rename `PDF` to `PDFM` with backward-compatible model loading; retire `ots.py`, `vis2411.py`, `vis_grade.py`; rename `tl.py` to `tle_experiment.py` and `huanghua.py` to `huanghua_airport.py` | 2026-09-30 |
+| Shared Plot Helpers & Naming Cleanup | Extract `setup_plot_style` and `save_station_scatter` into `src/utils.py`; restore every stage switch; rename the 2.1 stage key to `stage_2_1_dist_feature`; correct the misspelled `gainovement` identifier to `improvement`; emit EPS instead of SVG for journal figures | 2026-10-01 |
 
 ### In Progress
 | Task | Description | Notes |
@@ -146,10 +151,14 @@ See the Git guidelines below and the additional notes in this document.
 | Task | Description | Priority |
 |------|-------------|----------|
 | Special Industry Risk Product Development | Develop visibility risk products for special industries such as transportation and aviation | P1 |
+| Regression Test Suite | Add pytest coverage for `PDFM`, `TLE` and the PDFM cache using synthetic data, gate key metric changes within 0.1%, and run a minimal compile plus lint check in CI | P1 |
+| Silent Failure Guards | Report the actual TLE sample count per lead, raise station-order mismatches to ERROR level, and write products to a temporary file before renaming | P1 |
+| Single Source of Configuration | Consolidate the region and grade-threshold settings that currently differ between `config.yaml` and `operational.yaml` | P2 |
 | Preprocessing Parallelization | Research memory-aware dynamic parallelization for GRIB interpolation tasks (joblib / batch scheduling) to speed up multi-init-time preprocessing on servers | P2 |
 | Multi-model Data Application | Apply multi-model forecast data to visibility analysis and product services | P2 |
-| Code Documentation Refresh | Refresh `README.md`, `README_cn.md`, and `docs/OPERATIONAL_INFERENCE_PIPELINE_cn.md` to match the current code; `comment_analysis.md` was removed because it described modules that no longer exist | P2 |
+| Resource Self-adaptation | Cap `parallel.n_jobs` by available memory and add retention rotation for `ops/` logs | P3 |
+| Documentation Consistency | Keep `README.md` and `README_cn.md` in step with the code after further changes | P3 |
 
 ---
 
-**Last Updated**: 2026-09-30
+**Last Updated**: 2026-10-01

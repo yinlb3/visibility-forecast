@@ -120,7 +120,7 @@ def main() -> None:
     # 2.1 Distribution feature calculation
     print('2.1 Distribution feature calculation')
     sec_start = arrow.now()
-    if stages['p2_1_dist_feature']:
+    if stages['stage_2_1_dist_feature']:
         df_month = pd.DataFrame(p21.build_month_stats(
             vis_grade=vis_grade, pre=pre, rhu=rhu,
             month_ind=month_ind, thres=thres

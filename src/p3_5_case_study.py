@@ -294,7 +294,7 @@ def analyze_case_studies(
         pdfm_s += f'e:{ts_pdfm_e:.4f}, p:{ts_pdfm_p:.4f}'
         pdfm_str = f'PDFM=[{pdfm_s}]'
         def _gain(t_pdfm: float, t_cma: float) -> float:
-            """Compute percentage gainovement of PDFM over CMA."""
+            """Compute percentage improvement of PDFM over CMA."""
             return ((t_pdfm - t_cma) / t_cma * 100
                     if t_cma != 0 else np.nan)
         gain_all = _gain(ts_pdfm_all, ts_cma_all)

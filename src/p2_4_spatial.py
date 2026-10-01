@@ -4,18 +4,18 @@
 Part 2.4: Spatial distribution feature plotting module.
 
 Founded in 2026-04-14
-Modified in 2026-09-30
+Modified in 2026-10-01
 @author: yinlb, space-bunny
 """
 
-import contextlib
-import io
 import pathlib
 import typing
 
 import numpy as np
 import pandas as pd
 from meteva import base as meb    # type: ignore
+
+from src import utils
 
 
 def _scatter_sta_pair(
@@ -25,20 +25,8 @@ def _scatter_sta_pair(
     clevs: object,
     cfg: typing.Dict,
 ) -> None:
-    """Helper: Plot station scatter using configured formats."""
-    formats = cfg['draw']['plot']['output_formats']
-    for fmt in formats:
-        fmt_clean = fmt.lstrip('.').lower()
-        path = str(pathlib.Path(save_path).with_suffix(f'.{fmt_clean}'))
-        try:
-            with contextlib.redirect_stdout(io.StringIO()):
-                meb.tool.plot_tools.scatter_sta(
-                    sta0=sta0.copy(), point_size=20,
-                    map_extend=[108, 123, 24, 36], clevs=clevs, cmap=cmap,
-                    extend='max', title=[''], save_path=path, dpi=800
-                )
-        except Exception as e:
-            print(f'[_scatter_sta_pair] Error saving {fmt_clean}: {e}')
+    """Helper: save station scatter in all configured formats."""
+    utils.save_station_scatter(sta0, save_path, cmap, clevs, cfg)
 
 
 def _calc_region_mean(

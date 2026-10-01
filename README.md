@@ -1,9 +1,9 @@
-# vis
+# visibility-forecast
 
-[![Gitee](https://img.shields.io/badge/Gitee-vis-blue)](https://gitee.com/yinlb97/vis)
-[![GitHub](https://img.shields.io/badge/GitHub-vis-black)](https://github.com/yinlb3/vis)
+[![Gitee](https://img.shields.io/badge/Gitee-visibility--forecast-blue)](https://gitee.com/yinlb97/visibility-forecast)
+[![GitHub](https://img.shields.io/badge/GitHub-visibility--forecast-black)](https://github.com/yinlb3/visibility-forecast)
 
-> A collection of Python scripts for meteorological visibility data analysis and visualization.
+> Visibility event analysis and rapid-refresh forecast correction for meteorological stations over eastern China, covering PDFM-TLE correction, graded verification (TS/FAR/MAR/POD), spatiotemporal distribution analysis, and a full GRIB-to-product operational pipeline.
 
 ## Features
 
@@ -61,6 +61,7 @@ Before running, please confirm:
 | Code Style Compliance & Path Configuration | Systematically check and fix code style items, and migrate hard-coded paths to the configuration file | 2026-05-09 |
 | Code Refactoring | Refactor `access.py`, `tl.py`, `vis2411.py`, `ots.py`, `vis_grade.py`, `huanghua.py`; move reusable classes (`PDF`, `OTS`) into `src/pdf_model.py` and `src/ots_model.py`; replace hard-coded paths with `config.yaml`; standardize entry points and English comments | 2026-07-16 |
 | Pipeline Consolidation and Stage Split | Merge `preprocess.py` and `inference.py` into `pipeline.py`; split the operational flow into three stage modules (`forecast_prep` data, `postprocess` model, `product_writer` product); rename `PDF` to `PDFM` with backward-compatible model loading; retire `ots.py`, `vis2411.py`, `vis_grade.py`; rename `tl.py` to `tle_experiment.py` and `huanghua.py` to `huanghua_airport.py`; rebuild `docs/OPERATIONAL_INFERENCE_PIPELINE_cn.md` and `docs/ABBREVIATIONS.md` | 2026-09-30 |
+| Shared Plot Helpers & Naming Cleanup | Extract `setup_plot_style` and `save_station_scatter` into `src/utils.py`; restore every stage switch; rename the 2.1 stage key to `stage_2_1_dist_feature`; correct the misspelled `gainovement` identifier to `improvement`; emit EPS instead of SVG for journal figures | 2026-10-01 |
 
 ### In Progress
 | Task | Description | Notes |
@@ -85,6 +86,6 @@ Before running, please confirm:
 
 ---
 
-**Last Updated**: 2026-09-30
+**Last Updated**: 2026-10-01
 
 For Chinese version, see [README_cn.md](README_cn.md).

@@ -2,11 +2,13 @@
 """General utility functions.
 
 Founded in 2026-04-04
-Modified in 2026-09-30
+Modified in 2026-10-01
 @author: yinlb, space-bunny
 """
 
+import contextlib
 import ctypes
+import io
 import os
 import platform
 import pathlib
@@ -20,18 +22,72 @@ import numpy as np
 import yaml
 
 from matplotlib import figure
+from matplotlib import font_manager as fm
 
 
 mpl.use('Agg')
-mpl.rcParams['font.family'] = 'serif'
-mpl.rcParams['font.serif'] = ['Times New Roman', 'SimSun']
-mpl.rcParams['axes.unicode_minus'] = False
 
 
-# Single source of truth for the matplotlib backend and rcParams above:
-# importing this module is enough, so plotting modules must not repeat the
-# settings. schematic.py is the only exception because it registers a
-# concrete Chinese font file at runtime.
+# ==================== Plot Style Utilities ====================
+
+
+def find_chinese_font(
+    fonts_cfg: typing.Optional[typing.Dict] = None
+) -> typing.Optional[str]:
+    """
+    Register the first available Chinese font file of the configuration.
+
+    Args:
+        fonts_cfg: 'fonts' section of the config; it holds a 'chinese' list
+            of font file paths. None or an empty list means no candidate.
+
+    Returns:
+        Family name of the registered font, or None when no file is usable.
+    """
+    for font_path in (fonts_cfg or {}).get('chinese', []):
+        path = pathlib.Path(font_path)
+        if not path.is_file():
+            continue
+        try:
+            fm.fontManager.addfont(str(path))
+            font_name = fm.FontProperties(fname=str(path)).get_name()
+        except Exception as e:
+            print(f'[find_chinese_font] Skipped {path}: {e}')
+            continue
+        print(f'[find_chinese_font] Chinese font: {font_name} ({path})')
+        return font_name
+    return None
+
+
+def setup_plot_style(
+    fonts_cfg: typing.Optional[typing.Dict] = None,
+    chinese_first: bool = False
+) -> None:
+    """
+    Apply the project-wide matplotlib fonts and tick settings.
+
+    Single source of truth for rcParams, so plotting modules only need to
+    import src.utils. matplotlib >= 3.11 no longer falls back inside the
+    generic 'serif' alias list, hence the Chinese family name must be put
+    into font.family explicitly.
+
+    Args:
+        fonts_cfg: 'fonts' section of the config, optional. A usable font
+            file found there replaces the built-in SimSun.
+        chinese_first: When True the Chinese font also renders latin text,
+            otherwise Times New Roman keeps the latin characters.
+    """
+    mpl.rcParams['font.serif'] = ['Times New Roman', 'SimSun']
+    mpl.rcParams['axes.unicode_minus'] = False
+    chinese_name = find_chinese_font(fonts_cfg) or 'SimSun'
+    # The Chinese family goes into font.family instead of relying on the
+    # generic 'serif' alias: matplotlib >= 3.11 does not fall back inside
+    # that alias list, and third-party libraries (e.g. meteva) overwrite
+    # font.serif when they are imported.
+    if chinese_first:
+        mpl.rcParams['font.family'] = [chinese_name]
+    else:
+        mpl.rcParams['font.family'] = ['Times New Roman', chinese_name]
 
 
 # ==================== Figure Save Utility ====================
@@ -82,6 +138,58 @@ def save_figure(
         except Exception as e:
             print(f'[save_figure] Error saving {fmt_clean}: {e}')
             continue
+
+        # Vector formats such as EPS fail silently far too often, so the
+        # result is checked instead of trusting savefig alone.
+        if not filepath.is_file() or filepath.stat().st_size == 0:
+            print(f'[save_figure] EMPTY {fmt_clean}: {filepath}')
+            continue
+        size_kb = filepath.stat().st_size / 1024
+        print(f'[save_figure] Saved: {filepath} ({size_kb:.0f} KB)')
+
+
+def save_station_scatter(
+    sta0: typing.Any,
+    base_path: str,
+    cmap: object,
+    clevs: object,
+    cfg: typing.Dict,
+) -> None:
+    """
+    Save a station scatter map through meteva in every configured format.
+
+    meteva prints a lot while plotting, so its output is redirected here
+    instead of in each caller. Vector formats such as EPS can come out
+    empty without raising, so the result is checked afterwards.
+
+    Args:
+        sta0: Station DataFrame that holds a 'data0' column to be mapped.
+        base_path: Base file path without extension.
+        cmap: Matplotlib colormap object.
+        clevs: Discrete colour levels.
+        cfg: Configuration dictionary containing plot settings.
+    """
+    from meteva import base as meb    # type: ignore
+
+    formats = cfg['draw']['plot']['output_formats']
+    for fmt in formats:
+        fmt_clean = fmt.lstrip('.').lower()
+        path = pathlib.Path(base_path).with_suffix(f'.{fmt_clean}')
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                meb.tool.plot_tools.scatter_sta(
+                    sta0=sta0.copy(), point_size=20,
+                    map_extend=[108, 123, 24, 36], clevs=clevs, cmap=cmap,
+                    extend='max', title=[''], save_path=str(path), dpi=800
+                )
+        except Exception as e:
+            print(f'[save_station_scatter] Error saving {fmt_clean}: {e}')
+            continue
+        if not path.is_file() or path.stat().st_size == 0:
+            print(f'[save_station_scatter] EMPTY {fmt_clean}: {path}')
+            continue
+        size_kb = path.stat().st_size / 1024
+        print(f'[save_station_scatter] Saved: {path} ({size_kb:.0f} KB)')
 
 
 def format_time(second: float, is_abbreviation: bool = False) -> str:
@@ -581,6 +689,14 @@ def _validate_config(cfg: typing.Dict) -> None:
         'paths.wind_data_dir',
         'draw.stages',
         'draw.plot.output_formats',
+        # Plot keys used by src/p3_2_init_lead.py: without them the stage
+        # fails only after the long 3.1 calculation has already finished.
+        'draw.plot.hour_access_heatmaps.improvement_vmin',
+        'draw.plot.hour_access_heatmaps.improvement_vmax',
+        'draw.plot.ts_comparison_bars.color_improvement',
+        'draw.plot.ts_comparison_bars.ft_xlim',
+        'draw.plot.mre_violins.improvement_figsize',
+        'draw.plot.mre_violins.improvement_color',
         'draw.regions.provinces',
         'draw.regions.mlyr_provinces',
         'tl.input_files.observation_npy',
@@ -661,3 +777,7 @@ _validate_config(_CFG)
 
 # Global config instance (validated)
 CFG: typing.Dict = _CFG
+
+# Apply the shared plot style once, so importing this module is enough for
+# every plotting module.
+setup_plot_style()
